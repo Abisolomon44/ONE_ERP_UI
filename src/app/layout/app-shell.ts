@@ -2,7 +2,6 @@
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../core/services/auth.service';
-import { PermissionService } from '../core/services/permission.service';
 import { ThemeService } from '../core/services/theme.service';
 import { BaseButton } from '../shared/base-button';
 import { BaseToast } from '../shared/base-feedback';
@@ -11,15 +10,18 @@ interface NavItem {
   route: string;
   label: string;
   icon: string;
-  permission?: string;
+  section?: string;
 }
 
+const SECTION_ORDER = ['Workspace'];
+
 const NAV: NavItem[] = [
-  { route: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard' },
-  { route: 'users', label: 'Users', icon: 'users', permission: 'users.view' },
-  { route: 'roles', label: 'Roles', icon: 'shield', permission: 'roles.view' },
-  { route: 'company', label: 'Company', icon: 'building-2', permission: 'companies.view' },
-  { route: 'settings', label: 'Settings', icon: 'settings' },
+  { route: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', section: 'Workspace' },
+  { route: 'users', label: 'Users', icon: 'users', section: 'Workspace' },
+  { route: 'roles', label: 'Roles', icon: 'shield', section: 'Workspace' },
+  { route: 'company', label: 'Company', icon: 'building-2', section: 'Workspace' },
+  { route: 'settings', label: 'Settings', icon: 'settings', section: 'Workspace' },
+  { route: 'system-master', label: 'System Master', icon: 'folder', section: 'Workspace' },
 ];
 
 @Component({
@@ -32,7 +34,6 @@ const NAV: NavItem[] = [
 export class AppShell {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
-  private readonly perms = inject(PermissionService);
   private readonly router = inject(Router);
 
   protected readonly collapsed = signal(false);
@@ -50,7 +51,17 @@ export class AppShell {
     });
   }
 
-  protected readonly navItems = computed(() => NAV.filter((item) => !item.permission || this.perms.has(item.permission)));
+  protected readonly navItems = computed(() => NAV);
+
+  protected readonly navSections = computed(() => {
+    const groups = new Map<string, NavItem[]>();
+    for (const item of this.navItems()) {
+      const key = item.section ?? 'Workspace';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(item);
+    }
+    return SECTION_ORDER.filter((name) => groups.has(name)).map((name) => ({ name, items: groups.get(name)! }));
+  });
 
   private initIsMobile(): boolean {
     return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(max-width: 1024px)').matches;

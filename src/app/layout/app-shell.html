@@ -11,14 +11,16 @@
     </div>
 
     <nav class="sidebar-nav">
-      <div class="sidebar-section">Workspace</div>
-      @for (item of navItems(); track item.route) {
-        <a class="nav-item" routerLink="/{{ item.route }}" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.route === 'dashboard' }" (click)="closeMobile()">
-          <i-lucide [name]="item.icon" [size]="18"></i-lucide>
-          @if (!collapsed()) {
-            <span>{{ item.label }}</span>
-          }
-        </a>
+      @for (section of navSections(); track section.name) {
+        <div class="sidebar-section">{{ section.name }}</div>
+        @for (item of section.items; track item) {
+          <a class="nav-item" routerLink="/{{ item.route }}" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.route === 'dashboard' }" (click)="closeMobile()">
+            <i-lucide [name]="item.icon" [size]="18"></i-lucide>
+            @if (!collapsed()) {
+              <span>{{ item.label }}</span>
+            }
+          </a>
+        }
       }
     </nav>
 

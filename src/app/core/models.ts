@@ -99,6 +99,79 @@ export interface Permission {
   module: string;
 }
 
+export interface BusinessType {
+  businessTypeId: number;
+  name: string;
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface IndustryType {
+  industryTypeId: number;
+  name: string;
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface CompanyGroup {
+  companyGroupId: number;
+  groupCode: string;
+  groupName: string;
+  shortName?: string;
+  description?: string;
+  parentGroupId?: number;
+  parentGroupName?: string;
+  isActive: boolean;
+}
+
+export interface Country {
+  countryId: number;
+  name: string;
+  isoCode2: string;
+  isoCode3: string;
+  phoneCode?: string;
+  currencyCode?: string;
+  nationality?: string;
+  isActive: boolean;
+  createdBy?: string;
+  createdDate: string;
+  modifiedBy?: string;
+  modifiedDate: string;
+}
+
+export interface State {
+  stateId: number;
+  countryId: number;
+  countryName?: string;
+  name: string;
+  stateCode: string;
+  gstStateCode?: string;
+  isActive: boolean;
+  createdBy?: string;
+  createdDate: string;
+  modifiedBy?: string;
+  modifiedDate: string;
+}
+
+export interface City {
+  cityId: number;
+  countryId: number;
+  countryName?: string;
+  stateId: number;
+  stateName?: string;
+  name: string;
+  postalCode?: string;
+  latitude?: number;
+  longitude?: number;
+  isActive: boolean;
+  createdBy?: string;
+  createdDate: string;
+  modifiedBy?: string;
+  modifiedDate: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;

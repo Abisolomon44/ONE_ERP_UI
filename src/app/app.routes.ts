@@ -47,6 +47,32 @@ export const routes: Routes = [
           import('./pages/company/company').then((m) => m.CompanyPage),
       },
       {
+        path: 'system-master',
+        title: 'System Master',
+        loadComponent: () =>
+          import('./pages/system-master/system-master').then((m) => m.SystemMasterPage),
+      },
+      {
+        path: 'business-types',
+        redirectTo: 'system-master?tab=business-types',
+        pathMatch: 'full',
+      },
+      {
+        path: 'industry-types',
+        redirectTo: 'system-master?tab=industry-types',
+        pathMatch: 'full',
+      },
+      {
+        path: 'company-groups',
+        redirectTo: 'system-master?tab=company-groups',
+        pathMatch: 'full',
+      },
+      {
+        path: 'locations',
+        redirectTo: 'system-master?tab=locations',
+        pathMatch: 'full',
+      },
+      {
         path: 'settings',
         title: 'Settings',
         loadComponent: () =>

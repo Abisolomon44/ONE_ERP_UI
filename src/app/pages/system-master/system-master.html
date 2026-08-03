@@ -1,0 +1,27 @@
+<div class="page">
+  <div class="tabs">
+    @for (t of tabs; track t.id) {
+      <button type="button" class="tab" [class.active]="tab() === t.id" (click)="setTab(t.id)">
+        <i-lucide [name]="t.icon" [size]="16"></i-lucide>
+        {{ t.label }}
+      </button>
+    }
+  </div>
+
+  <div class="tab-panel">
+    @switch (tab()) {
+      @case ('business-types') {
+        <app-business-types></app-business-types>
+      }
+      @case ('industry-types') {
+        <app-industry-types></app-industry-types>
+      }
+      @case ('company-groups') {
+        <app-company-groups></app-company-groups>
+      }
+      @case ('locations') {
+        <app-locations></app-locations>
+      }
+    }
+  </div>
+</div>

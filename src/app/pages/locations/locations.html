@@ -1,0 +1,264 @@
+<div class="page-header">
+  <div>
+    <h1>Locations</h1>
+    <div class="page-sub">Manage countries, states, and cities for your organization.</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab" [class.active]="tab() === 'countries'" (click)="setTab('countries')">
+    <i-lucide name="globe" [size]="16"></i-lucide>
+    Countries
+    <span class="tab-count">{{ countries().length }}</span>
+  </button>
+  <button class="tab" [class.active]="tab() === 'states'" (click)="setTab('states')">
+    <i-lucide name="map" [size]="16"></i-lucide>
+    States
+    <span class="tab-count">{{ states().length }}</span>
+  </button>
+  <button class="tab" [class.active]="tab() === 'cities'" (click)="setTab('cities')">
+    <i-lucide name="building-2" [size]="16"></i-lucide>
+    Cities
+    <span class="tab-count">{{ cities().length }}</span>
+  </button>
+</div>
+
+@if (tab() === 'countries') {
+  <div class="page-header">
+    <div class="page-sub">Countries form the top level of the location hierarchy.</div>
+    <div class="page-actions">
+      <base-search [placeholder]="'Search countries...'" [(value)]="countrySearch"></base-search>
+      <base-button *basePermission="'locations.create'" icon="plus" (click)="openCountryCreate()">New Country</base-button>
+    </div>
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <div class="flex" style="justify-content:center; padding: 44px">
+        <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+      </div>
+    } @else if (filteredCountries().length === 0) {
+      <base-empty icon="globe" title="No countries found" subtitle="Create a country to get started."></base-empty>
+    } @else {
+      <div class="table-wrap">
+        <table class="btable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th style="width: 110px">ISO Code 2</th>
+              <th style="width: 110px">ISO Code 3</th>
+              <th style="width: 110px">Phone Code</th>
+              <th style="width: 110px">Currency</th>
+              <th style="width: 110px">Status</th>
+              <th style="width: 90px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredCountries(); track item.countryId) {
+              <tr>
+                <td>
+                  <div style="display:flex; align-items:center; gap:10px">
+                    <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="globe" [size]="16"></i-lucide></span>
+                    <span style="font-weight:600">{{ item.name }}</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-accent" style="font-family: monospace">{{ item.isoCode2 }}</span></td>
+                <td class="text-muted" style="font-family: monospace">{{ item.isoCode3 }}</td>
+                <td class="text-muted">{{ item.phoneCode || '—' }}</td>
+                <td class="text-muted">{{ item.currencyCode || '—' }}</td>
+                <td><base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill></td>
+                <td>
+                  <div style="display:flex; gap:6px">
+                    <base-button *basePermission="'locations.edit'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit" (click)="openCountryEdit(item)"></base-button>
+                    <base-button *basePermission="'locations.delete'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete" (click)="removeCountry(item)"></base-button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+}
+
+@if (tab() === 'states') {
+  <div class="page-header">
+    <div class="page-sub">States are tied to a country and use short codes.</div>
+    <div class="page-actions">
+      <base-dropdown [placeholder]="'All countries'" [options]="countryOptions()" [(value)]="stateCountryFilter"></base-dropdown>
+      <base-search [placeholder]="'Search states...'" [(value)]="stateSearch"></base-search>
+      <base-button *basePermission="'locations.create'" icon="plus" (click)="openStateCreate()">New State</base-button>
+    </div>
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <div class="flex" style="justify-content:center; padding: 44px">
+        <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+      </div>
+    } @else if (filteredStates().length === 0) {
+      <base-empty icon="map" title="No states found" subtitle="Create a state to get started."></base-empty>
+    } @else {
+      <div class="table-wrap">
+        <table class="btable">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Country</th>
+              <th style="width: 120px">State Code</th>
+              <th style="width: 140px">GST Code</th>
+              <th style="width: 110px">Status</th>
+              <th style="width: 90px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredStates(); track item.stateId) {
+              <tr>
+                <td>
+                  <div style="display:flex; align-items:center; gap:10px">
+                    <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="map" [size]="16"></i-lucide></span>
+                    <span style="font-weight:600">{{ item.name }}</span>
+                  </div>
+                </td>
+                <td class="text-muted">{{ item.countryName || '—' }}</td>
+                <td><span class="badge badge-accent" style="font-family: monospace">{{ item.stateCode }}</span></td>
+                <td class="text-muted">{{ item.gstStateCode || '—' }}</td>
+                <td><base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill></td>
+                <td>
+                  <div style="display:flex; gap:6px">
+                    <base-button *basePermission="'locations.edit'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit" (click)="openStateEdit(item)"></base-button>
+                    <base-button *basePermission="'locations.delete'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete" (click)="removeState(item)"></base-button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+}
+
+@if (tab() === 'cities') {
+  <div class="page-header">
+    <div class="page-sub">Cities are tied to a state and may carry postal codes and coordinates.</div>
+    <div class="page-actions">
+      <base-dropdown [placeholder]="'All countries'" [options]="countryOptions()" [(value)]="cityCountryFilter"></base-dropdown>
+      <base-dropdown [placeholder]="'All states'" [options]="cityFilterStateOptions()" [(value)]="cityStateFilter" [disabled]="!cityCountryFilter()"></base-dropdown>
+      <base-search [placeholder]="'Search cities...'" [(value)]="citySearch"></base-search>
+      <base-button *basePermission="'locations.create'" icon="plus" (click)="openCityCreate()">New City</base-button>
+    </div>
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <div class="flex" style="justify-content:center; padding: 44px">
+        <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+      </div>
+    } @else if (filteredCities().length === 0) {
+      <base-empty icon="building-2" title="No cities found" subtitle="Create a city to get started."></base-empty>
+    } @else {
+      <div class="table-wrap">
+        <table class="btable">
+          <thead>
+            <tr>
+              <th>City</th>
+              <th>Country</th>
+              <th>State</th>
+              <th style="width: 130px">Postal Code</th>
+              <th style="width: 110px">Status</th>
+              <th style="width: 90px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredCities(); track item.cityId) {
+              <tr>
+                <td>
+                  <div style="display:flex; align-items:center; gap:10px">
+                    <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="building-2" [size]="16"></i-lucide></span>
+                    <span style="font-weight:600">{{ item.name }}</span>
+                  </div>
+                </td>
+                <td class="text-muted">{{ item.countryName || '—' }}</td>
+                <td class="text-muted">{{ item.stateName || '—' }}</td>
+                <td class="text-muted" style="font-family: monospace">{{ item.postalCode || '—' }}</td>
+                <td><base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill></td>
+                <td>
+                  <div style="display:flex; gap:6px">
+                    <base-button *basePermission="'locations.edit'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit" (click)="openCityEdit(item)"></base-button>
+                    <base-button *basePermission="'locations.delete'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete" (click)="removeCity(item)"></base-button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="dialogTitle()" (closeRequest)="dialogOpen.set(false)">
+  @if (tab() === 'countries') {
+    <div class="grid grid-2" style="gap: 0 16px">
+      <base-input label="Country Name" icon="globe" [(value)]="countryForm.name"></base-input>
+      <base-input label="Nationality" icon="users" [(value)]="countryForm.nationality" [hint]="'e.g. Indian'"></base-input>
+    </div>
+    <div class="grid grid-2" style="gap: 0 16px">
+      <base-input label="ISO Code 2" icon="badge" [(value)]="countryForm.iso2" [hint]="'e.g. IN'"></base-input>
+      <base-input label="ISO Code 3" icon="badge" [(value)]="countryForm.iso3" [hint]="'e.g. IND'"></base-input>
+    </div>
+    <div class="grid grid-2" style="gap: 0 16px">
+      <base-input label="Phone Code" icon="phone" [(value)]="countryForm.phone" [hint]="'e.g. +91'"></base-input>
+      <base-input label="Currency Code" icon="circle-dollar-sign" [(value)]="countryForm.currency" [hint]="'e.g. INR'"></base-input>
+    </div>
+    @if (editingCountry()) {
+      <label class="check-item">
+        <input type="checkbox" [checked]="countryForm.isActive()" (change)="onActiveChange($event)"/>
+        <span>Active</span>
+      </label>
+    }
+  }
+
+  @if (tab() === 'states') {
+    <base-dropdown label="Country" icon="globe" [options]="countryOptions()" [(value)]="stateForm.countryId" placeholder="Select country"></base-dropdown>
+    <div class="grid grid-2" style="gap: 0 16px">
+      <base-input label="State Name" icon="map" [(value)]="stateForm.name"></base-input>
+      <base-input label="State Code" icon="badge" [(value)]="stateForm.code" [hint]="'e.g. MH'"></base-input>
+    </div>
+    <base-input label="GST State Code" icon="hash" [(value)]="stateForm.gstCode" [hint]="'e.g. 27'"></base-input>
+    @if (editingState()) {
+      <label class="check-item">
+        <input type="checkbox" [checked]="stateForm.isActive()" (change)="onActiveChange($event)"/>
+        <span>Active</span>
+      </label>
+    }
+  }
+
+  @if (tab() === 'cities') {
+    <div class="grid grid-2" style="gap: 0 16px">
+      <base-dropdown label="Country" icon="globe" [options]="countryOptions()" [(value)]="cityForm.countryId" placeholder="Select country"></base-dropdown>
+      <base-dropdown label="State" icon="map" [options]="cityFormStateOptions()" [(value)]="cityForm.stateId" [disabled]="!cityForm.countryId()" placeholder="Select state"></base-dropdown>
+    </div>
+    <base-input label="City Name" icon="building-2" [(value)]="cityForm.name"></base-input>
+    <div class="grid grid-2" style="gap: 0 16px">
+      <base-input label="Postal Code" icon="hash" [(value)]="cityForm.postalCode" [hint]="'e.g. 400001'"></base-input>
+      <base-input label="Latitude" type="number" icon="move-up-right" [(value)]="cityForm.latitude" [hint]="'e.g. 19.0760'"></base-input>
+    </div>
+    <base-input label="Longitude" type="number" icon="move-down-right" [(value)]="cityForm.longitude" [hint]="'e.g. 72.8777'"></base-input>
+    @if (editingCity()) {
+      <label class="check-item">
+        <input type="checkbox" [checked]="cityForm.isActive()" (change)="onActiveChange($event)"/>
+        <span>Active</span>
+      </label>
+    }
+  }
+
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!canSave()" (click)="save()">
+      {{ saveLabel() }}
+    </base-button>
+  </div>
+</base-dialog>

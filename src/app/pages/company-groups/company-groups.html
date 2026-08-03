@@ -1,0 +1,89 @@
+<div class="page-header">
+  <div>
+    <h1>Company Groups</h1>
+    <div class="page-sub">Organize companies into corporate groups with optional parent hierarchies.</div>
+  </div>
+  <div class="page-actions">
+    <base-search [placeholder]="'Search company groups...'" [(value)]="search"></base-search>
+    <base-button *basePermission="'company-groups.manage'" icon="plus" (click)="openCreate()">New Group</base-button>
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <div class="flex" style="justify-content:center; padding: 44px">
+      <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+    </div>
+  } @else if (filtered().length === 0) {
+    <base-empty icon="network" title="No company groups found" subtitle="Create a company group to get started."></base-empty>
+  } @else {
+    <div class="table-wrap">
+      <table class="btable">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Group Name</th>
+            <th>Short Name</th>
+            <th>Parent Group</th>
+            <th style="width: 110px">Status</th>
+            <th style="width: 90px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filtered(); track item.companyGroupId) {
+            <tr>
+              <td>
+                <span class="badge badge-accent" style="font-family: monospace">{{ item.groupCode }}</span>
+              </td>
+              <td>
+                <div style="display:flex; align-items:center; gap:10px">
+                  <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="network" [size]="16"></i-lucide></span>
+                  <span style="font-weight:600">{{ item.groupName }}</span>
+                </div>
+              </td>
+              <td class="text-muted">{{ item.shortName || '—' }}</td>
+              <td class="text-muted">
+                @if (item.parentGroupName) {
+                  <span style="display:inline-flex; align-items:center; gap:6px">
+                    <i-lucide name="corner-down-right" [size]="14"></i-lucide>{{ item.parentGroupName }}
+                  </span>
+                } @else {
+                  —
+                }
+              </td>
+              <td><base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill></td>
+              <td>
+                <div style="display:flex; gap:6px">
+                  <base-button *basePermission="'company-groups.manage'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit" (click)="openEdit(item)"></base-button>
+                  <base-button *basePermission="'company-groups.manage'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete" (click)="remove(item)"></base-button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Company Group' : 'Create Company Group'" (closeRequest)="dialogOpen.set(false)">
+  <div class="grid grid-2" style="gap: 0 16px">
+    <base-input label="Group Code" icon="badge" [(value)]="form.groupCode" [hint]="editing() ? '' : 'e.g. RETAIL'"></base-input>
+    <base-input label="Group Name" icon="network" [(value)]="form.groupName"></base-input>
+  </div>
+  <base-input label="Short Name" icon="type" [(value)]="form.shortName"></base-input>
+  <base-input label="Description" icon="text-wrap" [(value)]="form.description"></base-input>
+  <base-dropdown label="Parent Group" icon="corner-down-right" [options]="parentOptions()" [(value)]="form.parentGroupId" placeholder="No parent group"></base-dropdown>
+  @if (editing()) {
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isActive()" (change)="onActiveChange($event)"/>
+      <span>Active</span>
+    </label>
+  }
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.groupCode() || !form.groupName()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Group' }}
+    </base-button>
+  </div>
+</base-dialog>

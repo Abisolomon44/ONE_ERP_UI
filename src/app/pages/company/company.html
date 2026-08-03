@@ -1,6 +1,6 @@
 <div class="cmp-header">
   <nav class="bc">
-    <a routerLink="/dashboard"><i-lucide name="home" [size]="13"></i-lucide> Home</a>
+    <a routerLink="/dashboard"><i-lucide name="house" [size]="13"></i-lucide> Home</a>
     <span class="bc-sep"><i-lucide name="chevron-right" [size]="13"></i-lucide></span>
     <span class="bc-current">Company</span>
   </nav>
@@ -67,7 +67,7 @@
   </div>
 } @else if (loadFailed()) {
   <div class="card cmp-card cmp-error">
-    <base-empty icon="building-off" title="Unable to load company" subtitle="Your company profile could not be loaded. Please try again.">
+    <base-empty icon="building" title="Unable to load company" subtitle="Your company profile could not be loaded. Please try again.">
       <base-button variant="secondary" icon="refresh-cw" (click)="retry()">Try Again</base-button>
     </base-empty>
   </div>
@@ -91,7 +91,7 @@
           <span class="cmp-logo">{{ initials(company.companyName) }}</span>
           <div class="cmp-profile-meta">
             <div class="cmp-name">{{ company.companyName }}</div>
-            <div class="cmp-code"><i-lucide name="fingerprint" [size]="12"></i-lucide> {{ company.companyCode }}</div>
+            <div class="cmp-code"><i-lucide name="fingerprint-pattern" [size]="12"></i-lucide> {{ company.companyCode }}</div>
           </div>
         </div>
 
@@ -249,7 +249,7 @@
 
           <div class="ff">
             <div class="ff-wrap has-icon floated">
-              <i-lucide name="fingerprint" [size]="16" class="ff-icon"></i-lucide>
+              <i-lucide name="fingerprint-pattern" [size]="16" class="ff-icon"></i-lucide>
               <input id="cmp-code" name="companyCode" type="text" class="ff-control has-icon"
                      [ngModel]="form.companyCode()"
                      disabled
