@@ -1,0 +1,102 @@
+<div class="page-header">
+  <div>
+    <h1>Users</h1>
+    <div class="page-sub">Manage tenant users and their role assignments.</div>
+  </div>
+  <div class="page-actions">
+    <base-search [placeholder]="'Search users...'" [(value)]="search"></base-search>
+    <base-button *basePermission="'users.create'" icon="plus" (click)="openCreate()">New User</base-button>
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <div class="flex" style="justify-content:center; padding: 44px">
+      <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+    </div>
+  } @else if (rows().length === 0) {
+    <base-empty icon="users" title="No users found" subtitle="Create a user to get started."></base-empty>
+  } @else {
+    <div class="table-wrap">
+      <table class="btable">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Roles</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th style="width: 90px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of rows(); track user.userId) {
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:10px">
+                  <span class="avatar">{{ initials(user.fullName) }}</span>
+                  <div>
+                    <div style="font-weight:600">{{ user.fullName }}</div>
+                    <div class="text-muted" style="font-size:12.5px">
+                      @{{ user.username }}
+                      @if (user.isSuperAdmin) { <span class="badge badge-accent">super</span> }
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="text-muted">{{ user.email }}</td>
+              <td>
+                <div style="display:flex; gap:4px; flex-wrap:wrap">
+                  @for (role of user.roleNames; track role) {
+                    <span class="badge">{{ role }}</span>
+                  }
+                </div>
+              </td>
+              <td><base-pill [status]="user.status" [label]="user.status"></base-pill></td>
+              <td class="text-muted">{{ user.createdDate | date: 'MMM d, yyyy' }}</td>
+              <td>
+                <div style="display:flex; gap:6px">
+                  <base-button *basePermission="'users.edit'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit user" (click)="openEdit(user)"></base-button>
+                  <base-button *basePermission="'users.delete'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete user" (click)="remove(user)"></base-button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer">
+      <base-pagination [(page)]="page" [size]="size()" [total]="total()"></base-pagination>
+    </div>
+  }
+</div>
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit User' : 'Create User'" (closeRequest)="dialogOpen.set(false)">
+  <base-input label="Username" icon="user" [(value)]="form.username" [disabled]="!!editing()" [hint]="editing() ? '' : 'Unique login name'"></base-input>
+  <base-input label="Full Name" icon="id-card" [(value)]="form.fullName"></base-input>
+  <base-input label="Email" type="email" icon="mail" [(value)]="form.email"></base-input>
+  <base-input label="Mobile" icon="phone" [(value)]="form.mobile"></base-input>
+  @if (!editing()) {
+    <base-input label="Password" type="password" icon="key-round" [(value)]="form.password"></base-input>
+  }
+  <div class="field">
+    <label class="field-label">Roles</label>
+    <div class="check-list">
+      @for (role of roleToggles(); track role.roleId) {
+        <label class="check-item">
+          <input type="checkbox" [checked]="role.checked" (change)="toggleRole(role.roleId, $event)"/>
+          <span>{{ role.name }}</span>
+        </label>
+      }
+      @if (roleToggles().length === 0) {
+        <div class="text-muted">No roles available.</div>
+      }
+    </div>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.username() || !form.fullName() || !form.email() || selectedRoleIds().length === 0 || (!editing() && !form.password())" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create User' }}
+    </base-button>
+  </div>
+</base-dialog>

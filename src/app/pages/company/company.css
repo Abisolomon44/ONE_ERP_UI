@@ -1,0 +1,90 @@
+/* ============================================================
+   Company Management — enterprise card layout
+   ============================================================ */
+
+/* ---------- Layout ---------- */
+.cmp-header { margin-bottom: 22px; }
+.cmp-layout { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 22px; align-items: start; }
+.cmp-layout-single { grid-template-columns: minmax(0, 1fr); max-width: 800px; }
+@media (max-width: 1080px) { .cmp-layout, .cmp-layout-single { grid-template-columns: 1fr; } }
+@media (min-width: 1081px) { .cmp-sticky { position: sticky; top: 84px; } }
+
+.cmp-card { border-radius: var(--radius-lg); overflow: hidden; }
+.cmp-card-foot { background: var(--surface-2); }
+.cmp-head-ic {
+  width: 34px; height: 34px; border-radius: var(--radius-sm);
+  background: var(--accent-soft); color: var(--accent);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* ---------- Company profile header ---------- */
+.cmp-profile { display: flex; align-items: center; gap: 14px; }
+.cmp-logo {
+  width: 62px; height: 62px; border-radius: var(--radius-lg); flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent-active));
+  color: var(--accent-contrast); font-size: 22px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);
+}
+.cmp-profile-meta { min-width: 0; }
+.cmp-name { font-size: 16.5px; font-weight: 700; line-height: 1.3; }
+.cmp-code {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
+  font-family: Consolas, 'Courier New', monospace; font-size: 11.5px; font-weight: 600; letter-spacing: 0.4px;
+  color: var(--text-2); background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 3px 9px;
+}
+.cmp-meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.cmp-type-badge, .cmp-base-currency {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-sm);
+}
+.cmp-type-badge { background: var(--purple-soft); color: var(--purple); }
+.cmp-base-currency { background: var(--accent-soft); color: var(--accent); }
+
+/* ---------- Info section ---------- */
+.cmp-section-title {
+  display: flex; align-items: center; gap: 6px; margin: 20px 0 6px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3);
+}
+.cmp-row { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.cmp-row:last-child { border-bottom: none; }
+.cmp-ic {
+  width: 34px; height: 34px; border-radius: var(--radius-sm); flex-shrink: 0;
+  background: var(--surface-3); color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
+}
+.cmp-ic.accent { background: var(--accent-soft); color: var(--accent); }
+.cmp-ic.success { background: var(--success-soft); color: var(--success); }
+.cmp-ic.info { background: var(--info-soft); color: var(--info); }
+.cmp-ic.warning { background: var(--warning-soft); color: var(--warning); }
+.cmp-ic.purple { background: var(--purple-soft); color: var(--purple); }
+.cmp-row-meta { min-width: 0; }
+.cmp-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); }
+.cmp-val { font-size: 13.5px; font-weight: 600; color: var(--text); margin-top: 1px; word-break: break-word; }
+.cmp-val a { word-break: break-all; }
+.cmp-address { white-space: pre-line; font-weight: 500; }
+
+/* ---------- Audit trail ---------- */
+.cmp-audit { margin-top: 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.cmp-audit-title {
+  display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); margin-bottom: 8px;
+}
+.cmp-audit-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; }
+.cmp-audit-row + .cmp-audit-row { border-top: 1px solid var(--border); }
+.cmp-audit-ic {
+  width: 28px; height: 28px; border-radius: var(--radius-sm); flex-shrink: 0;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
+}
+.cmp-audit-meta { min-width: 0; }
+.cmp-audit-meta .cmp-lbl { font-size: 10.5px; }
+.cmp-audit-meta .cmp-val { font-size: 12.5px; }
+.cmp-sep { margin: 0 4px; color: var(--text-3); }
+
+/* ---------- Footer status / actions ---------- */
+.cmp-foot-status { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-2); }
+.cmp-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 720px) { .cmp-logo { width: 54px; height: 54px; font-size: 19px; } }

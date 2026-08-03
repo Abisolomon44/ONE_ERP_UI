@@ -1,0 +1,405 @@
+<div class="cmp-header">
+  <nav class="bc">
+    <a routerLink="/dashboard"><i-lucide name="home" [size]="13"></i-lucide> Home</a>
+    <span class="bc-sep"><i-lucide name="chevron-right" [size]="13"></i-lucide></span>
+    <span class="bc-current">Company</span>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h1>Company</h1>
+      <div class="page-sub">Manage your registered workspace profile</div>
+    </div>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="cmp-layout">
+    <aside class="card cmp-card">
+      <div class="card card-header">
+        <span class="skel" style="width:34px; height:34px; border-radius:8px"></span>
+        <div>
+          <span class="skel" style="width:150px; height:16px; border-radius:4px"></span>
+          <span class="skel" style="width:190px; height:12px; border-radius:4px; margin-top:6px"></span>
+        </div>
+        <div class="card-actions"><span class="skel" style="width:64px; height:22px; border-radius:11px"></span></div>
+      </div>
+      <div class="card card-body">
+        <div class="cmp-profile">
+          <span class="skel" style="width:62px; height:62px; border-radius:12px"></span>
+          <div style="flex:1">
+            <span class="skel" style="width:180px; height:18px; border-radius:4px"></span>
+            <span class="skel" style="width:110px; height:12px; border-radius:4px; margin-top:8px"></span>
+          </div>
+        </div>
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="cmp-row" style="padding:12px 0">
+            <span class="skel" style="width:34px; height:34px; border-radius:8px"></span>
+            <div style="flex:1">
+              <span class="skel" style="width:90px; height:11px; border-radius:4px"></span>
+              <span class="skel" style="width:160px; height:13px; border-radius:4px; margin-top:7px"></span>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="card card-footer cmp-card-foot">
+        <div class="skel" style="width:230px; height:34px; margin-left:auto; border-radius:6px"></div>
+      </div>
+    </aside>
+
+    <div class="card cmp-card">
+      <div class="card card-header">
+        <span class="skel" style="width:34px; height:34px; border-radius:8px"></span>
+        <div>
+          <span class="skel" style="width:110px; height:16px; border-radius:4px"></span>
+          <span class="skel" style="width:150px; height:12px; border-radius:4px; margin-top:6px"></span>
+        </div>
+      </div>
+      <div class="card card-body">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="skel" style="height:46px; border-radius:8px; margin-bottom:16px"></div>
+        }
+      </div>
+      <div class="card card-footer cmp-card-foot">
+        <div class="skel" style="width:230px; height:34px; margin-left:auto; border-radius:6px"></div>
+      </div>
+    </div>
+  </div>
+} @else if (loadFailed()) {
+  <div class="card cmp-card cmp-error">
+    <base-empty icon="building-off" title="Unable to load company" subtitle="Your company profile could not be loaded. Please try again.">
+      <base-button variant="secondary" icon="refresh-cw" (click)="retry()">Try Again</base-button>
+    </base-empty>
+  </div>
+} @else if (data(); as company) {
+  <div class="cmp-layout" [class.cmp-layout-single]="!canEdit()">
+    <!-- ============ Left: Company Information ============ -->
+    <aside class="card cmp-card cmp-sticky">
+      <div class="card card-header">
+        <span class="cmp-head-ic"><i-lucide name="building-2" [size]="18"></i-lucide></span>
+        <div>
+          <h3>Company Information</h3>
+          <div class="card-sub">Registered workspace profile</div>
+        </div>
+        <div class="card-actions">
+          <base-pill [status]="company.status" [label]="company.status"></base-pill>
+        </div>
+      </div>
+
+      <div class="card card-body">
+        <div class="cmp-profile">
+          <span class="cmp-logo">{{ initials(company.companyName) }}</span>
+          <div class="cmp-profile-meta">
+            <div class="cmp-name">{{ company.companyName }}</div>
+            <div class="cmp-code"><i-lucide name="fingerprint" [size]="12"></i-lucide> {{ company.companyCode }}</div>
+          </div>
+        </div>
+
+        <div class="cmp-meta-row">
+          @if (company.companyType) {
+            <span class="cmp-type-badge"><i-lucide name="briefcase" [size]="12"></i-lucide> {{ companyTypeLabel(company.companyType) }}</span>
+          }
+          <span class="cmp-base-currency"><i-lucide name="coins" [size]="12"></i-lucide> {{ company.currency }}</span>
+        </div>
+
+        <div class="cmp-section-title"><i-lucide name="contact" [size]="13"></i-lucide> Contact &amp; Tax Details</div>
+
+        <div class="cmp-rows">
+          <div class="cmp-row">
+            <span class="cmp-ic accent"><i-lucide name="coins" [size]="16"></i-lucide></span>
+            <div class="cmp-row-meta">
+              <div class="cmp-lbl">Base Currency</div>
+              <div class="cmp-val">{{ company.currency }}</div>
+            </div>
+          </div>
+
+          <div class="cmp-row">
+            <span class="cmp-ic"><i-lucide name="mail" [size]="16"></i-lucide></span>
+            <div class="cmp-row-meta">
+              <div class="cmp-lbl">Contact Email</div>
+              <div class="cmp-val">
+                @if (company.email) {
+                  <a [href]="'mailto:' + company.email">{{ company.email }}</a>
+                } @else {
+                  <span style="color:var(--text-3); font-weight:500">Not set</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="cmp-row">
+            <span class="cmp-ic"><i-lucide name="phone" [size]="16"></i-lucide></span>
+            <div class="cmp-row-meta">
+              <div class="cmp-lbl">Phone</div>
+              <div class="cmp-val">
+                @if (company.phone) {
+                  <a [href]="'tel:' + company.phone">{{ company.phone }}</a>
+                } @else {
+                  <span style="color:var(--text-3); font-weight:500">Not set</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="cmp-row">
+            <span class="cmp-ic info"><i-lucide name="globe" [size]="16"></i-lucide></span>
+            <div class="cmp-row-meta">
+              <div class="cmp-lbl">Website</div>
+              <div class="cmp-val">
+                @if (company.website) {
+                  <a [href]="company.website" target="_blank" rel="noopener">{{ company.website }}</a>
+                } @else {
+                  <span style="color:var(--text-3); font-weight:500">Not set</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="cmp-row">
+            <span class="cmp-ic purple"><i-lucide name="receipt-text" [size]="16"></i-lucide></span>
+            <div class="cmp-row-meta">
+              <div class="cmp-lbl">GST Number</div>
+              <div class="cmp-val">
+                @if (company.gst) {
+                  {{ company.gst }}
+                } @else {
+                  <span style="color:var(--text-3); font-weight:500">Not set</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="cmp-row">
+            <span class="cmp-ic warning"><i-lucide name="map-pin" [size]="16"></i-lucide></span>
+            <div class="cmp-row-meta">
+              <div class="cmp-lbl">Registered Address</div>
+              <div class="cmp-val">
+                @if (company.address) {
+                  <span class="cmp-address">{{ company.address }}</span>
+                } @else {
+                  <span style="color:var(--text-3); font-weight:500">Not set</span>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cmp-section-title"><i-lucide name="shield-check" [size]="13"></i-lucide> Audit Trail</div>
+        <div class="cmp-audit">
+          <div class="cmp-audit-row">
+            <span class="cmp-audit-ic"><i-lucide name="user-plus" [size]="14"></i-lucide></span>
+            <div class="cmp-audit-meta">
+              <div class="cmp-lbl">Created By</div>
+              <div class="cmp-val">{{ company.createdBy ?? 'System' }}</div>
+            </div>
+            @if (company.createdDate) {
+              <span class="cmp-audit-date" style="margin-left:auto; font-size:11.5px; color:var(--text-3); white-space:nowrap">{{ company.createdDate | date: 'mediumDate' }}</span>
+            }
+          </div>
+          <div class="cmp-audit-row">
+            <span class="cmp-audit-ic"><i-lucide name="user-cog" [size]="14"></i-lucide></span>
+            <div class="cmp-audit-meta">
+              <div class="cmp-lbl">Last Modified By</div>
+              <div class="cmp-val">{{ company.modifiedBy ?? '—' }}</div>
+            </div>
+            @if (company.modifiedDate) {
+              <span class="cmp-audit-date" style="margin-left:auto; font-size:11.5px; color:var(--text-3); white-space:nowrap">{{ company.modifiedDate | date: 'mediumDate' }}</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-footer cmp-card-foot">
+        <div class="cmp-foot-status">
+          <i-lucide [name]="isActive() ? 'circle-check' : 'circle'"
+                    [size]="15"
+                    [style.color]="isActive() ? 'var(--success)' : 'var(--text-3)'"></i-lucide>
+          <span>{{ isActive() ? 'Company is active and visible across the workspace' : 'Company is inactive' }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============ Right: Edit Company ============ -->
+    @if (canEdit()) {
+      <form class="card cmp-card" (ngSubmit)="save()">
+        <div class="card card-header">
+          <span class="cmp-head-ic"><i-lucide name="pencil-line" [size]="18"></i-lucide></span>
+          <div>
+            <h3>Edit Company</h3>
+            <div class="card-sub">Update your workspace profile details</div>
+          </div>
+        </div>
+
+        <div class="card card-body">
+          <div class="ff">
+            <div class="ff-wrap has-icon" [class.floated]="!!form.companyName()">
+              <i-lucide name="building-2" [size]="16" class="ff-icon"></i-lucide>
+              <input id="cmp-name" name="companyName" type="text" class="ff-control has-icon"
+                     [class.invalid]="errorFor('companyName')"
+                     [ngModel]="form.companyName()"
+                     (input)="onInput($event, 'companyName')"
+                     (blur)="onTouch('companyName')"
+                     autocomplete="organization" />
+              <label class="ff-label" for="cmp-name">Company Name <span class="ff-req">*</span></label>
+            </div>
+            @if (errorFor('companyName')) {
+              <div class="ff-error"><i-lucide name="circle-alert" [size]="13"></i-lucide> {{ errorFor('companyName') }}</div>
+            }
+          </div>
+
+          <div class="ff">
+            <div class="ff-wrap has-icon floated">
+              <i-lucide name="fingerprint" [size]="16" class="ff-icon"></i-lucide>
+              <input id="cmp-code" name="companyCode" type="text" class="ff-control has-icon"
+                     [ngModel]="form.companyCode()"
+                     disabled
+                     autocomplete="off" />
+              <label class="ff-label" for="cmp-code">Company Code</label>
+            </div>
+            <span class="ff-hint">Read-only &middot; assigned at provisioning</span>
+          </div>
+
+          <div class="ff-grid">
+            <div class="ff">
+              <div class="ff-wrap has-icon floated" [class.hide-empty]="!form.companyType()">
+                <i-lucide name="briefcase" [size]="16" class="ff-icon"></i-lucide>
+                <select id="cmp-type" name="companyType" class="ff-control has-icon"
+                        [class.invalid]="errorFor('companyType')"
+                        [ngModel]="form.companyType()"
+                        (change)="onSelect($event, 'companyType')"
+                        (blur)="onTouch('companyType')">
+                  <option value="" disabled>Select a type</option>
+                  @for (opt of companyTypeOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <label class="ff-label" for="cmp-type">Company Type</label>
+              </div>
+            </div>
+
+            <div class="ff">
+              <div class="ff-wrap has-icon floated" [class.hide-empty]="!form.currency()">
+                <i-lucide name="coins" [size]="16" class="ff-icon"></i-lucide>
+                <select id="cmp-currency" name="currency" class="ff-control has-icon"
+                        [class.invalid]="errorFor('currency')"
+                        [ngModel]="form.currency()"
+                        (change)="onSelect($event, 'currency')"
+                        (blur)="onTouch('currency')">
+                  @for (opt of currencyOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <label class="ff-label" for="cmp-currency">Base Currency <span class="ff-req">*</span></label>
+              </div>
+              @if (errorFor('currency')) {
+                <div class="ff-error"><i-lucide name="circle-alert" [size]="13"></i-lucide> {{ errorFor('currency') }}</div>
+              }
+            </div>
+          </div>
+
+          <div class="ff-grid">
+            <div class="ff">
+              <div class="ff-wrap has-icon floated" [class.hide-empty]="!form.status()">
+                <i-lucide name="toggle-right" [size]="16" class="ff-icon"></i-lucide>
+                <select id="cmp-status" name="status" class="ff-control has-icon"
+                        [class.invalid]="errorFor('status')"
+                        [ngModel]="form.status()"
+                        (change)="onSelect($event, 'status')"
+                        (blur)="onTouch('status')">
+                  @for (opt of statusOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <label class="ff-label" for="cmp-status">Status <span class="ff-req">*</span></label>
+              </div>
+              @if (errorFor('status')) {
+                <div class="ff-error"><i-lucide name="circle-alert" [size]="13"></i-lucide> {{ errorFor('status') }}</div>
+              }
+            </div>
+
+            <div class="ff">
+              <div class="ff-wrap has-icon" [class.floated]="!!form.email()">
+                <i-lucide name="mail" [size]="16" class="ff-icon"></i-lucide>
+                <input id="cmp-email" name="email" type="email" class="ff-control has-icon"
+                       [class.invalid]="errorFor('email')"
+                       [ngModel]="form.email()"
+                       (input)="onInput($event, 'email')"
+                       (blur)="onTouch('email')"
+                       autocomplete="email" />
+                <label class="ff-label" for="cmp-email">Contact Email</label>
+              </div>
+              @if (errorFor('email')) {
+                <div class="ff-error"><i-lucide name="circle-alert" [size]="13"></i-lucide> {{ errorFor('email') }}</div>
+              }
+            </div>
+          </div>
+
+          <div class="ff-grid">
+            <div class="ff">
+              <div class="ff-wrap has-icon" [class.floated]="!!form.phone()">
+                <i-lucide name="phone" [size]="16" class="ff-icon"></i-lucide>
+                <input id="cmp-phone" name="phone" type="tel" class="ff-control has-icon"
+                       [ngModel]="form.phone()"
+                       (input)="onInput($event, 'phone')"
+                       (blur)="onTouch('phone')"
+                       autocomplete="tel" />
+                <label class="ff-label" for="cmp-phone">Phone</label>
+              </div>
+            </div>
+
+            <div class="ff">
+              <div class="ff-wrap has-icon" [class.floated]="!!form.website()">
+                <i-lucide name="globe" [size]="16" class="ff-icon"></i-lucide>
+                <input id="cmp-website" name="website" type="url" class="ff-control has-icon"
+                       [class.invalid]="errorFor('website')"
+                       [ngModel]="form.website()"
+                       (input)="onInput($event, 'website')"
+                       (blur)="onTouch('website')"
+                       autocomplete="url" />
+                <label class="ff-label" for="cmp-website">Website</label>
+              </div>
+              @if (errorFor('website')) {
+                <div class="ff-error"><i-lucide name="circle-alert" [size]="13"></i-lucide> {{ errorFor('website') }}</div>
+              }
+            </div>
+          </div>
+
+          <div class="ff">
+            <div class="ff-wrap has-icon" [class.floated]="!!form.gst()">
+              <i-lucide name="receipt-text" [size]="16" class="ff-icon"></i-lucide>
+              <input id="cmp-gst" name="gst" type="text" class="ff-control has-icon"
+                     [ngModel]="form.gst()"
+                     (input)="onInput($event, 'gst')"
+                     (blur)="onTouch('gst')"
+                     autocomplete="off" />
+              <label class="ff-label" for="cmp-gst">GST Number</label>
+            </div>
+            <span class="ff-hint">Goods &amp; Services Tax identification number, if applicable</span>
+          </div>
+
+          <div class="ff">
+            <div class="ff-wrap area has-icon" [class.floated]="!!form.address()">
+              <i-lucide name="map-pin" [size]="16" class="ff-icon"></i-lucide>
+              <textarea id="cmp-address" name="address" rows="3" class="ff-control has-icon"
+                        [ngModel]="form.address()"
+                        (input)="onInput($event, 'address')"
+                        (blur)="onTouch('address')"
+                        autocomplete="street-address"></textarea>
+              <label class="ff-label" for="cmp-address">Registered Address</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-footer cmp-card-foot">
+          <div class="cmp-actions">
+            <base-button variant="ghost" type="button" icon="x" (click)="cancel()">Cancel</base-button>
+            <base-button variant="secondary" type="button" icon="rotate-ccw" (click)="reset()">Reset</base-button>
+            <base-button variant="primary" type="submit" icon="save" [loading]="saving()" [disabled]="!dirty() || saving()">
+              Save Changes
+            </base-button>
+          </div>
+        </div>
+      </form>
+    }
+  </div>
+}

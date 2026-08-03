@@ -1,0 +1,58 @@
+<div class="shell">
+  <aside class="sidebar" [class.collapsed]="collapsed()" [class.open]="mobileOpen()">
+    <div class="sidebar-brand">
+      <span class="brand-logo"><i-lucide name="layers" [size]="20"></i-lucide></span>
+      @if (!collapsed()) {
+        <div>
+          <div class="brand-name">ONE ERP</div>
+          <div class="brand-sub">{{ tenantLabel() }}</div>
+        </div>
+      }
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Workspace</div>
+      @for (item of navItems(); track item.route) {
+        <a class="nav-item" routerLink="/{{ item.route }}" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.route === 'dashboard' }" (click)="closeMobile()">
+          <i-lucide [name]="item.icon" [size]="18"></i-lucide>
+          @if (!collapsed()) {
+            <span>{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <span class="avatar">{{ initials() }}</span>
+        @if (!collapsed()) {
+          <div class="user-meta">
+            <div class="user-name">{{ auth.user()?.fullName || auth.user()?.username }}</div>
+            <div class="user-role">{{ roleLabel() }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" [class.show]="mobileOpen() && isMobile()" (click)="closeMobile()"></div>
+
+  <div class="shell-body">
+    <header class="topbar">
+      <button class="icon-btn" aria-label="Toggle sidebar" (click)="toggleSidebar()">
+        <i-lucide [name]="isMobile() ? (mobileOpen() ? 'x' : 'menu') : (collapsed() ? 'panel-left-open' : 'panel-left-close')" [size]="19"></i-lucide>
+      </button>
+      <div class="topbar-title">{{ pageTitle() }}</div>
+      <div class="topbar-spacer"></div>
+      <button class="icon-btn" aria-label="Toggle theme" (click)="theme.toggleMode()">
+        <i-lucide [name]="theme.mode() === 'light' ? 'moon' : 'sun'" [size]="18"></i-lucide>
+      </button>
+      <base-button variant="ghost" icon="log-out" label="Logout" (click)="logout()">Logout</base-button>
+    </header>
+
+    <main class="shell-main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+<base-toast></base-toast>

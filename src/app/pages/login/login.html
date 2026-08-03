@@ -1,0 +1,48 @@
+<div class="auth-page">
+  <div class="auth-side">
+    <div class="auth-logo">
+      <span class="auth-logo-badge"><i-lucide name="layers" [size]="24"></i-lucide></span>
+      <div>
+        <div class="auth-name">ONE ERP</div>
+        <div style="opacity:.85; font-size:12.5px; letter-spacing:1px; font-weight:600">TENANT WORKSPACE</div>
+      </div>
+    </div>
+    <div>
+      <div class="auth-quote">Your company. Your data.<br />Your ERP workspace.</div>
+      <div class="auth-quote-sub">
+        Sign in to the tenant workspace with your username and password to access users, roles and company settings.
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px">
+      <div class="auth-feature"><i-lucide name="users" [size]="18"></i-lucide> Manage users with role-based access</div>
+      <div class="auth-feature"><i-lucide name="shield-check" [size]="18"></i-lucide> Fine-grained permission controls</div>
+      <div class="auth-feature"><i-lucide name="building-2" [size]="18"></i-lucide> Company profile & settings</div>
+    </div>
+  </div>
+
+  <div class="auth-main">
+    <div class="auth-box">
+      <div class="auth-logo">
+        <span class="auth-logo-badge"><i-lucide name="layers" [size]="24"></i-lucide></span>
+        <div>
+          <div class="auth-name">ONE ERP</div>
+          <div style="color: var(--text-3); font-size:12px; font-weight:600; letter-spacing:1px">TENANT LOGIN</div>
+        </div>
+      </div>
+      <h1 class="auth-title">Welcome to your workspace</h1>
+      <div class="auth-sub">Sign in with your account credentials.</div>
+
+      <form (ngSubmit)="submit()" style="display:block">
+        <base-input label="Username" icon="user" id="username" [(value)]="username" autocomplete="username"></base-input>
+        <base-input label="Password" type="password" icon="key-round" id="password" [(value)]="password" autocomplete="current-password" [error]="error()"></base-input>
+        <base-button type="submit" [loading]="loading()" [block]="true" style="margin-top:6px" [disabled]="!username() || !password()">
+          Sign in
+        </base-button>
+      </form>
+
+      <div class="auth-footer">
+        © 2026 ONE ERP. Enterprise Multi-Tenant Platform.
+      </div>
+    </div>
+  </div>
+</div>

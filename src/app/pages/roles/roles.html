@@ -1,0 +1,82 @@
+<div class="page-header">
+  <div>
+    <h1>Roles</h1>
+    <div class="page-sub">Define roles and control what each role can access.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'roles.manage'" icon="plus" (click)="openCreate()">New Role</base-button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card"><base-empty icon="shield" title="No roles found" subtitle="Create a role to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (role of rows(); track role.roleId) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="shield" [size]="17"></i-lucide></span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ role.name }}</h3>
+              @if (role.isSystem) { <span class="badge badge-accent">system</span> }
+            </div>
+            <div class="card-sub">{{ role.code }}</div>
+          </div>
+          <base-pill [status]="role.isActive ? 'Active' : 'Inactive'" [label]="role.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          <p style="margin:0 0 12px; color: var(--text-2); font-size:13.5px">{{ role.description || 'No description' }}</p>
+          <div class="perm-grid">
+            @for (perm of role.permissions; track perm) {
+              <span class="perm-chip">{{ perm }}</span>
+            }
+            @if (role.permissions.length === 0) {
+              <span class="text-muted" style="font-size:13px">No permissions assigned.</span>
+            }
+          </div>
+        </div>
+        @if (perms.has('roles.manage')) {
+          <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+            <base-button variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(role)"></base-button>
+            @if (!role.isSystem) {
+              <base-button variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(role)"></base-button>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Role' : 'Create Role'" (closeRequest)="dialogOpen.set(false)">
+  <base-input label="Role Name" icon="shield" [(value)]="form.name"></base-input>
+  <base-input label="Code" icon="badge" [(value)]="form.code" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. HR_MANAGER'"></base-input>
+  <base-input label="Description" icon="text-wrap" [(value)]="form.description"></base-input>
+  <div class="field">
+    <label class="field-label">Permissions</label>
+    @for (group of permissionGroups(); track group.module) {
+      <div class="perm-group">
+        <div class="perm-group-title">{{ group.module }}</div>
+        <div class="perm-grid">
+          @for (toggle of group.items; track toggle.code) {
+            <label class="check-item">
+              <input type="checkbox" [checked]="toggle.checked" (change)="togglePermission(toggle.code, $event)"/>
+              <span>{{ toggle.name }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    }
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.name() || !form.code()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Role' }}
+    </base-button>
+  </div>
+</base-dialog>

@@ -1,0 +1,182 @@
+<div class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="page-sub">{{ data()?.tenantName }} · {{ data()?.tenantCode }}</div>
+  </div>
+  @if (data()?.planName) {
+    <div class="page-actions">
+      <span class="badge badge-accent"><i-lucide name="crown" [size]="13"></i-lucide> {{ data()?.planName }}</span>
+    </div>
+  }
+</div>
+
+@if (data(); as d) {
+  <div class="grid grid-4 stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon accent"><i-lucide name="users" [size]="18"></i-lucide></span>
+      <div class="stat-label">Total Users</div>
+      <div class="stat-value">{{ d.totalUsers }}</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon success"><i-lucide name="user-check" [size]="18"></i-lucide></span>
+      <div class="stat-label">Active Users</div>
+      <div class="stat-value">{{ d.activeUsers }}</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon purple"><i-lucide name="shield" [size]="18"></i-lucide></span>
+      <div class="stat-label">Roles</div>
+      <div class="stat-value">{{ d.totalRoles }}</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon warning"><i-lucide name="calendar-clock" [size]="18"></i-lucide></span>
+      <div class="stat-label">Subscription End</div>
+      <div class="stat-value stat-sm">{{ d.subscriptionEnd ? (d.subscriptionEnd | date: 'MMM d, yyyy') : '—' }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-3 personal-grid">
+    <div class="card">
+      <div class="card-header">
+        <i-lucide name="user" [size]="18" style="color: var(--accent)"></i-lucide>
+        <div>
+          <h3>My Profile</h3>
+          <div class="card-sub">Personal & account details</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px">
+          <span class="avatar avatar-lg" style="background: var(--accent-soft-2); color: var(--accent)">{{ initials(d.user.fullName) }}</span>
+          <div style="min-width:0">
+            <div style="font-weight:700; font-size:15px">{{ d.user.fullName }}</div>
+            <div class="text-muted" style="font-size:12.5px">@{{ d.user.username }}</div>
+            @if (d.user.isSuperAdmin) {
+              <span class="badge badge-accent">super admin</span>
+            }
+          </div>
+          <div style="margin-left:auto"><base-pill [status]="d.user.status" [label]="d.user.status"></base-pill></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:7px; font-size:13.5px; border-top:1px solid var(--border); padding-top:14px">
+          <div class="flex-between"><span class="text-muted">Email</span><span style="font-weight:600">{{ d.user.email || '—' }}</span></div>
+          <div class="flex-between"><span class="text-muted">Mobile</span><span style="font-weight:600">{{ d.user.mobile || '—' }}</span></div>
+          <div class="flex-between"><span class="text-muted">Member since</span><span style="font-weight:600">{{ d.user.createdDate | date: 'MMM d, yyyy' }}</span></div>
+          <div class="flex-between"><span class="text-muted">Last login</span><span style="font-weight:600">{{ d.user.lastLoginDate ? (d.user.lastLoginDate | date: 'MMM d, yyyy') : '—' }}</span></div>
+          <div class="flex-between">
+            <span class="text-muted">Roles</span>
+            <span style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end">
+              @for (role of d.roles; track role) {
+                <span class="badge">{{ role }}</span>
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i-lucide name="key-round" [size]="18" style="color: var(--accent)"></i-lucide>
+        <div>
+          <h3>My Access</h3>
+          <div class="card-sub">{{ d.permissions.length }} permission{{ d.permissions.length === 1 ? '' : 's' }} granted</div>
+        </div>
+      </div>
+      <div class="card-body">
+        @if (permissionGroups().length === 0) {
+          <div class="text-muted" style="font-size:13px">No permissions assigned to your account.</div>
+        } @else {
+          @for (group of permissionGroups(); track group.module) {
+            <div class="perm-group">
+              <div class="perm-group-title">{{ group.module }}</div>
+              <div class="perm-grid">
+                @for (item of group.items; track item.code) {
+                  <span class="perm-chip">{{ item.name }}</span>
+                }
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i-lucide name="zap" [size]="18" style="color: var(--accent)"></i-lucide>
+        <div>
+          <h3>Quick Actions</h3>
+          <div class="card-sub">Based on your permissions</div>
+        </div>
+      </div>
+      <div class="list" style="padding: 8px 12px">
+        @for (action of quickActions(); track action.route) {
+          <button class="action-row" (click)="go(action.route)">
+            <span class="action-icon"><i-lucide [name]="action.icon" [size]="16"></i-lucide></span>
+            <span class="action-label">{{ action.label }}</span>
+            <i-lucide name="chevron-right" [size]="16" class="action-chevron"></i-lucide>
+          </button>
+        }
+        @if (quickActions().length === 0) {
+          <div class="text-muted" style="font-size:13px; padding: 12px">You have no workspace actions available.</div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="align-items: start; gap: 20px">
+    <div class="card">
+      <div class="card-header">
+        <i-lucide name="clock" [size]="18" style="color: var(--accent)"></i-lucide>
+        <div>
+          <h3>Recent Users</h3>
+          <div class="card-sub">Latest accounts created in this tenant</div>
+        </div>
+      </div>
+      @if (d.recentUsers.length === 0) {
+        <div class="card-body">
+          <div class="text-muted">No users yet.</div>
+        </div>
+      } @else {
+        <div class="list">
+          @for (u of d.recentUsers; track u.userId) {
+            <div class="list-row">
+              <span class="avatar">{{ initials(u.fullName) }}</span>
+              <div style="flex:1; min-width:0">
+                <div style="font-weight:600; font-size:14px">{{ u.fullName }}</div>
+                <div class="text-muted" style="font-size:12.5px">@{{ u.username }} · {{ u.createdDate | date: 'MMM d, yyyy' }}</div>
+              </div>
+              <base-pill [status]="u.status" [label]="u.status"></base-pill>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i-lucide name="building-2" [size]="18" style="color: var(--accent)"></i-lucide>
+        <div>
+          <h3>Company</h3>
+          <div class="card-sub">{{ d.company.companyCode }}</div>
+        </div>
+      </div>
+      <div class="card-body" style="display:flex; flex-direction:column; gap:14px">
+        <div class="flex gap-3">
+          <span class="avatar avatar-lg" style="background: var(--accent-soft-2); color: var(--accent)">{{ initials(d.company.companyName) }}</span>
+          <div>
+            <div style="font-weight:700; font-size:15px">{{ d.company.companyName }}</div>
+            <div class="text-muted" style="font-size:12.5px">{{ d.company.email || 'No contact email' }}</div>
+          </div>
+        </div>
+        <div style="border-top: 1px solid var(--border); padding-top: 12px; display:flex; flex-direction:column; gap:8px; font-size:13.5px">
+          <div class="flex-between"><span class="text-muted">Currency</span><span style="font-weight:600">{{ d.company.currency }}</span></div>
+          <div class="flex-between"><span class="text-muted">Phone</span><span style="font-weight:600">{{ d.company.phone || '—' }}</span></div>
+          <div class="flex-between"><span class="text-muted">GST</span><span style="font-weight:600">{{ d.company.gst || '—' }}</span></div>
+          <div class="flex-between"><span class="text-muted">Status</span><base-pill [status]="d.company.status" [label]="d.company.status"></base-pill></div>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+}
