@@ -1,0 +1,92 @@
+<div class="page-header">
+  <div>
+    <h1>Languages</h1>
+    <div class="page-sub">Manage system languages and their regional settings.</div>
+  </div>
+  <div class="page-actions">
+    <base-search [placeholder]="'Search languages...'" [(value)]="search"></base-search>
+    <base-button *basePermission="'languages.manage'" icon="plus" (click)="openCreate()">New Language</base-button>
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <div class="flex" style="justify-content:center; padding: 44px">
+      <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+    </div>
+  } @else if (filtered().length === 0) {
+    <base-empty icon="languages" title="No languages found" subtitle="Create a language to get started."></base-empty>
+  } @else {
+    <div class="table-wrap">
+      <table class="btable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th style="width: 100px">Code</th>
+            <th style="width: 120px">Culture Code</th>
+            <th style="width: 80px">RTL</th>
+            <th style="width: 80px">Default</th>
+            <th style="width: 110px">Sort Order</th>
+            <th style="width: 110px">Status</th>
+            <th style="width: 90px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filtered(); track item.languageId) {
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:10px">
+                  <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="languages" [size]="16"></i-lucide></span>
+                  <span style="font-weight:600">{{ item.name }}</span>
+                </div>
+              </td>
+              <td><span class="badge badge-accent" style="font-family: monospace">{{ item.code }}</span></td>
+              <td class="text-muted">{{ item.cultureCode || '—' }}</td>
+              <td><base-pill [status]="item.isRTL ? 'Yes' : 'No'" [label]="item.isRTL ? 'RTL' : 'LTR'"></base-pill></td>
+              <td><base-pill [status]="item.isDefault ? 'Yes' : 'No'" [label]="item.isDefault ? 'Default' : '—'"></base-pill></td>
+              <td class="text-muted">{{ item.sortOrder }}</td>
+              <td><base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill></td>
+              <td>
+                <div style="display:flex; gap:6px">
+                  <base-button *basePermission="'languages.manage'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit" (click)="openEdit(item)"></base-button>
+                  <base-button *basePermission="'languages.manage'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete" (click)="remove(item)"></base-button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Language' : 'Create Language'" (closeRequest)="dialogOpen.set(false)">
+  <div class="grid grid-2" style="gap: 0 16px">
+    <base-input label="Name" icon="languages" [(value)]="form.name" [hint]="'e.g. English'"></base-input>
+    <base-input label="Code" icon="code" [(value)]="form.code" [hint]="'e.g. en'"></base-input>
+  </div>
+  <base-input label="Culture Code" icon="type" [(value)]="form.cultureCode" [hint]="'e.g. en-US'"></base-input>
+  <div class="grid grid-3" style="gap: 0 16px">
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isRTL()" (change)="onRtlChange($event)"/>
+      <span>RTL</span>
+    </label>
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isDefault()" (change)="onDefaultChange($event)"/>
+      <span>Default</span>
+    </label>
+    <base-input label="Sort Order" type="number" icon="list-ordered" [(value)]="form.sortOrder"></base-input>
+  </div>
+  @if (editing()) {
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isActive()" (change)="onActiveChange($event)"/>
+      <span>Active</span>
+    </label>
+  }
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.name() || !form.code()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Language' }}
+    </base-button>
+  </div>
+</base-dialog>

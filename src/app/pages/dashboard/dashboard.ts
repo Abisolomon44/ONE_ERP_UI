@@ -50,6 +50,13 @@ export class DashboardPage {
   private readonly router = inject(Router);
   protected readonly perms = inject(PermissionService);
 
+  protected readonly greeting = computed(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  });
+
   protected readonly data = signal<DashboardData | null>(null);
 
   protected readonly quickActions = computed(() =>

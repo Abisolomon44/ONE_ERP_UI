@@ -5,20 +5,36 @@ import { BusinessTypesPage } from '../business-types/business-types';
 import { IndustryTypesPage } from '../industry-types/industry-types';
 import { CompanyGroupsPage } from '../company-groups/company-groups';
 import { LocationsPage } from '../locations/locations';
+import { LanguagesPage } from '../languages/languages';
+import { TimeZonesPage } from '../time-zones/time-zones';
+import { GstRegistrationTypesPage } from '../gst-registration-types/gst-registration-types';
+import { AddressTypesPage } from '../address-types/address-types';
+import { ContactTypesPage } from '../contact-types/contact-types';
+import { DocumentTypesPage } from '../document-types/document-types';
+import { OrganizationTypesPage } from '../organization-types/organization-types';
+import { CurrenciesPage } from '../currencies/currencies';
 
-type MasterTab = 'business-types' | 'industry-types' | 'company-groups' | 'locations';
+type MasterTab = 'business-types' | 'industry-types' | 'company-groups' | 'locations' | 'languages' | 'time-zones' | 'gst-registration-types' | 'address-types' | 'contact-types' | 'document-types' | 'organization-types' | 'currencies';
 
 const TABS: { id: MasterTab; label: string; icon: string }[] = [
   { id: 'business-types', label: 'Business Types', icon: 'store' },
   { id: 'industry-types', label: 'Industry Types', icon: 'factory' },
   { id: 'company-groups', label: 'Company Groups', icon: 'network' },
   { id: 'locations', label: 'Locations', icon: 'map' },
+  { id: 'languages', label: 'Languages', icon: 'languages' },
+  { id: 'time-zones', label: 'Time Zones', icon: 'clock' },
+  { id: 'gst-registration-types', label: 'GST Registration Types', icon: 'file-text' },
+  { id: 'address-types', label: 'Address Types', icon: 'map-pin' },
+  { id: 'contact-types', label: 'Contact Types', icon: 'user' },
+  { id: 'document-types', label: 'Document Types', icon: 'file' },
+  { id: 'organization-types', label: 'Organization Types', icon: 'layers' },
+  { id: 'currencies', label: 'Currencies', icon: 'coins' },
 ];
 
 @Component({
   selector: 'app-system-master',
   standalone: true,
-  imports: [LucideAngularModule, BusinessTypesPage, IndustryTypesPage, CompanyGroupsPage, LocationsPage],
+  imports: [LucideAngularModule, BusinessTypesPage, IndustryTypesPage, CompanyGroupsPage, LocationsPage, LanguagesPage, TimeZonesPage, GstRegistrationTypesPage, AddressTypesPage, ContactTypesPage, DocumentTypesPage, OrganizationTypesPage, CurrenciesPage],
   templateUrl: './system-master.html',
   styleUrl: './system-master.css',
 })

@@ -1,0 +1,76 @@
+<div class="page-header">
+  <div>
+    <h1>Organization Types</h1>
+    <div class="page-sub">Manage organization structure classifications (e.g. Head Office, Branch).</div>
+  </div>
+  <div class="page-actions">
+    <base-search [placeholder]="'Search organization types...'" [(value)]="search"></base-search>
+    <base-button *basePermission="'organization-types.manage'" icon="plus" (click)="openCreate()">New Organization Type</base-button>
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <div class="flex" style="justify-content:center; padding: 44px">
+      <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+    </div>
+  } @else if (filtered().length === 0) {
+    <base-empty icon="layers" title="No organization types found" subtitle="Create an organization type to get started."></base-empty>
+  } @else {
+    <div class="table-wrap">
+      <table class="btable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th style="width: 100px">Code</th>
+            <th>Description</th>
+            <th style="width: 110px">Sort Order</th>
+            <th style="width: 110px">Status</th>
+            <th style="width: 90px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filtered(); track item.organizationTypeId) {
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:10px">
+                  <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="layers" [size]="16"></i-lucide></span>
+                  <span style="font-weight:600">{{ item.name }}</span>
+                </div>
+              </td>
+              <td><span class="badge badge-accent" style="font-family: monospace">{{ item.code }}</span></td>
+              <td class="text-muted">{{ item.description || '—' }}</td>
+              <td class="text-muted">{{ item.sortOrder }}</td>
+              <td><base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill></td>
+              <td>
+                <div style="display:flex; gap:6px">
+                  <base-button *basePermission="'organization-types.manage'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit" (click)="openEdit(item)"></base-button>
+                  <base-button *basePermission="'organization-types.manage'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete" (click)="remove(item)"></base-button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Organization Type' : 'Create Organization Type'" (closeRequest)="dialogOpen.set(false)">
+  <div class="grid grid-2" style="gap: 0 16px">
+    <base-input label="Name" icon="layers" [(value)]="form.name" [hint]="'e.g. Head Office'"></base-input>
+    <base-input label="Code" icon="code" [(value)]="form.code" [hint]="editing() ? '' : 'e.g. HO'"></base-input>
+  </div>
+  <base-input label="Description" icon="text-wrap" [(value)]="form.description"></base-input>
+  <base-input label="Sort Order" type="number" icon="list-ordered" [(value)]="form.sortOrder"></base-input>
+  <label class="check-item">
+    <input type="checkbox" [checked]="form.isActive()" (change)="onActiveChange($event)"/>
+    <span>Active</span>
+  </label>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.name() || !form.code()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Organization Type' }}
+    </base-button>
+  </div>
+</base-dialog>

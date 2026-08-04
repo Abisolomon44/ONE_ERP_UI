@@ -1,0 +1,68 @@
+<div class="page-header">
+  <div>
+    <h1>GST Registration Types</h1>
+    <div class="page-sub">Manage GST registration classifications (e.g. Regular, Composition).</div>
+  </div>
+  <div class="page-actions">
+    <base-search [placeholder]="'Search GST registration types...'" [(value)]="search"></base-search>
+    <base-button *basePermission="'gst-registration-types.manage'" icon="plus" (click)="openCreate()">New GST Registration Type</base-button>
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <div class="flex" style="justify-content:center; padding: 44px">
+      <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+    </div>
+  } @else if (filtered().length === 0) {
+    <base-empty icon="file-text" title="No GST registration types found" subtitle="Create a GST registration type to get started."></base-empty>
+  } @else {
+    <div class="table-wrap">
+      <table class="btable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th style="width: 90px">Status</th>
+            <th style="width: 90px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filtered(); track item.gstRegistrationTypeId) {
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:10px">
+                  <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="file-text" [size]="16"></i-lucide></span>
+                  <span style="font-weight:600">{{ item.name }}</span>
+                </div>
+              </td>
+              <td class="text-muted">{{ item.description || '—' }}</td>
+              <td><base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill></td>
+              <td>
+                <div style="display:flex; gap:6px">
+                  <base-button *basePermission="'gst-registration-types.manage'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit" (click)="openEdit(item)"></base-button>
+                  <base-button *basePermission="'gst-registration-types.manage'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete" (click)="remove(item)"></base-button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit GST Registration Type' : 'Create GST Registration Type'" (closeRequest)="dialogOpen.set(false)">
+  <base-input label="Name" icon="file-text" [(value)]="form.name"></base-input>
+  <base-input label="Description" icon="text-wrap" [(value)]="form.description"></base-input>
+  <label class="check-item">
+    <input type="checkbox" [checked]="form.isActive()" (change)="onActiveChange($event)"/>
+    <span>Active</span>
+  </label>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.name()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create GST Registration Type' }}
+    </base-button>
+  </div>
+</base-dialog>

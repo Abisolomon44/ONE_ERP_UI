@@ -1,0 +1,71 @@
+<div class="page-header">
+  <div>
+    <h1>Time Zones</h1>
+    <div class="page-sub">Manage supported time zones and their UTC offsets.</div>
+  </div>
+  <div class="page-actions">
+    <base-search [placeholder]="'Search time zones...'" [(value)]="search"></base-search>
+    <base-button *basePermission="'timezones.manage'" icon="plus" (click)="openCreate()">New Time Zone</base-button>
+  </div>
+</div>
+
+<div class="card">
+  @if (loading()) {
+    <div class="flex" style="justify-content:center; padding: 44px">
+      <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+    </div>
+  } @else if (filtered().length === 0) {
+    <base-empty icon="clock" title="No time zones found" subtitle="Create a time zone to get started."></base-empty>
+  } @else {
+    <div class="table-wrap">
+      <table class="btable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>IANA Name</th>
+            <th>UTC Offset</th>
+            <th style="width: 90px">Status</th>
+            <th style="width: 90px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filtered(); track item.timeZoneId) {
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:10px">
+                  <span class="avatar" style="background: var(--accent-soft); color: var(--accent)"><i-lucide name="clock" [size]="16"></i-lucide></span>
+                  <span style="font-weight:600">{{ item.name }}</span>
+                </div>
+              </td>
+              <td class="text-muted">{{ item.timeZoneName }}</td>
+              <td class="text-muted">{{ item.utcOffset || '—' }}</td>
+              <td><base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill></td>
+              <td>
+                <div style="display:flex; gap:6px">
+                  <base-button *basePermission="'timezones.manage'" variant="secondary" size="sm" icon="square-pen" [iconOnly]="true" label="Edit" (click)="openEdit(item)"></base-button>
+                  <base-button *basePermission="'timezones.manage'" variant="danger" size="sm" icon="trash-2" [iconOnly]="true" label="Delete" (click)="remove(item)"></base-button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Time Zone' : 'Create Time Zone'" (closeRequest)="dialogOpen.set(false)">
+  <base-input label="Name" icon="clock" [(value)]="form.name" [hint]="'e.g. Eastern Time'"></base-input>
+  <base-input label="IANA Name" icon="code" [(value)]="form.timeZoneName" [hint]="'e.g. America/New_York'"></base-input>
+  <base-input label="UTC Offset" icon="globe" [(value)]="form.utcOffset" [hint]="'e.g. UTC-5'"></base-input>
+  <label class="check-item">
+    <input type="checkbox" [checked]="form.isActive()" (change)="onActiveChange($event)"/>
+    <span>Active</span>
+  </label>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.name() || !form.timeZoneName()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Time Zone' }}
+    </base-button>
+  </div>
+</base-dialog>

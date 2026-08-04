@@ -1,0 +1,499 @@
+/* ===========================================================
+   ONE ERP - Workspace Template
+   Bootstrap 5 + Custom CSS
+===========================================================*/
+
+:root{
+
+    --primary:#2563eb;
+    --primary-light:#e8f0ff;
+
+    --success:#10b981;
+    --danger:#ef4444;
+    --warning:#f59e0b;
+
+    --bg:#f4f7fb;
+    --card:#ffffff;
+
+    --text:#222;
+    --text-light:#6b7280;
+
+    --border:#e5e7eb;
+
+    --radius:12px;
+
+    --shadow:0 4px 15px rgba(0,0,0,.08);
+
+}
+
+/* ===========================================================
+Layout
+===========================================================*/
+
+body{
+
+    margin:0;
+
+    background:var(--bg);
+
+    font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;
+
+}
+
+.workspace-container{
+
+    display:flex;
+
+    height:100vh;
+
+    overflow:hidden;
+
+}
+
+/* ===========================================================
+Sidebar
+===========================================================*/
+
+.sidebar{
+
+    width:260px;
+
+    background:#1f2937;
+
+    color:#fff;
+
+    display:flex;
+
+    flex-direction:column;
+
+    transition:.3s;
+
+}
+
+.logo{
+
+    padding:25px;
+
+    text-align:center;
+
+    border-bottom:1px solid rgba(255,255,255,.08);
+
+}
+
+.logo h3{
+
+    margin:0;
+
+    font-weight:700;
+
+    letter-spacing:1px;
+
+}
+
+.menu{
+
+    list-style:none;
+
+    margin:0;
+
+    padding:15px;
+
+    overflow:auto;
+
+}
+
+.menu li{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+    padding:14px 18px;
+
+    margin-bottom:6px;
+
+    cursor:pointer;
+
+    border-radius:10px;
+
+    transition:.25s;
+
+}
+
+.menu li i{
+
+    font-size:20px;
+
+}
+
+.menu li:hover{
+
+    background:#374151;
+
+}
+
+.menu li.active{
+
+    background:var(--primary);
+
+}
+
+/* ===========================================================
+Main
+===========================================================*/
+
+.workspace-main{
+
+    flex:1;
+
+    overflow:auto;
+
+    padding:25px;
+
+}
+
+/* ===========================================================
+Header
+===========================================================*/
+
+.workspace-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:25px;
+
+}
+
+.workspace-header h2{
+
+    margin:0;
+
+    font-weight:700;
+
+}
+
+.workspace-header small{
+
+    color:var(--text-light);
+
+}
+
+.header-actions{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.header-actions input{
+
+    width:260px;
+
+}
+
+.header-actions .btn{
+
+    border-radius:10px;
+
+}
+
+/* ===========================================================
+Cards
+===========================================================*/
+
+.card{
+
+    border:none;
+
+    border-radius:var(--radius);
+
+    box-shadow:var(--shadow);
+
+}
+
+.card-header{
+
+    background:#fff;
+
+    border-bottom:1px solid var(--border);
+
+    font-weight:600;
+
+}
+
+/* ===========================================================
+Shortcut Cards
+===========================================================*/
+
+.shortcut-card{
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.shortcut-card:hover{
+
+    transform:translateY(-5px);
+
+    box-shadow:0 12px 30px rgba(0,0,0,.15);
+
+}
+
+.shortcut-icon{
+
+    width:70px;
+
+    height:70px;
+
+    margin:auto;
+
+    margin-bottom:18px;
+
+    border-radius:50%;
+
+    background:var(--primary-light);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+.shortcut-icon i{
+
+    font-size:34px;
+
+    color:var(--primary);
+
+}
+
+.shortcut-card h5{
+
+    margin-bottom:10px;
+
+    font-weight:600;
+
+}
+
+.shortcut-card p{
+
+    color:var(--text-light);
+
+    min-height:45px;
+
+}
+
+/* ===========================================================
+Buttons
+===========================================================*/
+
+.btn{
+
+    border-radius:10px;
+
+    font-weight:500;
+
+}
+
+/* ===========================================================
+Activity
+===========================================================*/
+
+.activity-item{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:15px;
+
+}
+
+.activity-icon{
+
+    width:45px;
+
+    height:45px;
+
+    border-radius:50%;
+
+    background:var(--primary-light);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+}
+
+.activity-icon i{
+
+    color:var(--primary);
+
+    font-size:20px;
+
+}
+
+.activity-content strong{
+
+    display:block;
+
+}
+
+.activity-content small{
+
+    color:gray;
+
+}
+
+/* ===========================================================
+Favorites
+===========================================================*/
+
+.card .btn{
+
+    border-radius:30px;
+
+}
+
+/* ===========================================================
+Scrollbar
+===========================================================*/
+
+::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#c7c7c7;
+
+    border-radius:20px;
+
+}
+
+/* ===========================================================
+Hover Animation
+===========================================================*/
+
+.btn:hover{
+
+    transform:translateY(-2px);
+
+}
+
+/* ===========================================================
+Responsive
+===========================================================*/
+
+@media(max-width:1200px){
+
+    .header-actions input{
+
+        width:180px;
+
+    }
+
+}
+
+@media(max-width:992px){
+
+    .sidebar{
+
+        width:75px;
+
+    }
+
+    .logo h3{
+
+        display:none;
+
+    }
+
+    .menu li span{
+
+        display:none;
+
+    }
+
+    .menu li{
+
+        justify-content:center;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .workspace-header{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:15px;
+
+    }
+
+    .header-actions{
+
+        width:100%;
+
+    }
+
+    .header-actions input{
+
+        width:100%;
+
+    }
+
+}
+
+@media(max-width:576px){
+
+    .workspace-container{
+
+        flex-direction:column;
+
+    }
+
+    .sidebar{
+
+        width:100%;
+
+        height:auto;
+
+    }
+
+    .menu{
+
+        display:flex;
+
+        overflow:auto;
+
+    }
+
+    .menu li{
+
+        white-space:nowrap;
+
+    }
+
+}

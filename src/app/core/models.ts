@@ -172,6 +172,74 @@ export interface City {
   modifiedDate: string;
 }
 
+export interface Language {
+  languageId: number;
+  name: string;
+  code: string;
+  cultureCode?: string;
+  isRTL: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface TimeZone {
+  timeZoneId: number;
+  name: string;
+  timeZoneName: string;
+  utcOffset?: string;
+  isActive: boolean;
+}
+
+export interface GstRegistrationType {
+  gstRegistrationTypeId: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface AddressType {
+  addressTypeId: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface ContactType {
+  contactTypeId: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface DocumentType {
+  documentTypeId: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface OrganizationType {
+  organizationTypeId: number;
+  name: string;
+  code: string;
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface Currency {
+  id: number;
+  currencyCode: string;
+  currencyName: string;
+  symbol: string;
+  isoCode?: string;
+  decimalPlaces: number;
+  isBaseCurrency: boolean;
+  sortOrder: number;
+  isActive: boolean;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
