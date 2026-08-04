@@ -16,42 +16,66 @@ export interface Paginated<T> {
 }
 
 export interface Company {
-  companyId: number;
+  id: number;
   companyCode: string;
   companyName: string;
-  address?: string;
-  email?: string;
-  phone?: string;
-  website?: string;
-  companyType?: string;
-  gst?: string;
-  currency: string;
-  status: string;
-  createdBy?: string;
+  shortName?: string;
+  abbreviation?: string;
+  businessTypeId: number;
+  industryTypeId: number;
+  gstRegistrationTypeId?: number;
+  gstNumber?: string;
+  panNumber?: string;
+  tanNumber?: string;
+  cinNumber?: string;
+  registrationNumber?: string;
+  currencyId: number;
+  languageId: number;
+  timeZoneId: number;
+  isActive: boolean;
+  isBlocked: boolean;
+  lastLoginDate?: string;
+  createdBy: number;
   createdDate?: string;
-  modifiedBy?: string;
+  modifiedBy?: number;
   modifiedDate?: string;
 }
 
 export interface CreateCompanyRequest {
   companyCode: string;
   companyName: string;
-  address?: string;
-  email?: string;
-  phone?: string;
-  gst?: string;
-  currency: string;
-  status: string;
+  shortName?: string;
+  abbreviation?: string;
+  businessTypeId: number;
+  industryTypeId: number;
+  gstRegistrationTypeId?: number;
+  gstNumber?: string;
+  panNumber?: string;
+  tanNumber?: string;
+  cinNumber?: string;
+  registrationNumber?: string;
+  currencyId: number;
+  languageId: number;
+  timeZoneId: number;
 }
 
 export interface UpdateCompanyRequest {
   companyName: string;
-  address?: string;
-  email?: string;
-  phone?: string;
-  gst?: string;
-  currency: string;
-  status: string;
+  shortName?: string;
+  abbreviation?: string;
+  businessTypeId: number;
+  industryTypeId: number;
+  gstRegistrationTypeId?: number;
+  gstNumber?: string;
+  panNumber?: string;
+  tanNumber?: string;
+  cinNumber?: string;
+  registrationNumber?: string;
+  currencyId: number;
+  languageId: number;
+  timeZoneId: number;
+  isActive: boolean;
+  isBlocked: boolean;
 }
 
 export interface ErpUser {

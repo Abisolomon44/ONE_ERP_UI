@@ -1,44 +1,239 @@
-.master-page{
+/* ===========================================================
+   ONE ERP Master Page Template
+   Uses ONE ERP Design System tokens
+=========================================================== */
 
-    padding:20px;
-
+.master-page {
+  padding: 24px 28px;
 }
 
-.master-header{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
-    margin-bottom:20px;
-
+/* ---------- Header ---------- */
+.master-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 22px;
 }
 
-.toolbar{
-
-    display:flex;
-
-    gap:10px;
-
+.master-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 4px;
 }
 
-.master-list,
-.master-entry{
-
-    background:#fff;
-
-    border-radius:12px;
-
-    padding:20px;
-
-    box-shadow:0 3px 12px rgba(0,0,0,.08);
-
+.master-header h3 i-lucide {
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
-.btn{
+.master-header small {
+  color: var(--text-3);
+  font-size: 13px;
+}
 
-    border-radius:8px;
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 
+.toolbar .search-box {
+  min-width: 220px;
+}
+
+.toolbar .btn i-lucide {
+  flex-shrink: 0;
+}
+
+/* ---------- Stat cards ---------- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+@media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .stat-grid { grid-template-columns: 1fr; } }
+
+.stat-card-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.stat-card-flex .stat-label {
+  display: block;
+}
+
+.stat-card-flex .stat-value {
+  margin: 4px 0 2px;
+}
+
+.stat-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ---------- List states ---------- */
+.list-loading,
+.list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.list-empty i-lucide {
+  opacity: 0.5;
+}
+
+.list-empty h5 {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin: 4px 0 0;
+}
+
+/* ---------- Table ---------- */
+.btable .cell-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.btable th.cell-actions {
+  display: table-cell;
+  text-align: right;
+}
+.btable .cell-actions .btn {
+  padding: 6px;
+}
+
+/* ---------- Pagination bar ---------- */
+.master-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.master-pagination .page-info strong {
+  color: var(--text);
+}
+
+.master-pagination .page-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.master-pagination .page-current {
+  font-weight: 600;
+  color: var(--text);
+  min-width: 46px;
+  text-align: center;
+}
+
+.page-size-select {
+  width: auto;
+  padding: 7px 30px 7px 10px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+/* ---------- Entry tabs ---------- */
+.entry-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.entry-tab {
+  padding: 14px 4px;
+  margin-right: 22px;
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.entry-tab:hover {
+  color: var(--text);
+}
+
+.entry-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Entry form grid ---------- */
+.entry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 20px;
+}
+@media (max-width: 720px) { .entry-grid { grid-template-columns: 1fr; } }
+
+.ff.area {
+  grid-column: 1 / -1;
+}
+
+/* checkbox field doesn't want the floating-label treatment */
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-top: 26px;
+  margin-bottom: 16px;
+}
+.field-checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.field-checkbox label {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 720px) {
+  .master-page { padding: 16px 14px; }
+  .toolbar { width: 100%; }
+  .toolbar .search-box { flex: 1 1 100%; }
+  .toolbar .search-box .search-input { width: 100%; }
+  .master-pagination { flex-direction: column; align-items: stretch; text-align: center; }
+  .master-pagination .page-controls { justify-content: center; }
 }

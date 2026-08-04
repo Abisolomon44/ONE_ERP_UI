@@ -27,8 +27,7 @@ export class Branch {
 
     description: 'Manage Company Branches',
 
-    icon: 'bi bi-shop',
-
+     icon: 'Store',
     api: '/api/branch',
 
     createLabel: 'Create Branch',
@@ -50,7 +49,7 @@ export class Branch {
       {
         label: 'Branches',
         value: 3,
-        icon: 'bi bi-shop',
+        icon: 'Store',
         description: 'Total Branches'
       }
 

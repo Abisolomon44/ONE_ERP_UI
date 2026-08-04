@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -19,20 +18,43 @@ describe('CompanyPage', () => {
 
   function mockCompany(): Company {
     return {
-      companyId: 1,
+      id: 1,
       companyCode: 'ABC',
       companyName: 'Acme Corp',
-      address: '1 Main Street',
-      email: 'a@b.com',
-      phone: '123',
-      gst: 'GST01',
-      currency: 'USD',
-      status: 'Active',
-      createdBy: 'admin',
+      shortName: 'Acme',
+      abbreviation: 'ACM',
+      businessTypeId: 1,
+      industryTypeId: 1,
+      gstRegistrationTypeId: null,
+      gstNumber: 'GST01',
+      panNumber: 'PAN01',
+      tanNumber: 'TAN01',
+      cinNumber: 'CIN01',
+      registrationNumber: 'REG10001',
+      currencyId: 2,
+      languageId: 1,
+      timeZoneId: 1,
+      isActive: true,
+      isBlocked: false,
+      createdBy: 0,
       createdDate: '2026-01-01T00:00:00',
-      modifiedBy: 'admin',
+      modifiedBy: 1,
       modifiedDate: '2026-01-02T00:00:00',
     };
+  }
+
+  function flushMasterData(): void {
+    httpTesting.expectOne({ method: 'GET', url: '/api/business-types' }).flush([]);
+    httpTesting.expectOne({ method: 'GET', url: '/api/industry-types' }).flush([]);
+    httpTesting.expectOne({ method: 'GET', url: '/api/gst-registration-types' }).flush([]);
+    httpTesting.expectOne({ method: 'GET', url: '/api/Administration/currencies' }).flush([]);
+    httpTesting.expectOne({ method: 'GET', url: '/api/languages' }).flush([]);
+    httpTesting.expectOne({ method: 'GET', url: '/api/timezones' }).flush([]);
+  }
+
+  function flushAll(company: Company = mockCompany()): void {
+    flushMasterData();
+    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).flush(company);
   }
 
   beforeEach(() => {
@@ -54,13 +76,13 @@ describe('CompanyPage', () => {
   });
 
   it('should create', () => {
-    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).flush(mockCompany());
+    flushAll();
     expect(component).toBeTruthy();
   });
 
   it('loads company data on construction', () => {
     const company = mockCompany();
-    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).flush(company);
+    flushAll(company);
     expect(toast.error).not.toHaveBeenCalled();
     expect(anyComponent.data()).toEqual(company);
     expect(anyComponent.loading()).toBe(false);
@@ -68,41 +90,37 @@ describe('CompanyPage', () => {
   });
 
   it('sets error state when load fails', () => {
-    httpTesting
-      .expectOne({ method: 'GET', url: '/api/companies/current' })
-      .error(new ProgressEvent('error'));
+    flushMasterData();
+    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).error(new ProgressEvent('error'));
     expect(anyComponent.loadFailed()).toBe(true);
     expect(anyComponent.loading()).toBe(false);
   });
 
   it('reports a required error for an empty company name', () => {
-    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).flush(mockCompany());
+    flushAll();
     anyComponent.form.companyName.set('');
+    anyComponent.touched.companyName.set(true);
     anyComponent.submitted.set(true);
     expect(anyComponent.errorFor('companyName')).toBe('This field is required');
   });
 
-  it('validates an email address format', () => {
-    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).flush(mockCompany());
-    anyComponent.form.email.set('not-an-email');
-    anyComponent.submitted.set(true);
-    expect(anyComponent.errorFor('email')).toBe('Enter a valid email address');
-  });
-
   it('skips the request when the form is invalid', async () => {
-    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).flush(mockCompany());
+    flushAll();
     anyComponent.form.companyName.set('');
+    anyComponent.form.businessTypeId.set(0);
+    anyComponent.form.currencyId.set(0);
     await anyComponent.save();
     expect(toast.warning).toHaveBeenCalled();
   });
 
   it('saves the company and reloads on success', async () => {
     const company = mockCompany();
-    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).flush(company);
+    flushAll(company);
+    anyComponent.form.companyName.set('Acme Corp Updated');
 
     const savePromise = anyComponent.save();
     httpTesting.expectOne({ method: 'PUT', url: '/api/companies/current' }).flush(company);
-    httpTesting.expectOne({ method: 'GET', url: '/api/companies/current' }).flush(company);
+    flushAll(company);
     await savePromise;
 
     expect(toast.success).toHaveBeenCalledWith('Company updated', 'Your company profile has been saved.');
