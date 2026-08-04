@@ -1,300 +1,85 @@
-<div class="workspace-container">
-
-    <!-- Sidebar -->
-    <aside class="sidebar">
-
-        <div class="logo">
-            <h3>ONE ERP</h3>
-        </div>
-
-        <ul class="menu">
-
-            <li class="active">
-                <i class="bi bi-speedometer2"></i>
-                <span>Dashboard</span>
-            </li>
-
-            <li>
-                <i class="bi bi-gear"></i>
-                <span>Administration</span>
-            </li>
-
-            <li>
-                <i class="bi bi-database"></i>
-                <span>System Masters</span>
-            </li>
-
-            <li>
-                <i class="bi bi-boxes"></i>
-                <span>Business Masters</span>
-            </li>
-
-            <li>
-                <i class="bi bi-cart-check"></i>
-                <span>Purchase</span>
-            </li>
-
-            <li>
-                <i class="bi bi-receipt"></i>
-                <span>Sales</span>
-            </li>
-
-            <li>
-                <i class="bi bi-box-seam"></i>
-                <span>Inventory</span>
-            </li>
-
-            <li>
-                <i class="bi bi-cash-stack"></i>
-                <span>Finance</span>
-            </li>
-
-            <li>
-                <i class="bi bi-people"></i>
-                <span>CRM</span>
-            </li>
-
-            <li>
-                <i class="bi bi-person-workspace"></i>
-                <span>HRMS</span>
-            </li>
-
-            <li>
-                <i class="bi bi-bar-chart"></i>
-                <span>Reports</span>
-            </li>
-
-            <li>
-                <i class="bi bi-sliders"></i>
-                <span>Settings</span>
-            </li>
-
-        </ul>
-
-    </aside>
-
-    <!-- Main -->
-    <main class="workspace-main">
-
-        <!-- Header -->
-        <header class="workspace-header">
-
-            <div>
-
-                <h2>{{workspaceTitle()}}</h2>
-
-                <small>{{workspaceDescription()}}</small>
-
-            </div>
-
-            <div class="header-actions">
-
-                <input
-                    class="form-control"
-                    placeholder="Search..." />
-
-                <button class="btn btn-light">
-                    <i class="bi bi-bell"></i>
-                </button>
-
-                <button class="btn btn-light">
-                    <i class="bi bi-person-circle"></i>
-                </button>
-
-            </div>
-
-        </header>
-
-        <!-- Quick Actions -->
-
-        <div class="card mb-3">
-
-            <div class="card-body">
-
-                <button class="btn btn-primary me-2">
-                    <i class="bi bi-plus-circle"></i>
-                    Create
-                </button>
-
-                <button class="btn btn-success me-2">
-                    <i class="bi bi-upload"></i>
-                    Import
-                </button>
-
-                <button class="btn btn-warning me-2">
-                    <i class="bi bi-download"></i>
-                    Export
-                </button>
-
-                <button class="btn btn-info me-2">
-                    <i class="bi bi-file-earmark-text"></i>
-                    Reports
-                </button>
-
-            </div>
-
-        </div>
-
-        <!-- Shortcut Cards -->
-
-        <div class="row g-3">
-
-            @for(card of shortcuts();track card.id){
-
-            <div class="col-xl-3 col-lg-4 col-md-6">
-
-                <div
-                    class="card shortcut-card h-100"
-                    (click)="openShortcut(card)">
-
-                    <div class="card-body text-center">
-
-                        <div class="shortcut-icon">
-
-                            <i class="bi {{card.icon}}"></i>
-
-                        </div>
-
-                        <h5>
-
-                            {{card.title}}
-
-                        </h5>
-
-                        <p>
-
-                            {{card.description}}
-
-                        </p>
-
-                        <span class="badge bg-primary">
-
-                            {{card.count}} Records
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            }
-
-        </div>
-
-        <!-- Recent Activities -->
-
-        <div class="card mt-4">
-
-            <div class="card-header">
-
-                <h5>
-
-                    Recent Activities
-
-                </h5>
-
-            </div>
-
-            <div class="card-body">
-
-                @for(item of recentActivities();track item.title){
-
-                <div class="activity-item">
-
-                    <div class="activity-icon">
-
-                        <i class="bi {{item.icon}}"></i>
-
-                    </div>
-
-                    <div class="activity-content">
-
-                        <strong>
-
-                            {{item.title}}
-
-                        </strong>
-
-                        <div>
-
-                            {{item.description}}
-
-                        </div>
-
-                        <small>
-
-                            {{item.time}}
-
-                        </small>
-
-                    </div>
-
-                </div>
-
-                <hr>
-
-                }
-
-            </div>
-
-        </div>
-
-        <!-- Favorites -->
-
-        <div class="card mt-4">
-
-            <div class="card-header">
-
-                <h5>
-
-                    Favorites
-
-                </h5>
-
-            </div>
-
-            <div class="card-body">
-
-                <div class="d-flex flex-wrap gap-2">
-
-                    <button class="btn btn-outline-primary">
-
-                        Company
-
-                    </button>
-
-                    <button class="btn btn-outline-success">
-
-                        Branch
-
-                    </button>
-
-                    <button class="btn btn-outline-warning">
-
-                        Customer
-
-                    </button>
-
-                    <button class="btn btn-outline-info">
-
-                        Product
-
-                    </button>
-
-                    <button class="btn btn-outline-danger">
-
-                        Sales Invoice
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </main>
-
+<div class="workspace-page">
+
+  <!-- Header -->
+  <div class="workspace-header">
+    <div class="workspace-title">
+      <div class="workspace-icon">
+        <i-lucide [name]="workspace.icon" [size]="30"></i-lucide>
+      </div>
+      <div>
+        <h2>{{ workspace.title }}</h2>
+        <p>{{ workspace.description }}</p>
+      </div>
+    </div>
+
+    <div class="workspace-header-actions">
+      <div class="search-box">
+        <i-lucide name="Search" [size]="15" class="input-prefix"></i-lucide>
+        <input
+          class="input search-input has-prefix"
+          placeholder="Search..."
+        />
+      </div>
+
+      <button class="icon-btn" type="button">
+        <i-lucide name="Bell" [size]="17"></i-lucide>
+      </button>
+
+      <button class="icon-btn" type="button">
+        <i-lucide name="CircleUserRound" [size]="17"></i-lucide>
+      </button>
+    </div>
+  </div><!-- Quick Actions -->
+<div class="workspace-actions">
+  @for (action of workspace.quickActions; track action.id) {
+
+    <a
+      class="btn btn-{{ action.color }}"
+      [routerLink]="action.route">
+
+      @if (action.icon) {
+        <i-lucide
+          [name]="action.icon"
+          [size]="16">
+        </i-lucide>
+      }
+
+      {{ action.title }}
+
+    </a>
+
+  }
+</div>
+
+<!-- Shortcut Cards -->
+<div class="shortcut-grid">
+  @for (card of workspace.shortcuts; track card.id) {
+
+    <a
+      class="shortcut-card"
+      [routerLink]="card.route">
+
+      <div class="shortcut-icon">
+        @if (card.icon) {
+          <i-lucide
+            [name]="card.icon"
+            [size]="28">
+          </i-lucide>
+        } @else {
+          <i-lucide
+            name="Circle"
+            [size]="28">
+          </i-lucide>
+        }
+      </div>
+
+      <h5>{{ card.title }}</h5>
+
+      <p>{{ card.description }}</p>
+
+   
+
+    </a>
+
+  }
 </div>

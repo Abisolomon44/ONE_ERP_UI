@@ -1,0 +1,25 @@
+<app-master-page
+
+    [config]="config"
+
+    [data]="branches"
+
+    [userModel]="userModel"
+
+    [showEntry]="showEntry"
+
+    [loading]="loading"
+
+    (createClick)="createBranch()"
+
+    (editClick)="editBranch($event)"
+
+    (deleteClick)="deleteBranch($event)"
+
+    (saveClick)="saveBranch()"
+
+    (cancelClick)="cancel()"
+
+    (refreshClick)="refreshBranch()">
+
+</app-master-page>

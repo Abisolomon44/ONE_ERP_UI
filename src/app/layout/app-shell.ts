@@ -19,6 +19,8 @@ const NAV: NavItem[] = [
   { route: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', section: 'Workspace' },
   { route: 'users', label: 'Users', icon: 'users', section: 'Workspace' },
   { route: 'roles', label: 'Roles', icon: 'shield', section: 'Workspace' },
+  { route: 'administration', label: 'Administration', icon: 'shield', section: 'Workspace' },
+
   { route: 'masters/company', label: 'Masters', icon: 'building-2', section: 'Workspace' },
   { route: 'system-master', label: 'System Master', icon: 'folder', section: 'Workspace' },
   { route: 'settings', label: 'Settings', icon: 'settings', section: 'Workspace' },

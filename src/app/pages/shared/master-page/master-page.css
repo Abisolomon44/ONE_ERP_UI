@@ -1,0 +1,44 @@
+.master-page{
+
+    padding:20px;
+
+}
+
+.master-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:20px;
+
+}
+
+.toolbar{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.master-list,
+.master-entry{
+
+    background:#fff;
+
+    border-radius:12px;
+
+    padding:20px;
+
+    box-shadow:0 3px 12px rgba(0,0,0,.08);
+
+}
+
+.btn{
+
+    border-radius:8px;
+
+}
