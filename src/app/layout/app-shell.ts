@@ -17,11 +17,8 @@ const SECTION_ORDER = ['Workspace'];
 
 const NAV: NavItem[] = [
   { route: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', section: 'Workspace' },
-  { route: 'users', label: 'Users', icon: 'users', section: 'Workspace' },
-  { route: 'roles', label: 'Roles', icon: 'shield', section: 'Workspace' },
   { route: 'administration', label: 'Administration', icon: 'shield', section: 'Workspace' },
 
-  { route: 'masters/company', label: 'Masters', icon: 'building-2', section: 'Workspace' },
   { route: 'system-master', label: 'System Master', icon: 'folder', section: 'Workspace' },
   { route: 'settings', label: 'Settings', icon: 'settings', section: 'Workspace' },
 ];
@@ -43,7 +40,10 @@ export class AppShell {
   protected readonly isMobile = signal(this.initIsMobile());
 
   constructor() {
-    const mq = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 1024px)') : null;
+    const mq =
+      typeof window !== 'undefined' && window.matchMedia
+        ? window.matchMedia('(max-width: 1024px)')
+        : null;
     mq?.addEventListener?.('change', (e: MediaQueryListEvent) => {
       this.isMobile.set(e.matches);
       if (e.matches) {
@@ -62,11 +62,18 @@ export class AppShell {
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(item);
     }
-    return SECTION_ORDER.filter((name) => groups.has(name)).map((name) => ({ name, items: groups.get(name)! }));
+    return SECTION_ORDER.filter((name) => groups.has(name)).map((name) => ({
+      name,
+      items: groups.get(name)!,
+    }));
   });
 
   private initIsMobile(): boolean {
-    return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(max-width: 1024px)').matches;
+    return (
+      typeof window !== 'undefined' &&
+      !!window.matchMedia &&
+      window.matchMedia('(max-width: 1024px)').matches
+    );
   }
 
   protected toggleSidebar(): void {

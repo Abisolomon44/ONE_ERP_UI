@@ -1,25 +1,14 @@
 <app-master-page
-
-    [config]="config"
-
-    [data]="branches"
-
-    [userModel]="userModel"
-
-    [showEntry]="showEntry"
-
-    [loading]="loading"
-
-    (createClick)="createBranch()"
-
-    (editClick)="editBranch($event)"
-
-    (deleteClick)="deleteBranch($event)"
-
-    (saveClick)="saveBranch()"
-
-    (cancelClick)="cancel()"
-
-    (refreshClick)="refreshBranch()">
-
+  [config]="config"
+  [data]="branches()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createBranch()"
+  (editClick)="editBranch($event)"
+  (deleteClick)="deleteBranch($event)"
+  (saveClick)="saveBranch()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
 </app-master-page>

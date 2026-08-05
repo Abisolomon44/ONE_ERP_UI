@@ -1,0 +1,14 @@
+<app-master-page
+  [config]="config"
+  [data]="companies()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createCompany()"
+  (editClick)="editCompany($event)"
+  (deleteClick)="deleteCompany($event)"
+  (saveClick)="saveCompany()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>

@@ -1,36 +1,28 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { firstValueFrom, Observable } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { Currency, IndustryType, GstRegistrationType, Language, TimeZone } from '../models';
 
 // ============================================================
-// Shared API envelope (only Company uses this today)
+// Shared pagination shape — matches the real backend response:
+// { items, pageNumber, pageSize, totalCount, totalPages, hasNext, hasPrevious }
+// No ApiResponse<T> envelope — endpoints return raw JSON directly.
 // ============================================================
-
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data: T;
-  errors?: string[];
-}
 
 export interface PaginatedResult<T> {
   items: T[];
-  page: number;
-  size: number;
+  pageNumber: number;
+  pageSize: number;
   totalCount: number;
   totalPages: number;
-}
-
-async function unwrap<T>(obs: Observable<ApiResponse<T>>): Promise<T> {
-  const res = await firstValueFrom(obs);
-  return res.data;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 // ============================================================
 // Generic lookup CRUD module — one concept, reused for every
 // simple master-data entity (Currency, IndustryType, GST types,
-// Language, TimeZone, ...future ones). Returns raw JSON, no envelope.
+// Language, TimeZone, ...future ones). Returns raw JSON.
 // ============================================================
 
 class LookupService<TDto, TCreate = Partial<TDto>, TUpdate = Partial<TDto>> {
@@ -63,8 +55,8 @@ class LookupService<TDto, TCreate = Partial<TDto>, TUpdate = Partial<TDto>> {
 }
 
 // ============================================================
-// Company — separate module: paginated list, /current endpoint,
-// and every response wrapped in ApiResponse<T>.
+// Company — separate module: paginated list + /current endpoint.
+// Returns raw JSON, same as everything else (no envelope).
 // ============================================================
 
 export interface CompanyDto {
@@ -98,31 +90,31 @@ class CompanyService {
 
   getPaged(page: number = 1, size: number = 10, search: string = ''): Promise<PaginatedResult<CompanyDto>> {
     const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
-    return unwrap(this.http.get<ApiResponse<PaginatedResult<CompanyDto>>>('/api/companies', { params }));
+    return firstValueFrom(this.http.get<PaginatedResult<CompanyDto>>('/api/companies', { params }));
   }
 
   getCurrent(): Promise<CompanyDto> {
-    return unwrap(this.http.get<ApiResponse<CompanyDto>>('/api/companies/current'));
+    return firstValueFrom(this.http.get<CompanyDto>('/api/companies/current'));
   }
 
   getById(id: number): Promise<CompanyDto> {
-    return unwrap(this.http.get<ApiResponse<CompanyDto>>(`/api/companies/${id}`));
+    return firstValueFrom(this.http.get<CompanyDto>(`/api/companies/${id}`));
   }
 
   create(request: CreateCompanyRequest): Promise<CompanyDto> {
-    return unwrap(this.http.post<ApiResponse<CompanyDto>>('/api/companies', request));
+    return firstValueFrom(this.http.post<CompanyDto>('/api/companies', request));
   }
 
   updateCurrent(request: UpdateCompanyRequest): Promise<CompanyDto> {
-    return unwrap(this.http.put<ApiResponse<CompanyDto>>('/api/companies/current', request));
+    return firstValueFrom(this.http.put<CompanyDto>('/api/companies/current', request));
   }
 
   update(id: number, request: UpdateCompanyRequest): Promise<CompanyDto> {
-    return unwrap(this.http.put<ApiResponse<CompanyDto>>(`/api/companies/${id}`, request));
+    return firstValueFrom(this.http.put<CompanyDto>(`/api/companies/${id}`, request));
   }
 
   delete(id: number): Promise<void> {
-    return firstValueFrom(this.http.delete<ApiResponse<null>>(`/api/companies/${id}`)).then(() => undefined);
+    return firstValueFrom(this.http.delete<void>(`/api/companies/${id}`)).then(() => undefined);
   }
 }
 
