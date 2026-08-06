@@ -1,1 +1,14 @@
-<p>designation works!</p>
+<app-master-page
+  [config]="config"
+  [data]="designations()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createDesignation()"
+  (editClick)="editDesignation($event)"
+  (deleteClick)="deleteDesignation($event)"
+  (saveClick)="saveDesignation()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>

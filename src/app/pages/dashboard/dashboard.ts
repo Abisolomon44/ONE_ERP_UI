@@ -40,7 +40,7 @@ const MODULE_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [LucideAngularModule, BasePill, DatePipe],
+  imports: [LucideAngularModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
