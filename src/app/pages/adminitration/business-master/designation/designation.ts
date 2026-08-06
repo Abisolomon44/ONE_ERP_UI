@@ -98,8 +98,12 @@ export class Designation implements OnInit {
   }
 
   private setOptions(fieldName: string, options: { value: any; label: string }[]): void {
-    const field = this.config.fields.find((f) => f.name === fieldName);
-    if (field) field.options = options;
+    this.config = {
+      ...this.config,
+      fields: this.config.fields.map((f) =>
+        f.name === fieldName ? { ...f, options } : f
+      ),
+    };
   }
 
   protected createDesignation(): void {

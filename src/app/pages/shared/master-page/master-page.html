@@ -253,16 +253,18 @@
                   }
 
                   @if (field.type == 'dropdown') {
-                    <select
-                      class="ff-control"
-                      [class.filled]="isFieldFilled(field)"
-                      [(ngModel)]="userModel[field.name]"
-                      [disabled]="field.disabled ?? false">
-                      <option [ngValue]="null">Select</option>
-                      @for (option of field.options; track option.value) {
-                        <option [ngValue]="option.value">{{ option.label }}</option>
-                      }
-                    </select>
+               <select
+    class="ff-control"
+    [(ngModel)]="userModel[field.name]">
+
+    <option [ngValue]="null">Select</option>
+
+    @for (option of field.options; track option.value) {
+        <option [ngValue]="option.value">
+            {{ option.label }}
+        </option>
+    }
+</select>
                   }
 
                   <label class="ff-label">

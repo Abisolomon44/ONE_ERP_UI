@@ -99,18 +99,24 @@ export class AuthService {
     return this.user()?.username ?? null;
   }
 
-  private persist(data: LoginResponse): void {
-    localStorage.setItem(TOKEN_KEY, data.accessToken);
-    localStorage.setItem(REFRESH_KEY, data.refreshToken);
-    localStorage.setItem(TENANT_KEY, data.tenantCode);
-    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-    localStorage.setItem(PERMS_KEY, JSON.stringify(data.permissions));
+private persist(data: LoginResponse): void {
 
-    this.token.set(data.accessToken);
-    this.user.set(data.user);
-    this.perms.permissions.set(data.permissions);
-  }
+  localStorage.setItem(TOKEN_KEY, data.accessToken);
+  localStorage.setItem(REFRESH_KEY, data.refreshToken);
+  localStorage.setItem(TENANT_KEY, data.tenantCode);
+  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+  localStorage.setItem(PERMS_KEY, JSON.stringify(data.permissions));
 
+  // ADD THESE LINES
+  localStorage.setItem('companyId', data.user.companyId.toString());
+  localStorage.setItem('userId', data.user.userId.toString());
+
+  console.log('CompanyId Saved:', localStorage.getItem('companyId'));
+
+  this.token.set(data.accessToken);
+  this.user.set(data.user);
+  this.perms.permissions.set(data.permissions);
+}
   private readUser(): LoginResponse['user'] | null {
     const raw = localStorage.getItem(USER_KEY);
 

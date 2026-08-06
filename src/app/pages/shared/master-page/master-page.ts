@@ -4,7 +4,9 @@ import {
   EventEmitter,
   Input,
   Output,
-  OnInit
+  OnInit,
+  OnChanges,
+  SimpleChanges
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MasterRow } from '../master.model';
@@ -86,7 +88,7 @@ export interface MasterConfig {
   templateUrl: './master-page.html',
   styleUrl: './master-page.css'
 })
-export class MasterPage implements OnInit {
+export class MasterPage implements OnInit, OnChanges {
 
   //===========================
   // Inputs
@@ -151,7 +153,20 @@ export class MasterPage implements OnInit {
       this.activeTab = this.config.tabs[0].name;
     }
   }
+ngOnChanges(changes: SimpleChanges): void {
 
+  if (changes['config']) {
+    console.log('Config updated');
+  }
+
+  if (changes['showEntry']) {
+    console.log('Show Entry:', this.showEntry);
+  }
+
+  if (changes['userModel']) {
+    console.log('User Model:', this.userModel);
+  }
+}
   //===========================
   // Search
   //===========================

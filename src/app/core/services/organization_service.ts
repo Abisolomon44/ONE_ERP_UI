@@ -5,6 +5,30 @@ import { LookupService, PagedCrudService, PagedFilter } from './crud';
 // Re-exported so existing imports of `OrgFilter` elsewhere don't break.
 export type OrgFilter = PagedFilter;
 
+export interface BranchTypeDto {
+    branchTypeId: number;
+    name: string;
+    description?: string;
+    code?: string;
+    isActive: boolean;
+}
+
+export interface WarehouseTypeDto {
+    warehouseTypeId: number;
+    name: string;
+    description?: string;
+    code?: string;
+    isActive: boolean;
+}
+
+export interface EmploymentTypeDto {
+    employmentTypeId: number;
+    name: string;
+    description?: string;
+    code?: string;
+    isActive: boolean;
+}
+
 // ============================================================
 // DTOs — adjust field names to match your real ManagementDtos.cs
 // ============================================================
