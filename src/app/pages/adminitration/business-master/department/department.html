@@ -1,1 +1,14 @@
-<p>department works!</p>
+<app-master-page
+  [config]="config"
+  [data]="departments()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createDepartment()"
+  (editClick)="editDepartment($event)"
+  (deleteClick)="deleteDepartment($event)"
+  (saveClick)="saveDepartment()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>
