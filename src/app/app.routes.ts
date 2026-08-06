@@ -69,8 +69,7 @@ export const routes: Routes = [
       {
         path: 'branch',
         title: 'Branch',
-        loadComponent: () =>
-          import('./pages/adminitration/business-master/branch/branch').then((m) => m.Branch),
+        loadComponent: () => import('./pages/branch/branch').then((m) => m.BranchPage),
       },
 
       {
