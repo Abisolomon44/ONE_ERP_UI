@@ -126,6 +126,114 @@ export const routes: Routes = [
         title: 'Settings',
         loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsPage),
       },
+
+      // ===========================
+      // Permission System
+      // ===========================
+
+      {
+        path: 'permission-modules',
+        title: 'Permission Modules',
+        loadComponent: () =>
+          import('./pages/permission-modules/permission-modules').then(
+            (m) => m.PermissionModulesPage
+          ),
+      },
+      {
+        path: 'permission-actions',
+        title: 'Permission Actions',
+        loadComponent: () =>
+          import('./pages/permission-actions/permission-actions').then(
+            (m) => m.PermissionActionsPage
+          ),
+      },
+      {
+        path: 'role-permissions',
+        title: 'Role Permissions',
+        loadComponent: () =>
+          import('./pages/role-permissions/role-permissions').then(
+            (m) => m.RolePermissionsPage
+          ),
+      },
+      {
+        path: 'role-permission-matrix',
+        title: 'Role Permission Matrix',
+        loadComponent: () =>
+          import('./pages/role-permission-matrix/role-permission-matrix').then(
+            (m) => m.RolePermissionMatrixPage
+          ),
+      },
+
+      // ===========================
+      // Enterprise Permission Engine
+      // ===========================
+
+      {
+        path: 'workspaces',
+        title: 'Workspaces',
+        loadComponent: () =>
+          import('./pages/workspaces/workspaces').then((m) => m.WorkspacesPage),
+      },
+      {
+        path: 'domains',
+        title: 'Domains',
+        loadComponent: () =>
+          import('./pages/domains/domains').then((m) => m.DomainsPage),
+      },
+      {
+        path: 'modules',
+        title: 'Modules',
+        loadComponent: () =>
+          import('./pages/modules/modules').then((m) => m.ModulesPage),
+      },
+      {
+        path: 'screens',
+        title: 'Screens',
+        loadComponent: () =>
+          import('./pages/screens/screens').then((m) => m.ScreensPage),
+      },
+      {
+        path: 'fields',
+        title: 'Fields',
+        loadComponent: () =>
+          import('./pages/fields/fields').then((m) => m.FieldsPage),
+      },
+      {
+        path: 'permission-actions-list',
+        title: 'Actions',
+        loadComponent: () =>
+          import('./pages/actions/actions').then((m) => m.ActionsPage),
+      },
+      {
+        path: 'user-permission-overrides',
+        title: 'User Permission Overrides',
+        loadComponent: () =>
+          import('./pages/user-permission-overrides/user-permission-overrides').then(
+            (m) => m.UserPermissionOverridesPage
+          ),
+      },
+      {
+        path: 'role-field-permissions',
+        title: 'Role Field Permissions',
+        loadComponent: () =>
+          import('./pages/role-field-permissions/role-field-permissions').then(
+            (m) => m.RoleFieldPermissionsPage
+          ),
+      },
+      {
+        path: 'data-scopes',
+        title: 'Data Scopes',
+        loadComponent: () =>
+          import('./pages/data-scopes/data-scopes').then((m) => m.DataScopesPage),
+      },
+      {
+        path: 'workflow-permissions',
+        title: 'Workflow Permissions',
+        loadComponent: () =>
+          import('./pages/workflow-permissions/workflow-permissions').then(
+            (m) => m.WorkflowPermissionsPage
+          ),
+      },
     ],
   },
 

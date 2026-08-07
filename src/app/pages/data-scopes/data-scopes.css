@@ -1,0 +1,67 @@
+.scope-card {
+  overflow: hidden;
+}
+
+.scope-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px 0;
+}
+
+.scope-body {
+  padding: 20px 24px 24px;
+}
+
+.scope-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.scope-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scope-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+
+.scope-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.scope-form-header {
+  padding: 20px 24px 0;
+}
+
+.scope-form-body {
+  padding: 20px 24px 24px;
+}
+
+.scope-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.scope-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.scope-actions {
+  display: flex;
+  justify-content: flex-end;
+}

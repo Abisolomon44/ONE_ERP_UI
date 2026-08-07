@@ -98,55 +98,30 @@ export class Warehouse implements OnInit {
     ],
   };
 
-ngOnInit(): void {
-  console.log('===== Warehouse Init =====');
-
-  console.log('LocalStorage CompanyId:', localStorage.getItem('companyId'));
-
-  void this.loadDropdowns();
-  void this.load();
-}
-
-private async initialize(): Promise<void> {
-  this.loading.set(true);
-
-  try {
-    await this.loadDropdowns();
-    await this.load();
-  } finally {
-    this.loading.set(false);
+  ngOnInit(): void {
+    void this.loadDropdowns();
+    void this.load();
   }
-}
-private async load(): Promise<void> {
-  this.loading.set(true);
 
-  try {
-    const companyId =
-      this.userModel['companyId'] ??
-      +(localStorage.getItem('companyId') ?? '1');
-
-    const branchId = this.userModel['branchId'] ?? null;
-const res = await this.org.warehouses.getPaged({
-  companyId,
-  branchId,
-  page: 1,
-  size: 100,
-  search: '',
-});
-
-console.log(res);
-    console.log('Warehouse Response:', res);
-    console.log('Warehouse Items:', res.items);
-
-    this.warehouses.set(res.items ?? []);
-
-    console.log('Warehouse Signal:', this.warehouses());
-  } catch (err) {
-    console.error('Warehouse load failed:', err);
-  } finally {
-    this.loading.set(false);
+  private async load(): Promise<void> {
+    this.loading.set(true);
+    try {
+      const companyId = this.userModel['companyId'] ?? +(localStorage.getItem('companyId') ?? '1');
+      const branchId = this.userModel['branchId'] ?? null;
+      const res = await this.org.warehouses.getPaged({
+        companyId,
+        branchId,
+        page: 1,
+        size: 100,
+        search: '',
+      });
+      this.warehouses.set(res.items ?? []);
+    } catch (err) {
+      console.error('[WarehousePage] load failed:', err);
+    } finally {
+      this.loading.set(false);
+    }
   }
-}
 
   private async loadDropdowns(): Promise<void> {
     try {

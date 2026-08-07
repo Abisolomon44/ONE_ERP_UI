@@ -1,0 +1,123 @@
+<div class="page-header">
+  <div>
+    <h1>Fields</h1>
+    <div class="page-sub">Manage fields within permission screens.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'fields.manage'" icon="plus" (click)="openCreate()">New Field</base-button>
+  </div>
+</div>
+
+<div class="filters">
+  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [(value)]="filterDomainId" placeholder="All Domains"></base-dropdown>
+  <base-dropdown label="Module" icon="layers" [options]="moduleOptions()" [(value)]="filterModuleId" placeholder="All Modules"></base-dropdown>
+  <base-dropdown label="Screen" icon="layout" [options]="screenOptions()" [(value)]="filterScreenId" placeholder="All Screens"></base-dropdown>
+  <base-search placeholder="Search fields..." [(value)]="search"></base-search>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (filteredRows().length === 0) {
+  <div class="card"><base-empty icon="text-cursor-input" title="No fields found" subtitle="Create a field to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (item of filteredRows(); track item.id) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
+            <i-lucide name="text-cursor-input" [size]="17"></i-lucide>
+          </span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ item.displayName }}</h3>
+              <span class="badge badge-soft">{{ getScreenName(item.screenId) }}</span>
+            </div>
+            <div class="card-sub">{{ item.fieldCode }}</div>
+          </div>
+          <base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          <p style="margin:0 0 8px; color: var(--text-2); font-size:13.5px">
+            Data Type: <strong>{{ item.dataType }}</strong> &middot; Display Order: <strong>{{ item.displayOrder }}</strong>
+          </p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            @if (item.isSystemField) {
+              <span class="badge badge-accent">System</span>
+            }
+            @if (item.isRequired) {
+              <span class="badge badge-warning">Required</span>
+            }
+            @if (item.defaultValue) {
+              <span class="badge badge-soft">Default: {{ item.defaultValue }}</span>
+            }
+          </div>
+        </div>
+        @if (perms.has('fields.manage')) {
+          <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+            <base-button variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(item)"></base-button>
+            @if (!item.isSystemField) {
+              <base-button variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(item)"></base-button>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Field' : 'Create Field'" (closeRequest)="dialogOpen.set(false)">
+  <base-dropdown label="Screen" icon="layout" [options]="formScreenOptions()" [(value)]="form.screenIdStr" placeholder="Select screen" [disabled]="!!editing()"></base-dropdown>
+  <base-input label="Field Code" icon="tag" [(value)]="form.fieldCode" [disabled]="!!editing()" hint="e.g. customer_name"></base-input>
+  <base-input label="Field Name" icon="type" [(value)]="form.fieldName"></base-input>
+  <base-input label="Display Name" icon="text" [(value)]="form.displayName"></base-input>
+  <base-dropdown label="Data Type" icon="hash" [options]="DATA_TYPE_OPTIONS" [(value)]="form.dataType"></base-dropdown>
+  <base-input label="Display Order" icon="list-ordered" type="number" [(value)]="form.displayOrderStr"></base-input>
+  <base-input label="Default Value" icon="equal" [(value)]="form.defaultValue"></base-input>
+  <div class="field">
+    <label class="field-label">System Field</label>
+    <div class="flex" style="gap: 16px">
+      <label class="radio-item">
+        <input type="radio" name="isSystemField" [value]="true" [checked]="form.isSystemField()" (change)="form.isSystemField.set($any($event.target).value === 'true')"/>
+        <span>Yes</span>
+      </label>
+      <label class="radio-item">
+        <input type="radio" name="isSystemField" [value]="false" [checked]="!form.isSystemField()" (change)="form.isSystemField.set($any($event.target).value === 'true')"/>
+        <span>No</span>
+      </label>
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Required</label>
+    <div class="flex" style="gap: 16px">
+      <label class="radio-item">
+        <input type="radio" name="isRequired" [value]="true" [checked]="form.isRequired()" (change)="form.isRequired.set($any($event.target).value === 'true')"/>
+        <span>Yes</span>
+      </label>
+      <label class="radio-item">
+        <input type="radio" name="isRequired" [value]="false" [checked]="!form.isRequired()" (change)="form.isRequired.set($any($event.target).value === 'true')"/>
+        <span>No</span>
+      </label>
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Active</label>
+    <div class="flex" style="gap: 16px">
+      <label class="radio-item">
+        <input type="radio" name="isActive" [value]="true" [checked]="form.isActive()" (change)="form.isActive.set($any($event.target).value === 'true')"/>
+        <span>Yes</span>
+      </label>
+      <label class="radio-item">
+        <input type="radio" name="isActive" [value]="false" [checked]="!form.isActive()" (change)="form.isActive.set($any($event.target).value === 'true')"/>
+        <span>No</span>
+      </label>
+    </div>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.screenIdStr() || !form.fieldCode() || !form.fieldName() || !form.displayName()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Field' }}
+    </base-button>
+  </div>
+</base-dialog>

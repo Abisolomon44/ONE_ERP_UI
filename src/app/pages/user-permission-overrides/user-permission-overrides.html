@@ -1,0 +1,117 @@
+<div class="page-header">
+  <div>
+    <h1>User Permission Overrides</h1>
+    <div class="page-sub">Override role-based permissions for individual users.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'user-permission-overrides.manage'" icon="plus" (click)="openCreate()" [disabled]="!selectedUserId()">New Override</base-button>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px">
+  <div class="flex" style="gap: 16px; align-items: flex-end">
+    <base-dropdown label="Select User" icon="user" placeholder="Choose a user" [options]="userOptions()" [(value)]="selectedUserId" id="user-select"></base-dropdown>
+    <base-button icon="refresh-cw" size="sm" (click)="onUserChange()" [disabled]="!selectedUserId()">Load</base-button>
+  </div>
+</div>
+
+@if (!selectedUserId()) {
+  <div class="card">
+    <base-empty icon="user" title="Select a user" subtitle="Choose a user above to view their permission overrides."></base-empty>
+  </div>
+} @else if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card">
+    <base-empty icon="shield" title="No overrides found" subtitle="No permission overrides have been configured for this user."></base-empty>
+  </div>
+} @else {
+  <div class="table-card">
+    <table class="btable">
+      <thead>
+        <tr>
+          <th>Permission Path</th>
+          <th>Type</th>
+          <th>Allow</th>
+          <th>Effective From</th>
+          <th>Effective To</th>
+          <th>Status</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of rows(); track item.id) {
+          <tr>
+            <td>
+              <span class="path-chip">
+                {{ item.workspaceName || item.workspaceId }}
+                <span class="path-sep">/</span>
+                {{ item.domainName || item.domainId }}
+                <span class="path-sep">/</span>
+                {{ item.moduleName || item.moduleId }}
+                <span class="path-sep">/</span>
+                {{ item.screenName || item.screenId }}
+                <span class="path-sep">/</span>
+                {{ item.actionName || item.actionId }}
+              </span>
+            </td>
+            <td>
+              <base-pill [status]="item.permissionType === 'Grant' ? 'Active' : 'Inactive'" [label]="item.permissionType"></base-pill>
+            </td>
+            <td>
+              @if (item.allow) {
+                <span class="allow-badge allow-yes">Yes</span>
+              } @else {
+                <span class="allow-badge allow-no">No</span>
+              }
+            </td>
+            <td>{{ item.effectiveFrom | date:'mediumDate' }}</td>
+            <td>{{ item.effectiveTo ? (item.effectiveTo | date:'mediumDate') : '—' }}</td>
+            <td>
+              <base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill>
+            </td>
+            <td style="text-align:right" *basePermission="'user-permission-overrides.manage'">
+              <base-button variant="secondary" size="sm" icon="square-pen" (click)="openEdit(item)"></base-button>
+              <base-button variant="danger" size="sm" icon="trash-2" (click)="remove(item)"></base-button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Override' : 'Create Override'" (closeRequest)="dialogOpen.set(false)">
+  @if (!editing()) {
+    <base-dropdown label="Workspace" icon="layout-grid" placeholder="Select workspace" [options]="workspaceOptions()" [(value)]="form.workspaceId" (valueChange)="onWorkspaceChange()"></base-dropdown>
+    <base-dropdown label="Domain" icon="folder" placeholder="Select domain" [options]="domainOptions()" [(value)]="form.domainId" (valueChange)="onDomainChange()"></base-dropdown>
+    <base-dropdown label="Module" icon="cube" placeholder="Select module" [options]="moduleOptions()" [(value)]="form.moduleId" (valueChange)="onModuleChange()"></base-dropdown>
+    <base-dropdown label="Screen" icon="monitor" placeholder="Select screen" [options]="screenOptions()" [(value)]="form.screenId" (valueChange)="onScreenChange()"></base-dropdown>
+    <base-dropdown label="Action" icon="zap" placeholder="Select action" [options]="actionOptions()" [(value)]="form.actionId"></base-dropdown>
+  }
+  <base-dropdown label="Permission Type" icon="shield" [options]="permissionTypeOptions" [(value)]="form.permissionType"></base-dropdown>
+  <div class="field">
+    <label class="field-label">Allow</label>
+    <div class="flex" style="gap: 16px">
+      <label class="radio-item">
+        <input type="radio" name="allow" [value]="true" [checked]="form.allow()" (change)="form.allow.set(true)"/>
+        <span>Yes</span>
+      </label>
+      <label class="radio-item">
+        <input type="radio" name="allow" [value]="false" [checked]="!form.allow()" (change)="form.allow.set(false)"/>
+        <span>No</span>
+      </label>
+    </div>
+  </div>
+  <base-input label="Effective From" icon="calendar" type="date" [(value)]="form.effectiveFrom"></base-input>
+  <base-input label="Effective To" icon="calendar" type="date" [(value)]="form.effectiveTo"></base-input>
+  <base-input label="Remarks" icon="message-square" [(value)]="form.remarks"></base-input>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.permissionType()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Override' }}
+    </base-button>
+  </div>
+</base-dialog>

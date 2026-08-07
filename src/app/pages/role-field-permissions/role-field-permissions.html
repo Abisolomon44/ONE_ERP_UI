@@ -1,0 +1,101 @@
+<div class="page-header">
+  <div>
+    <h1>Role Field Permissions</h1>
+    <div class="page-sub">Control field-level visibility and editability per role and screen.</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px">
+  <div class="flex" style="gap: 16px; align-items: flex-end">
+    <base-dropdown label="Select Role" icon="shield" placeholder="Choose a role" [options]="roleOptions()" [(value)]="selectedRoleId" (valueChange)="onRoleChange()" id="role-select"></base-dropdown>
+    <base-dropdown label="Select Screen" icon="monitor" placeholder="Choose a screen" [options]="screenOptions()" [(value)]="selectedScreenId" (valueChange)="onScreenChange()" id="screen-select"></base-dropdown>
+  </div>
+</div>
+
+@if (!selectedRoleId()) {
+  <div class="card">
+    <base-empty icon="shield" title="Select a role" subtitle="Choose a role above to manage field permissions."></base-empty>
+  </div>
+} @else if (!selectedScreenId()) {
+  <div class="card">
+    <base-empty icon="monitor" title="Select a screen" subtitle="Choose a screen to configure field-level permissions."></base-empty>
+  </div>
+} @else if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else {
+  <div class="bulk-bar card" style="margin-bottom: 16px" *basePermission="'role-field-permissions.manage'">
+    <span class="bulk-label">Bulk Set All Fields:</span>
+    <label class="check-item"><input type="checkbox" [checked]="bulkForm.canView()" (change)="bulkForm.canView.set($any($event.target).checked)"/><span>Can View</span></label>
+    <label class="check-item"><input type="checkbox" [checked]="bulkForm.canEdit()" (change)="bulkForm.canEdit.set($any($event.target).checked)"/><span>Can Edit</span></label>
+    <label class="check-item"><input type="checkbox" [checked]="bulkForm.isHidden()" (change)="bulkForm.isHidden.set($any($event.target).checked)"/><span>Hidden</span></label>
+    <label class="check-item"><input type="checkbox" [checked]="bulkForm.isReadOnly()" (change)="bulkForm.isReadOnly.set($any($event.target).checked)"/><span>Read Only</span></label>
+    <label class="check-item"><input type="checkbox" [checked]="bulkForm.isMandatory()" (change)="bulkForm.isMandatory.set($any($event.target).checked)"/><span>Mandatory</span></label>
+    <base-button size="sm" icon="check" [loading]="saving()" (click)="applyBulk()">Apply to All</base-button>
+  </div>
+
+  @if (rows().length === 0) {
+    <div class="card">
+      <base-empty icon="layout-list" title="No field permissions" subtitle="No field permissions configured for this screen. Use bulk set to apply."></base-empty>
+    </div>
+  } @else {
+    <div class="table-card">
+      <table class="btable">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th class="text-center">Can View</th>
+            <th class="text-center">Can Edit</th>
+            <th class="text-center">Hidden</th>
+            <th class="text-center">Read Only</th>
+            <th class="text-center">Mandatory</th>
+            <th class="text-center">Order</th>
+            <th style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of rows(); track item.id) {
+            <tr>
+              <td>
+                <div>
+                  <strong>{{ item.displayName || item.fieldName }}</strong>
+                  <div class="card-sub">{{ item.fieldName }}</div>
+                </div>
+              </td>
+              <td class="text-center">
+                <label class="perm-toggle-wrap">
+                  <input type="checkbox" [checked]="item.canView" (change)="toggleField(item.fieldId, 'canView', $event)" [disabled]="!perms.has('role-field-permissions.manage')"/>
+                </label>
+              </td>
+              <td class="text-center">
+                <label class="perm-toggle-wrap">
+                  <input type="checkbox" [checked]="item.canEdit" (change)="toggleField(item.fieldId, 'canEdit', $event)" [disabled]="!perms.has('role-field-permissions.manage')"/>
+                </label>
+              </td>
+              <td class="text-center">
+                <label class="perm-toggle-wrap">
+                  <input type="checkbox" [checked]="item.isHidden" (change)="toggleField(item.fieldId, 'isHidden', $event)" [disabled]="!perms.has('role-field-permissions.manage')"/>
+                </label>
+              </td>
+              <td class="text-center">
+                <label class="perm-toggle-wrap">
+                  <input type="checkbox" [checked]="item.isReadOnly" (change)="toggleField(item.fieldId, 'isReadOnly', $event)" [disabled]="!perms.has('role-field-permissions.manage')"/>
+                </label>
+              </td>
+              <td class="text-center">
+                <label class="perm-toggle-wrap">
+                  <input type="checkbox" [checked]="item.isMandatory" (change)="toggleField(item.fieldId, 'isMandatory', $event)" [disabled]="!perms.has('role-field-permissions.manage')"/>
+                </label>
+              </td>
+              <td class="text-center">{{ item.displayOrder }}</td>
+              <td style="text-align:right" *basePermission="'role-field-permissions.manage'">
+                <base-button variant="danger" size="sm" icon="trash-2" (click)="remove(item)"></base-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

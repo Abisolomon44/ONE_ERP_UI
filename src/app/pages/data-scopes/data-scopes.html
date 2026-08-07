@@ -1,0 +1,86 @@
+<div class="page-header">
+  <div>
+    <h1>Data Scopes</h1>
+    <div class="page-sub">Restrict which data a role can access by branch, department, or warehouse.</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px">
+  <div class="flex" style="gap: 16px; align-items: flex-end">
+    <base-dropdown label="Select Role" icon="shield" placeholder="Choose a role" [options]="roleOptions()" [(value)]="selectedRoleId" (valueChange)="onRoleChange()" id="role-select"></base-dropdown>
+  </div>
+</div>
+
+@if (!selectedRoleId()) {
+  <div class="card">
+    <base-empty icon="shield" title="Select a role" subtitle="Choose a role above to view or configure its data scope."></base-empty>
+  </div>
+} @else if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (hasScope() && currentScope()) {
+  <div class="scope-card card">
+    <div class="scope-header">
+      <div>
+        <h3>Data Scope Configuration</h3>
+        <div class="card-sub">Restricts data visibility for this role.</div>
+      </div>
+      <div class="flex" style="gap: 8px">
+        <base-button variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="startEdit()" *basePermission="'data-scopes.manage'"></base-button>
+        <base-button variant="danger" size="sm" icon="trash-2" label="Remove" (click)="remove()" *basePermission="'data-scopes.manage'"></base-button>
+      </div>
+    </div>
+    <div class="scope-body">
+      <div class="scope-grid">
+        <div class="scope-item">
+          <span class="scope-label">Branch</span>
+          <span class="scope-value">{{ currentScope()!.branchName || 'All Branches' }}</span>
+        </div>
+        <div class="scope-item">
+          <span class="scope-label">Department</span>
+          <span class="scope-value">{{ currentScope()!.departmentName || 'All Departments' }}</span>
+        </div>
+        <div class="scope-item">
+          <span class="scope-label">Warehouse</span>
+          <span class="scope-value">{{ currentScope()!.warehouseName || 'All Warehouses' }}</span>
+        </div>
+        <div class="scope-item">
+          <span class="scope-label">View All Data</span>
+          <base-pill [status]="currentScope()!.canViewAll ? 'Active' : 'Inactive'" [label]="currentScope()!.canViewAll ? 'Yes' : 'No'"></base-pill>
+        </div>
+        <div class="scope-item">
+          <span class="scope-label">Edit All Data</span>
+          <base-pill [status]="currentScope()!.canEditAll ? 'Active' : 'Inactive'" [label]="currentScope()!.canEditAll ? 'Yes' : 'No'"></base-pill>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="card" *basePermission="'data-scopes.manage'">
+    <div class="scope-form-header">
+      <h3>Configure Data Scope</h3>
+      <div class="card-sub">Define data restrictions for this role.</div>
+    </div>
+    <div class="scope-form-body">
+      <div class="scope-form-grid">
+        <base-dropdown label="Branch" icon="git-branch" placeholder="All Branches (no restriction)" [options]="branchOptions()" [(value)]="form.branchId"></base-dropdown>
+        <base-dropdown label="Department" icon="network" placeholder="All Departments (no restriction)" [options]="departmentOptions()" [(value)]="form.departmentId"></base-dropdown>
+        <base-dropdown label="Warehouse" icon="package" placeholder="All Warehouses (no restriction)" [options]="warehouseOptions()" [(value)]="form.warehouseId"></base-dropdown>
+      </div>
+      <div class="scope-toggles">
+        <label class="check-item">
+          <input type="checkbox" [checked]="form.canViewAll()" (change)="form.canViewAll.set($any($event.target).checked)"/>
+          <span>Allow viewing all data regardless of scope</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" [checked]="form.canEditAll()" (change)="form.canEditAll.set($any($event.target).checked)"/>
+          <span>Allow editing all data regardless of scope</span>
+        </label>
+      </div>
+      <div class="scope-actions">
+        <base-button [loading]="saving()" icon="save" (click)="save()">Save Data Scope</base-button>
+      </div>
+    </div>
+  </div>
+}

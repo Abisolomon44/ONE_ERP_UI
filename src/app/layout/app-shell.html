@@ -11,10 +11,48 @@
     </div>
 
     <nav class="sidebar-nav">
-      @for (section of navSections(); track section.name) {
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobile()">
+        <i-lucide name="layout-dashboard" [size]="18"></i-lucide>
+        @if (!collapsed()) {
+          <span>Dashboard</span>
+        }
+      </a>
+
+      @for (ws of workspaces(); track ws.workspace.id) {
+        <div class="nav-group">
+          <button type="button" class="nav-item nav-group-toggle" (click)="toggleWorkspace(ws)">
+            <i-lucide [name]="ws.workspace.icon || 'layout-grid'" [size]="18"></i-lucide>
+            @if (!collapsed()) {
+              <span class="nav-group-label">{{ ws.workspace.workspaceName }}</span>
+              <i-lucide class="nav-group-chevron" [name]="ws.open ? 'chevron-down' : 'chevron-right'" [size]="14"></i-lucide>
+            }
+          </button>
+          @if (ws.open && !collapsed()) {
+            @for (dn of ws.domains; track dn.domain.id) {
+              <div class="nav-subgroup">
+                <button type="button" class="nav-item nav-subgroup-toggle" (click)="toggleDomain(dn)">
+                  <i-lucide [name]="dn.domain.icon || 'layers'" [size]="16"></i-lucide>
+                  <span class="nav-group-label">{{ dn.domain.domainName }}</span>
+                  <i-lucide class="nav-group-chevron" [name]="dn.open ? 'chevron-down' : 'chevron-right'" [size]="12"></i-lucide>
+                </button>
+                @if (dn.open) {
+                  @for (mod of dn.modules; track mod.id) {
+                    <a class="nav-item nav-leaf" [routerLink]="mod.routeUrl || '/dashboard'" routerLinkActive="active" (click)="closeMobile()">
+                      <i-lucide [name]="mod.icon || 'box'" [size]="14"></i-lucide>
+                      <span>{{ mod.moduleName }}</span>
+                    </a>
+                  }
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+
+      @for (section of adminSections(); track section.name) {
         <div class="sidebar-section">{{ section.name }}</div>
         @for (item of section.items; track item) {
-          <a class="nav-item" routerLink="/{{ item.route }}" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.route === 'dashboard' }" (click)="closeMobile()">
+          <a class="nav-item" routerLink="/{{ item.route }}" routerLinkActive="active" (click)="closeMobile()">
             <i-lucide [name]="item.icon" [size]="18"></i-lucide>
             @if (!collapsed()) {
               <span>{{ item.label }}</span>

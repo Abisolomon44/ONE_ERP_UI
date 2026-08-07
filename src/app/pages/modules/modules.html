@@ -1,0 +1,114 @@
+<div class="page-header">
+  <div>
+    <h1>Modules</h1>
+    <div class="page-sub">Define functional modules within each domain.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'modules.manage'" icon="plus" (click)="openCreate()">New Module</base-button>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="field" style="min-width:200px">
+    <label class="field-label">Filter by Workspace</label>
+    <div class="input-wrap">
+      <i-lucide class="input-prefix" name="layout-grid" [size]="16"></i-lucide>
+      <select class="input has-prefix" [value]="filterWorkspaceId()" (change)="onFilterWorkspaceChange($event)">
+        <option value="">All Workspaces</option>
+        @for (ws of workspaces(); track ws.id) {
+          <option [value]="ws.id">{{ ws.workspaceName }}</option>
+        }
+      </select>
+    </div>
+  </div>
+  <div class="field" style="min-width:200px">
+    <label class="field-label">Filter by Domain</label>
+    <div class="input-wrap">
+      <i-lucide class="input-prefix" name="layers" [size]="16"></i-lucide>
+      <select class="input has-prefix" [value]="filterDomainId()" (change)="onFilterDomainChange($event)">
+        <option value="">All Domains</option>
+        @for (d of domains(); track d.id) {
+          <option [value]="d.id">{{ d.domainName }}</option>
+        }
+      </select>
+    </div>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card"><base-empty icon="box" title="No modules found" subtitle="Create a module to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (m of rows(); track m.id) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
+            @if (m.icon) {
+              <i-lucide [name]="m.icon" [size]="17"></i-lucide>
+            } @else {
+              <i-lucide name="box" [size]="17"></i-lucide>
+            }
+          </span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ m.moduleName }}</h3>
+              @if (m.domainName) {
+                <span class="badge badge-accent">{{ m.domainName }}</span>
+              }
+            </div>
+            <div class="card-sub">{{ m.moduleCode }}</div>
+          </div>
+          <base-pill [status]="m.isActive ? 'Active' : 'Inactive'" [label]="m.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          @if (m.routeUrl) {
+            <p style="margin:0 0 12px; color: var(--text-2); font-size:13.5px">
+              Route: <code>{{ m.routeUrl }}</code>
+            </p>
+          }
+          <div style="display:flex; gap:16px; font-size:13px; color: var(--text-3)">
+            <span>Sort: {{ m.sortOrder }}</span>
+            <span>Created: {{ m.createdDate | date:'mediumDate' }}</span>
+          </div>
+        </div>
+        @if (true) {
+          <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+            <base-button *basePermission="'modules.manage'" variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(m)"></base-button>
+            <base-button *basePermission="'modules.manage'" variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(m)"></base-button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Module' : 'Create Module'" (closeRequest)="dialogOpen.set(false)">
+  <base-dropdown label="Domain" icon="layers" placeholder="Select domain" [options]="domainOptions()" [(value)]="form.domainId" [disabled]="!!editing()"></base-dropdown>
+  <base-input label="Module Code" icon="hash" [(value)]="form.moduleCode" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. EMPLOYEE_MGMT'"></base-input>
+  <base-input label="Module Name" icon="box" [(value)]="form.moduleName"></base-input>
+  <base-input label="Icon" icon="smile" [(value)]="form.icon" hint="Lucide icon name (e.g. box)"></base-input>
+  <base-input label="Route URL" icon="route" [(value)]="form.routeUrl" hint="e.g. /hcm/employees"></base-input>
+  <div class="field">
+    <label class="field-label">Sort Order</label>
+    <div class="input-wrap">
+      <input class="input" type="number" [value]="form.sortOrder()" (input)="form.sortOrder.set(+$any($event.target).value)" />
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Active</label>
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isActive()" (change)="form.isActive.set($any($event.target).checked)" />
+      <span>Enabled</span>
+    </label>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.domainId() || !form.moduleCode() || !form.moduleName()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Module' }}
+    </base-button>
+  </div>
+</base-dialog>

@@ -1,0 +1,33 @@
+.table-card {
+  overflow-x: auto;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bulk-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.perm-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.perm-toggle-wrap input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}

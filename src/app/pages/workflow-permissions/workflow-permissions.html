@@ -1,0 +1,133 @@
+<div class="page-header">
+  <div>
+    <h1>Workflow Permissions</h1>
+    <div class="page-sub">Configure which roles can submit, approve, reject, cancel, or close workflows per screen.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'workflow-permissions.manage'" icon="plus" (click)="openCreate()" [disabled]="!selectedRoleId()">New Permission</base-button>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px">
+  <div class="flex" style="gap: 16px; align-items: flex-end">
+    <base-dropdown label="Select Role" icon="shield" placeholder="Choose a role" [options]="roleOptions()" [(value)]="selectedRoleId" (valueChange)="onRoleChange()" id="role-select"></base-dropdown>
+  </div>
+</div>
+
+@if (!selectedRoleId()) {
+  <div class="card">
+    <base-empty icon="shield" title="Select a role" subtitle="Choose a role above to manage its workflow permissions."></base-empty>
+  </div>
+} @else if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card">
+    <base-empty icon="git-merge" title="No workflow permissions" subtitle="No workflow permissions configured for this role."></base-empty>
+  </div>
+} @else {
+  <div class="table-card">
+    <table class="btable">
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th>Screen</th>
+          <th class="text-center">Submit</th>
+          <th class="text-center">Approve</th>
+          <th class="text-center">Reject</th>
+          <th class="text-center">Cancel</th>
+          <th class="text-center">Close</th>
+          <th>Status</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of rows(); track item.id) {
+          <tr>
+            <td>{{ item.moduleName || item.moduleId }}</td>
+            <td>{{ item.screenName || item.screenId }}</td>
+            <td class="text-center">
+              @if (item.canSubmit) {
+                <span class="wf-badge wf-yes"><i-lucide name="check" [size]="14"></i-lucide></span>
+              } @else {
+                <span class="wf-badge wf-no"><i-lucide name="x" [size]="14"></i-lucide></span>
+              }
+            </td>
+            <td class="text-center">
+              @if (item.canApprove) {
+                <span class="wf-badge wf-yes"><i-lucide name="check" [size]="14"></i-lucide></span>
+              } @else {
+                <span class="wf-badge wf-no"><i-lucide name="x" [size]="14"></i-lucide></span>
+              }
+            </td>
+            <td class="text-center">
+              @if (item.canReject) {
+                <span class="wf-badge wf-yes"><i-lucide name="check" [size]="14"></i-lucide></span>
+              } @else {
+                <span class="wf-badge wf-no"><i-lucide name="x" [size]="14"></i-lucide></span>
+              }
+            </td>
+            <td class="text-center">
+              @if (item.canCancel) {
+                <span class="wf-badge wf-yes"><i-lucide name="check" [size]="14"></i-lucide></span>
+              } @else {
+                <span class="wf-badge wf-no"><i-lucide name="x" [size]="14"></i-lucide></span>
+              }
+            </td>
+            <td class="text-center">
+              @if (item.canClose) {
+                <span class="wf-badge wf-yes"><i-lucide name="check" [size]="14"></i-lucide></span>
+              } @else {
+                <span class="wf-badge wf-no"><i-lucide name="x" [size]="14"></i-lucide></span>
+              }
+            </td>
+            <td>
+              <base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill>
+            </td>
+            <td style="text-align:right" *basePermission="'workflow-permissions.manage'">
+              <base-button variant="secondary" size="sm" icon="square-pen" (click)="openEdit(item)"></base-button>
+              <base-button variant="danger" size="sm" icon="trash-2" (click)="remove(item)"></base-button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Workflow Permission' : 'Create Workflow Permission'" (closeRequest)="dialogOpen.set(false)">
+  <base-dropdown label="Module" icon="cube" placeholder="Select module" [options]="moduleOptions()" [(value)]="form.moduleId" (valueChange)="onModuleChange()"></base-dropdown>
+  <base-dropdown label="Screen" icon="monitor" placeholder="Select screen" [options]="screenOptions()" [(value)]="form.screenId"></base-dropdown>
+  <div class="field">
+    <label class="field-label">Workflow Actions</label>
+    <div class="wf-toggles">
+      <label class="check-item">
+        <input type="checkbox" [checked]="form.canSubmit()" (change)="form.canSubmit.set($any($event.target).checked)"/>
+        <span>Can Submit</span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox" [checked]="form.canApprove()" (change)="form.canApprove.set($any($event.target).checked)"/>
+        <span>Can Approve</span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox" [checked]="form.canReject()" (change)="form.canReject.set($any($event.target).checked)"/>
+        <span>Can Reject</span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox" [checked]="form.canCancel()" (change)="form.canCancel.set($any($event.target).checked)"/>
+        <span>Can Cancel</span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox" [checked]="form.canClose()" (change)="form.canClose.set($any($event.target).checked)"/>
+        <span>Can Close</span>
+      </label>
+    </div>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.moduleId() || !form.screenId()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Permission' }}
+    </base-button>
+  </div>
+</base-dialog>

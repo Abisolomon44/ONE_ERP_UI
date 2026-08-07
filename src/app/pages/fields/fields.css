@@ -1,0 +1,13 @@
+.filters {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filters base-dropdown,
+.filters base-search {
+  flex: 1;
+  min-width: 160px;
+}

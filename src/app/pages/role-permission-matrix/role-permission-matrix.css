@@ -1,0 +1,235 @@
+.matrix-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.matrix-table thead th {
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-3);
+  background: var(--surface-2);
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.matrix-table thead th.col-entity {
+  min-width: 320px;
+  left: 0;
+  z-index: 3;
+  background: var(--surface-2);
+}
+
+.matrix-table thead th.col-action {
+  min-width: 100px;
+  text-align: center;
+}
+
+.matrix-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.matrix-table tbody td.col-entity {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
+.matrix-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.matrix-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+.matrix-table tbody tr:hover td.col-entity {
+  background: var(--surface-2);
+}
+
+/* Row levels */
+.row-workspace td {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.row-workspace:hover td {
+  background: var(--surface-3) !important;
+}
+
+.row-domain td {
+  background: var(--surface);
+}
+
+.row-module td {
+  background: var(--surface);
+}
+
+.row-screen td {
+  background: var(--surface);
+}
+
+.row-screen:nth-child(even) td {
+  background: var(--surface-2);
+}
+
+.row-screen:hover td {
+  background: var(--surface-3) !important;
+}
+
+/* Entity rows */
+.entity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.entity-name {
+  font-weight: 500;
+  font-size: 13.5px;
+}
+
+.entity-count {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* Expand button */
+.expand-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition), color var(--transition);
+  flex-shrink: 0;
+}
+
+.expand-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* Check items */
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.check-item input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+/* Permission toggle */
+.perm-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.perm-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.perm-toggle.active {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+/* Action header */
+.action-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Permission summary */
+.perm-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-soft-2);
+}
+
+.perm-summary-label {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--accent);
+}
+
+.perm-summary-count {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* Text center utility */
+.text-center {
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .matrix-table thead th.col-entity {
+    min-width: 240px;
+  }
+
+  .matrix-table thead th.col-action {
+    min-width: 80px;
+  }
+
+  .entity-count {
+    display: none;
+  }
+}

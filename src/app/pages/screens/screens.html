@@ -1,0 +1,92 @@
+<div class="page-header">
+  <div>
+    <h1>Screens</h1>
+    <div class="page-sub">Manage screens within permission modules.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'screens.manage'" icon="plus" (click)="openCreate()">New Screen</base-button>
+  </div>
+</div>
+
+<div class="filters">
+  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [(value)]="filterDomainId" placeholder="All Domains"></base-dropdown>
+  <base-dropdown label="Module" icon="layers" [options]="moduleOptions()" [(value)]="filterModuleId" placeholder="All Modules"></base-dropdown>
+  <base-search placeholder="Search screens..." [(value)]="search"></base-search>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (filteredRows().length === 0) {
+  <div class="card"><base-empty icon="layout" title="No screens found" subtitle="Create a screen to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (item of filteredRows(); track item.id) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
+            <i-lucide name="layout" [size]="17"></i-lucide>
+          </span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ item.screenName }}</h3>
+              <span class="badge badge-soft">{{ getModuleName(item.moduleId) }}</span>
+            </div>
+            <div class="card-sub">{{ item.screenCode }}</div>
+          </div>
+          <base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          @if (item.routeUrl) {
+            <p style="margin:0 0 6px; color: var(--text-2); font-size:13.5px">
+              Route: <code>{{ item.routeUrl }}</code>
+            </p>
+          }
+          @if (item.componentName) {
+            <p style="margin:0 0 6px; color: var(--text-2); font-size:13.5px">
+              Component: <code>{{ item.componentName }}</code>
+            </p>
+          }
+          <p style="margin:0; color: var(--text-2); font-size:13.5px">
+            Sort Order: <strong>{{ item.sortOrder }}</strong>
+          </p>
+        </div>
+        @if (perms.has('screens.manage')) {
+          <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+            <base-button variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(item)"></base-button>
+            <base-button variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(item)"></base-button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Screen' : 'Create Screen'" (closeRequest)="dialogOpen.set(false)">
+  <base-dropdown label="Module" icon="layers" [options]="formModuleOptions()" [(value)]="form.moduleIdStr" placeholder="Select module" [disabled]="!!editing()"></base-dropdown>
+  <base-input label="Screen Code" icon="tag" [(value)]="form.screenCode" [disabled]="!!editing()" hint="e.g. dashboard"></base-input>
+  <base-input label="Screen Name" icon="type" [(value)]="form.screenName"></base-input>
+  <base-input label="Route URL" icon="navigation" [(value)]="form.routeUrl" hint="e.g. /dashboard"></base-input>
+  <base-input label="Component Name" icon="box" [(value)]="form.componentName" hint="e.g. DashboardComponent"></base-input>
+  <base-input label="Sort Order" icon="list-ordered" type="number" [(value)]="form.sortOrderStr"></base-input>
+  <div class="field">
+    <label class="field-label">Active</label>
+    <div class="flex" style="gap: 16px">
+      <label class="radio-item">
+        <input type="radio" name="isActive" [value]="true" [checked]="form.isActive()" (change)="form.isActive.set($any($event.target).value === 'true')"/>
+        <span>Yes</span>
+      </label>
+      <label class="radio-item">
+        <input type="radio" name="isActive" [value]="false" [checked]="!form.isActive()" (change)="form.isActive.set($any($event.target).value === 'true')"/>
+        <span>No</span>
+      </label>
+    </div>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.moduleIdStr() || !form.screenCode() || !form.screenName()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Screen' }}
+    </base-button>
+  </div>
+</base-dialog>

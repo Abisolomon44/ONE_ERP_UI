@@ -1,0 +1,190 @@
+<div class="page-header">
+  <div>
+    <h1>Role Permission Matrix</h1>
+    <div class="page-sub">Assign Workspace → Domain → Module → Screen → Action permissions to roles.</div>
+  </div>
+  <div class="page-actions">
+    @if (selectedRoleId()) {
+      <base-button variant="secondary" icon="chevrons-up" size="sm" (click)="expandAllNodes()">Expand All</base-button>
+      <base-button variant="secondary" icon="chevrons-down" size="sm" (click)="collapseAll()">Collapse All</base-button>
+      <base-button variant="secondary" icon="check-square" size="sm" (click)="selectAll()">Select All</base-button>
+      <base-button variant="secondary" icon="x-square" size="sm" (click)="clearAll()">Clear All</base-button>
+      <base-button *basePermission="'role-permissions.manage'" icon="save" [loading]="saving()" (click)="save()">Save Permissions</base-button>
+    }
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px">
+  <div class="card-body" style="padding: 16px 20px">
+    <div class="flex" style="gap: 16px; align-items: flex-end; flex-wrap: wrap">
+      <base-dropdown
+        label="Select Role"
+        icon="shield"
+        placeholder="Choose a role"
+        [options]="roleOptions()"
+        [(value)]="selectedRoleId"
+        (valueChange)="onRoleChange()">
+      </base-dropdown>
+      @if (selectedRoleId()) {
+        <div class="perm-summary">
+          <span class="perm-summary-label">{{ selectedRoleName() }}</span>
+          <span class="perm-summary-count">{{ totalPermissions() }} permissions granted</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+@if (!selectedRoleId()) {
+  <div class="card">
+    <base-empty icon="shield-check" title="Select a role" subtitle="Choose a role above to view and manage its Workspace → Domain → Module → Screen → Action permissions."></base-empty>
+  </div>
+} @else if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (tree().length === 0) {
+  <div class="card">
+    <base-empty icon="layout-grid" title="No workspaces found" subtitle="Create workspaces, domains, modules, and screens to configure permissions."></base-empty>
+  </div>
+} @else {
+  <div class="matrix-card">
+    <div class="table-wrap">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th class="col-entity">Entity</th>
+            @for (action of actions(); track action.id) {
+              <th class="col-action text-center">
+                <div class="action-header">
+                  <label class="check-item" style="justify-content: center">
+                    <input
+                      type="checkbox"
+                      [checked]="isActionColumnChecked(action.id)"
+                      [indeterminate]="isActionColumnIndeterminate(action.id)"
+                      (change)="toggleActionColumn(action.id, $event)"/>
+                    <span>{{ action.actionName }}</span>
+                  </label>
+                </div>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (ws of tree(); track ws.id) {
+            <tr class="row-workspace">
+              <td class="col-entity">
+                <div class="entity-row" style="padding-left: 8px">
+                  <button class="expand-btn" (click)="toggleWorkspaceExpand(ws.id)">
+                    <i-lucide [name]="isWorkspaceExpanded(ws.id) ? 'chevron-down' : 'chevron-right'" [size]="14"></i-lucide>
+                  </button>
+                  <label class="check-item">
+                    <input
+                      type="checkbox"
+                      [checked]="isWorkspaceChecked(ws)"
+                      [indeterminate]="isWorkspaceIndeterminate(ws)"
+                      (change)="toggleWorkspace(ws, $event)"/>
+                    <i-lucide name="layers" [size]="15"></i-lucide>
+                    <span class="entity-name">{{ ws.name }}</span>
+                  </label>
+                  <span class="entity-count">{{ getWorkspaceScreenCount(ws) }} screens</span>
+                </div>
+              </td>
+              @for (action of actions(); track action.id) {
+                <td class="col-action text-center"></td>
+              }
+            </tr>
+
+            @if (isWorkspaceExpanded(ws.id)) {
+              @for (domain of ws.domains; track domain.id) {
+                <tr class="row-domain">
+                  <td class="col-entity">
+                    <div class="entity-row" style="padding-left: 32px">
+                      <button class="expand-btn" (click)="toggleDomainExpand(domain.id)">
+                        <i-lucide [name]="isDomainExpanded(domain.id) ? 'chevron-down' : 'chevron-right'" [size]="14"></i-lucide>
+                      </button>
+                      <label class="check-item">
+                        <input
+                          type="checkbox"
+                          [checked]="isDomainChecked(domain)"
+                          [indeterminate]="isDomainIndeterminate(domain)"
+                          (change)="toggleDomain(domain, $event)"/>
+                        <i-lucide name="folder" [size]="15"></i-lucide>
+                        <span class="entity-name">{{ domain.name }}</span>
+                      </label>
+                      <span class="entity-count">{{ getDomainScreenCount(domain) }} screens</span>
+                    </div>
+                  </td>
+                  @for (action of actions(); track action.id) {
+                    <td class="col-action text-center"></td>
+                  }
+                </tr>
+
+                @if (isDomainExpanded(domain.id)) {
+                  @for (mod of domain.modules; track mod.id) {
+                    <tr class="row-module">
+                      <td class="col-entity">
+                        <div class="entity-row" style="padding-left: 56px">
+                          <button class="expand-btn" (click)="toggleModuleExpand(mod.id)">
+                            <i-lucide [name]="isModuleExpanded(mod.id) ? 'chevron-down' : 'chevron-right'" [size]="14"></i-lucide>
+                          </button>
+                          <label class="check-item">
+                            <input
+                              type="checkbox"
+                              [checked]="isModuleChecked(mod)"
+                              [indeterminate]="isModuleIndeterminate(mod)"
+                              (change)="toggleModule(mod, $event)"/>
+                            <i-lucide name="box" [size]="15"></i-lucide>
+                            <span class="entity-name">{{ mod.name }}</span>
+                          </label>
+                          <span class="entity-count">{{ mod.screens.length }} screens</span>
+                        </div>
+                      </td>
+                      @for (action of actions(); track action.id) {
+                        <td class="col-action text-center"></td>
+                      }
+                    </tr>
+
+                    @if (isModuleExpanded(mod.id)) {
+                      @for (screen of mod.screens; track screen.id) {
+                        <tr class="row-screen">
+                          <td class="col-entity">
+                            <div class="entity-row" style="padding-left: 80px">
+                              <label class="check-item">
+                                <input
+                                  type="checkbox"
+                                  [checked]="isScreenChecked(screen)"
+                                  [indeterminate]="isScreenIndeterminate(screen)"
+                                  (change)="toggleScreen(screen, $event)"/>
+                                <i-lucide name="monitor" [size]="15"></i-lucide>
+                                <span class="entity-name">{{ screen.name }}</span>
+                              </label>
+                            </div>
+                          </td>
+                          @for (action of actions(); track action.id) {
+                            <td class="col-action text-center">
+                              <button
+                                class="perm-toggle"
+                                [class.active]="isAllowed(screen.id, action.id)"
+                                (click)="toggleCell(screen.id, action.id)">
+                                @if (isAllowed(screen.id, action.id)) {
+                                  <i-lucide name="check" [size]="14"></i-lucide>
+                                } @else {
+                                  <i-lucide name="x" [size]="14"></i-lucide>
+                                }
+                              </button>
+                            </td>
+                          }
+                        </tr>
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}

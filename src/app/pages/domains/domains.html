@@ -1,0 +1,96 @@
+<div class="page-header">
+  <div>
+    <h1>Domains</h1>
+    <div class="page-sub">Organize modules within workspaces by domain.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'domains.manage'" icon="plus" (click)="openCreate()">New Domain</base-button>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="field" style="min-width:220px">
+    <label class="field-label">Filter by Workspace</label>
+    <div class="input-wrap">
+      <i-lucide class="input-prefix" name="layout-grid" [size]="16"></i-lucide>
+      <select class="input has-prefix" [value]="filterWorkspaceId()" (change)="onFilterWorkspaceChange($event)">
+        <option value="">All Workspaces</option>
+        @for (ws of workspaces(); track ws.id) {
+          <option [value]="ws.id">{{ ws.workspaceName }}</option>
+        }
+      </select>
+    </div>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card"><base-empty icon="layers" title="No domains found" subtitle="Create a domain to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (d of rows(); track d.id) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
+            @if (d.icon) {
+              <i-lucide [name]="d.icon" [size]="17"></i-lucide>
+            } @else {
+              <i-lucide name="layers" [size]="17"></i-lucide>
+            }
+          </span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ d.domainName }}</h3>
+              @if (d.workspaceName) {
+                <span class="badge badge-accent">{{ d.workspaceName }}</span>
+              }
+            </div>
+            <div class="card-sub">{{ d.domainCode }}</div>
+          </div>
+          <base-pill [status]="d.isActive ? 'Active' : 'Inactive'" [label]="d.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          <div style="display:flex; gap:16px; font-size:13px; color: var(--text-3)">
+            <span>Sort: {{ d.sortOrder }}</span>
+            <span>Created: {{ d.createdDate | date:'mediumDate' }}</span>
+          </div>
+        </div>
+        @if (true) {
+          <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+            <base-button *basePermission="'domains.manage'" variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(d)"></base-button>
+            <base-button *basePermission="'domains.manage'" variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(d)"></base-button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Domain' : 'Create Domain'" (closeRequest)="dialogOpen.set(false)">
+  <base-dropdown label="Workspace" icon="layout-grid" placeholder="Select workspace" [options]="workspaceOptions()" [(value)]="form.workspaceId" [disabled]="!!editing()"></base-dropdown>
+  <base-input label="Domain Code" icon="hash" [(value)]="form.domainCode" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. HCM_CORE'"></base-input>
+  <base-input label="Domain Name" icon="layers" [(value)]="form.domainName"></base-input>
+  <base-input label="Icon" icon="smile" [(value)]="form.icon" hint="Lucide icon name (e.g. layers)"></base-input>
+  <div class="field">
+    <label class="field-label">Sort Order</label>
+    <div class="input-wrap">
+      <input class="input" type="number" [value]="form.sortOrder()" (input)="form.sortOrder.set(+$any($event.target).value)" />
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Active</label>
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isActive()" (change)="form.isActive.set($any($event.target).checked)" />
+      <span>Enabled</span>
+    </label>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.workspaceId() || !form.domainCode() || !form.domainName()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Domain' }}
+    </base-button>
+  </div>
+</base-dialog>

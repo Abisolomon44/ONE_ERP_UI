@@ -1,0 +1,85 @@
+<div class="page-header">
+  <div>
+    <h1>Workspaces</h1>
+    <div class="page-sub">Manage navigation workspaces and their layout configuration.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'workspaces.manage'" icon="plus" (click)="openCreate()">New Workspace</base-button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card"><base-empty icon="layout-grid" title="No workspaces found" subtitle="Create a workspace to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (ws of rows(); track ws.id) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
+            @if (ws.icon) {
+              <i-lucide [name]="ws.icon" [size]="17"></i-lucide>
+            } @else {
+              <i-lucide name="layout-grid" [size]="17"></i-lucide>
+            }
+          </span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ ws.workspaceName }}</h3>
+            </div>
+            <div class="card-sub">{{ ws.workspaceCode }}</div>
+          </div>
+          <base-pill [status]="ws.isActive ? 'Active' : 'Inactive'" [label]="ws.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          <p style="margin:0 0 12px; color: var(--text-2); font-size:13.5px">
+            @if (ws.route) {
+              Route: <code>{{ ws.route }}</code>
+            } @else {
+              No route configured
+            }
+          </p>
+          <div style="display:flex; gap:16px; font-size:13px; color: var(--text-3)">
+            <span>Sort: {{ ws.sortOrder }}</span>
+            <span>Created: {{ ws.createdDate | date:'mediumDate' }}</span>
+          </div>
+        </div>
+        @if (true) {
+          <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+            <base-button *basePermission="'workspaces.manage'" variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(ws)"></base-button>
+            <base-button *basePermission="'workspaces.manage'" variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(ws)"></base-button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Workspace' : 'Create Workspace'" (closeRequest)="dialogOpen.set(false)">
+  <base-input label="Workspace Code" icon="hash" [(value)]="form.workspaceCode" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. HCM'"></base-input>
+  <base-input label="Workspace Name" icon="layout-grid" [(value)]="form.workspaceName"></base-input>
+  <base-input label="Icon" icon="smile" [(value)]="form.icon" hint="Lucide icon name (e.g. layout-grid)"></base-input>
+  <base-input label="Route" icon="route" [(value)]="form.route" hint="e.g. /hcm"></base-input>
+  <div class="field">
+    <label class="field-label">Sort Order</label>
+    <div class="input-wrap">
+      <input class="input" type="number" [value]="form.sortOrder()" (input)="form.sortOrder.set(+$any($event.target).value)" />
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Active</label>
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isActive()" (change)="form.isActive.set($any($event.target).checked)" />
+      <span>Enabled</span>
+    </label>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.workspaceCode() || !form.workspaceName()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Workspace' }}
+    </base-button>
+  </div>
+</base-dialog>

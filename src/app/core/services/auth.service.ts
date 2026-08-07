@@ -2,12 +2,13 @@
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { LoginResponse } from '../models';
-import { PermissionService } from './permission.service';
+import { PermissionService, UserPermission } from './permission.service';
 
 export const TOKEN_KEY = 'oneerp-erp-token';
 export const REFRESH_KEY = 'oneerp-erp-refresh';
 export const USER_KEY = 'oneerp-erp-user';
 export const PERMS_KEY = 'oneerp-erp-permissions';
+export const MODULE_PERMS_KEY = 'oneerp-erp-module-permissions';
 export const TENANT_KEY = 'oneerp-erp-tenant';
 
 @Injectable({
@@ -31,6 +32,15 @@ export class AuthService {
         this.perms.permissions.set(JSON.parse(permissions));
       } catch {
         this.perms.permissions.set([]);
+      }
+    }
+
+    const modulePerms = localStorage.getItem(MODULE_PERMS_KEY);
+    if (modulePerms) {
+      try {
+        this.perms.userPermissions.set(JSON.parse(modulePerms));
+      } catch {
+        this.perms.userPermissions.set([]);
       }
     }
   }
@@ -93,21 +103,20 @@ export class AuthService {
     this.token.set(null);
     this.user.set(null);
     this.perms.permissions.set([]);
+    this.perms.userPermissions.set([]);
   }
 
   private currentUsername(): string | null {
     return this.user()?.username ?? null;
   }
 
-private persist(data: LoginResponse): void {
+  private persist(data: LoginResponse): void {
 
   localStorage.setItem(TOKEN_KEY, data.accessToken);
   localStorage.setItem(REFRESH_KEY, data.refreshToken);
   localStorage.setItem(TENANT_KEY, data.tenantCode);
   localStorage.setItem(USER_KEY, JSON.stringify(data.user));
   localStorage.setItem(PERMS_KEY, JSON.stringify(data.permissions));
-
-  // ADD THESE LINES
   localStorage.setItem('companyId', data.user.companyId.toString());
   localStorage.setItem('userId', data.user.userId.toString());
 
@@ -116,6 +125,9 @@ private persist(data: LoginResponse): void {
   this.token.set(data.accessToken);
   this.user.set(data.user);
   this.perms.permissions.set(data.permissions);
+
+  // Load module-scoped permissions
+  this.loadModulePermissions();
 }
   private readUser(): LoginResponse['user'] | null {
     const raw = localStorage.getItem(USER_KEY);
@@ -128,6 +140,18 @@ private persist(data: LoginResponse): void {
       return JSON.parse(raw);
     } catch {
       return null;
+    }
+  }
+
+  private async loadModulePermissions(): Promise<void> {
+    try {
+      const res = await firstValueFrom(
+        this.http.get<UserPermission[]>('/api/permission/modules/user-permissions')
+      );
+      this.perms.userPermissions.set(res);
+      localStorage.setItem(MODULE_PERMS_KEY, JSON.stringify(res));
+    } catch {
+      this.perms.userPermissions.set([]);
     }
   }
 }
