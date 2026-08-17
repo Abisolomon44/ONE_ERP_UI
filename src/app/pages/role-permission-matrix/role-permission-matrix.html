@@ -1,7 +1,7 @@
 <div class="page-header">
   <div>
     <h1>Role Permission Matrix</h1>
-    <div class="page-sub">Assign Workspace → Domain → Module → Screen → Action permissions to roles.</div>
+    <div class="page-sub">Assign Workspace → Domain → Module → Sub Module → Screen → Action permissions to roles.</div>
   </div>
   <div class="page-actions">
     @if (selectedRoleId()) {
@@ -137,7 +137,7 @@
                             <i-lucide name="box" [size]="15"></i-lucide>
                             <span class="entity-name">{{ mod.name }}</span>
                           </label>
-                          <span class="entity-count">{{ mod.screens.length }} screens</span>
+                          <span class="entity-count">{{ mod.subModules.length }} sub modules</span>
                         </div>
                       </td>
                       @for (action of actions(); track action.id) {
@@ -146,36 +146,63 @@
                     </tr>
 
                     @if (isModuleExpanded(mod.id)) {
-                      @for (screen of mod.screens; track screen.id) {
-                        <tr class="row-screen">
+                      @for (sub of mod.subModules; track sub.id) {
+                        <tr class="row-submodule">
                           <td class="col-entity">
                             <div class="entity-row" style="padding-left: 80px">
+                              <button class="expand-btn" (click)="toggleSubModuleExpand(sub.id)">
+                                <i-lucide [name]="isSubModuleExpanded(sub.id) ? 'chevron-down' : 'chevron-right'" [size]="14"></i-lucide>
+                              </button>
                               <label class="check-item">
                                 <input
                                   type="checkbox"
-                                  [checked]="isScreenChecked(screen)"
-                                  [indeterminate]="isScreenIndeterminate(screen)"
-                                  (change)="toggleScreen(screen, $event)"/>
-                                <i-lucide name="monitor" [size]="15"></i-lucide>
-                                <span class="entity-name">{{ screen.name }}</span>
+                                  [checked]="isSubModuleChecked(sub)"
+                                  [indeterminate]="isSubModuleIndeterminate(sub)"
+                                  (change)="toggleSubModule(sub, $event)"/>
+                                <i-lucide name="puzzle" [size]="15"></i-lucide>
+                                <span class="entity-name">{{ sub.name }}</span>
                               </label>
+                              <span class="entity-count">{{ sub.screens.length }} screens</span>
                             </div>
                           </td>
                           @for (action of actions(); track action.id) {
-                            <td class="col-action text-center">
-                              <button
-                                class="perm-toggle"
-                                [class.active]="isAllowed(screen.id, action.id)"
-                                (click)="toggleCell(screen.id, action.id)">
-                                @if (isAllowed(screen.id, action.id)) {
-                                  <i-lucide name="check" [size]="14"></i-lucide>
-                                } @else {
-                                  <i-lucide name="x" [size]="14"></i-lucide>
-                                }
-                              </button>
-                            </td>
+                            <td class="col-action text-center"></td>
                           }
                         </tr>
+
+                        @if (isSubModuleExpanded(sub.id)) {
+                          @for (screen of sub.screens; track screen.id) {
+                            <tr class="row-screen">
+                              <td class="col-entity">
+                                <div class="entity-row" style="padding-left: 104px">
+                                  <label class="check-item">
+                                    <input
+                                      type="checkbox"
+                                      [checked]="isScreenChecked(screen)"
+                                      [indeterminate]="isScreenIndeterminate(screen)"
+                                      (change)="toggleScreen(screen, $event)"/>
+                                    <i-lucide name="monitor" [size]="15"></i-lucide>
+                                    <span class="entity-name">{{ screen.name }}</span>
+                                  </label>
+                                </div>
+                              </td>
+                              @for (action of actions(); track action.id) {
+                                <td class="col-action text-center">
+                                  <button
+                                    class="perm-toggle"
+                                    [class.active]="isAllowed(screen.id, action.id)"
+                                    (click)="toggleCell(screen.id, action.id)">
+                                    @if (isAllowed(screen.id, action.id)) {
+                                      <i-lucide name="check" [size]="14"></i-lucide>
+                                    } @else {
+                                      <i-lucide name="x" [size]="14"></i-lucide>
+                                    }
+                                  </button>
+                                </td>
+                              }
+                            </tr>
+                          }
+                        }
                       }
                     }
                   }

@@ -7,7 +7,7 @@ import { BaseButton } from '../../shared/base-button';
 import { BaseDialog } from '../../shared/base-feedback';
 import { BaseInput, BaseDropdown, BaseSearch } from '../../shared/base-controls';
 import { BasePermission } from '../../shared/base-permission';
-import { Field, Screen, Module, Domain } from '../../core/models';
+import { Field, Screen, Module, Domain, SubModule } from '../../core/models';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DropdownOption } from '../../shared/base-controls';
@@ -59,6 +59,7 @@ export class FieldsPage {
   protected readonly search = signal('');
   protected readonly filterDomainId = signal('');
   protected readonly filterModuleId = signal('');
+  protected readonly filterSubModuleId = signal('');
   protected readonly filterScreenId = signal('');
 
   protected readonly DATA_TYPE_OPTIONS = DATA_TYPE_OPTIONS;
@@ -87,17 +88,38 @@ export class FieldsPage {
     return filtered.map((m) => ({ value: m.id, label: m.moduleName }));
   });
 
+  protected readonly subModules = signal<SubModule[]>([]);
+
+  protected readonly subModuleOptions = computed<DropdownOption[]>(() => {
+    const domainId = this.filterDomainId();
+    const moduleId = this.filterModuleId();
+    const domainModules = this.modules();
+    const filteredModules = domainId ? domainModules.filter((m) => m.domainId === +domainId) : domainModules;
+    const modIds = new Set(filteredModules.map((m) => m.id));
+    let list = this.subModules().filter((sm) => modIds.has(sm.moduleId));
+    if (moduleId) {
+      list = list.filter((sm) => sm.moduleId === +moduleId);
+    }
+    return list.map((sm) => ({ value: sm.id, label: sm.subModuleName }));
+  });
+
   protected readonly screenOptions = computed<DropdownOption[]>(() => {
     const domainId = this.filterDomainId();
     const moduleId = this.filterModuleId();
+    const subModuleId = this.filterSubModuleId();
     let list = this.screens();
 
     if (domainId) {
       const modIds = new Set(this.modules().filter((m) => m.domainId === +domainId).map((m) => m.id));
-      list = list.filter((s) => modIds.has(s.moduleId));
+      const smIds = new Set(this.subModules().filter((sm) => modIds.has(sm.moduleId)).map((sm) => sm.id));
+      list = list.filter((s) => smIds.has(s.subModuleId));
     }
     if (moduleId) {
-      list = list.filter((s) => s.moduleId === +moduleId);
+      const smIds = new Set(this.subModules().filter((sm) => sm.moduleId === +moduleId).map((sm) => sm.id));
+      list = list.filter((s) => smIds.has(s.subModuleId));
+    }
+    if (subModuleId) {
+      list = list.filter((s) => s.subModuleId === +subModuleId);
     }
     return list.map((s) => ({ value: s.id, label: s.screenName }));
   });
@@ -110,15 +132,21 @@ export class FieldsPage {
     let list = this.rows();
     const domainId = this.filterDomainId();
     const moduleId = this.filterModuleId();
+    const subModuleId = this.filterSubModuleId();
     const screenId = this.filterScreenId();
     const q = this.search().toLowerCase();
 
     if (domainId) {
       const modIds = new Set(this.modules().filter((m) => m.domainId === +domainId).map((m) => m.id));
-      list = list.filter((f) => modIds.has(this.screenMap().get(f.screenId)?.moduleId ?? -1));
+      const smIds = new Set(this.subModules().filter((sm) => modIds.has(sm.moduleId)).map((sm) => sm.id));
+      list = list.filter((f) => smIds.has(this.screenMap().get(f.screenId)?.subModuleId ?? -1));
     }
     if (moduleId) {
-      const scrIds = new Set(this.screens().filter((s) => s.moduleId === +moduleId).map((s) => s.id));
+      const smIds = new Set(this.subModules().filter((sm) => sm.moduleId === +moduleId).map((sm) => sm.id));
+      list = list.filter((f) => smIds.has(this.screenMap().get(f.screenId)?.subModuleId ?? -1));
+    }
+    if (subModuleId) {
+      const scrIds = new Set(this.screens().filter((s) => s.subModuleId === +subModuleId).map((s) => s.id));
       list = list.filter((f) => scrIds.has(f.screenId));
     }
     if (screenId) {
@@ -230,15 +258,17 @@ export class FieldsPage {
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const [fields, screens, modules, domains] = await Promise.all([
+      const [fields, screens, modules, subModules, domains] = await Promise.all([
         firstValueFrom(this.http.get<Field[]>('/api/fields')),
         firstValueFrom(this.http.get<Screen[]>('/api/screens')),
         firstValueFrom(this.http.get<Module[]>('/api/modules')),
+        firstValueFrom(this.http.get<SubModule[]>('/api/submodules')),
         firstValueFrom(this.http.get<Domain[]>('/api/domains')),
       ]);
       this.rows.set(fields);
       this.screens.set(screens);
       this.modules.set(modules);
+      this.subModules.set(subModules);
       this.domains.set(domains);
     } catch {
       this.toast.error('Failed to load fields');

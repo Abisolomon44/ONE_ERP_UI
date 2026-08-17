@@ -1,0 +1,193 @@
+<div class="page-header">
+  <div>
+    <h1>User Data Scope Overrides</h1>
+    <div class="page-sub">Override data access rules for specific users (time-based).</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 20px">
+  <div class="flex" style="gap: 16px; align-items: flex-end">
+    <div class="field" style="margin-bottom:0; min-width:280px">
+      <label class="field-label">Select User</label>
+      <div class="input-wrap">
+        <select class="input" [value]="selectedUserId()" (change)="onUserChange(); selectedUserId.set($any($event.target).value)">
+          <option value="">Choose a user...</option>
+          @for (opt of userOptions(); track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    @if (selectedUserId()) {
+      <base-button *basePermission="'user-data-scope-overrides.manage'" icon="plus" (click)="openCreate()">New Override</base-button>
+    }
+  </div>
+</div>
+
+@if (!selectedUserId()) {
+  <div class="card">
+    <base-empty icon="user" title="Select a user" subtitle="Choose a user above to view or configure data scope overrides."></base-empty>
+  </div>
+} @else if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card">
+    <base-empty icon="shield-off" title="No overrides" subtitle="Create an override to override data access for this user."></base-empty>
+  </div>
+} @else {
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Screen</th>
+            <th>Scope Type</th>
+            <th>Scope Value</th>
+            <th>Effect</th>
+            <th>Allow</th>
+            <th>Valid From</th>
+            <th>Valid To</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of rows(); track item.id) {
+            <tr>
+              <td>{{ item.moduleName || 'All' }}</td>
+              <td>{{ item.screenName || 'All' }}</td>
+              <td>{{ item.scopeType }}</td>
+              <td>{{ item.scopeValue }}</td>
+              <td>
+                @if (item.permissionType === 'Grant') {
+                  <span class="pill pill-green">Grant</span>
+                } @else {
+                  <span class="pill pill-red">Deny</span>
+                }
+              </td>
+              <td>
+                @if (item.allow) {
+                  <span class="pill pill-green">Yes</span>
+                } @else {
+                  <span class="pill pill-gray">No</span>
+                }
+              </td>
+              <td>{{ item.effectiveFrom | date:'medium' }}</td>
+              <td>{{ item.effectiveTo ? (item.effectiveTo | date:'medium') : 'No expiry' }}</td>
+              <td>
+                @if (item.isActive) {
+                  <span class="pill pill-green">Active</span>
+                } @else {
+                  <span class="pill pill-gray">Inactive</span>
+                }
+              </td>
+              <td>
+                <div class="flex" style="gap: 4px">
+                  <button class="icon-btn" title="Edit" *basePermission="'user-data-scope-overrides.manage'" (click)="openEdit(item)">
+                    <i-lucide name="square-pen" [size]="15"></i-lucide>
+                  </button>
+                  <button class="icon-btn" title="Delete" *basePermission="'user-data-scope-overrides.manage'" (click)="remove(item.id)">
+                    <i-lucide name="trash-2" [size]="15"></i-lucide>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Override' : 'New Override'" (closeRequest)="closeDialog()">
+  <div class="form-grid">
+    <div class="field">
+      <label class="field-label">Module (optional)</label>
+      <div class="input-wrap">
+        <select class="input" [value]="form.moduleId()" (change)="form.moduleId.set($any($event.target).value)">
+          <option value="">All Modules</option>
+          @for (opt of moduleOptions(); track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Screen (optional)</label>
+      <div class="input-wrap">
+        <select class="input" [value]="form.screenId()" (change)="form.screenId.set($any($event.target).value)">
+          <option value="">All Screens</option>
+          @for (opt of screenOptions(); track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Scope Type</label>
+      <div class="input-wrap">
+        <select class="input" [value]="form.scopeType()" (change)="form.scopeType.set($any($event.target).value)">
+          @for (st of scopeTypes; track st) {
+            <option [value]="st">{{ st }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Scope Value (ID)</label>
+      <div class="input-wrap">
+        <input class="input" type="text" [value]="form.scopeValue()" (input)="form.scopeValue.set($any($event.target).value)" placeholder="e.g. 1, 2, 3"/>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Permission Type</label>
+      <div class="input-wrap">
+        <select class="input" [value]="form.permissionType()" (change)="form.permissionType.set($any($event.target).value)">
+          @for (pt of permissionTypes; track pt) {
+            <option [value]="pt">{{ pt }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Allow</label>
+      <div class="input-wrap">
+        <select class="input" [value]="form.allow() ? 'true' : 'false'" (change)="form.allow.set($any($event.target).value === 'true')">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Valid From</label>
+      <div class="input-wrap">
+        <input class="input" type="datetime-local" [value]="form.effectiveFrom()" (input)="form.effectiveFrom.set($any($event.target).value)"/>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Valid To (optional)</label>
+      <div class="input-wrap">
+        <input class="input" type="datetime-local" [value]="form.effectiveTo()" (input)="form.effectiveTo.set($any($event.target).value)"/>
+      </div>
+    </div>
+    <div class="field" style="grid-column: 1 / -1">
+      <label class="field-label">Remarks</label>
+      <div class="input-wrap">
+        <input class="input" type="text" [value]="form.remarks()" (input)="form.remarks.set($any($event.target).value)" placeholder="Optional reason for this override"/>
+      </div>
+    </div>
+  </div>
+  <div class="scope-toggles">
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isActive()" (change)="form.isActive.set($any($event.target).checked)"/>
+      <span>Active</span>
+    </label>
+  </div>
+  <div dialog-actions style="display:flex; gap:8px; justify-content:flex-end">
+    <base-button variant="secondary" label="Cancel" (click)="closeDialog()"></base-button>
+    <base-button [loading]="saving()" icon="save" (click)="save()">Save</base-button>
+  </div>
+</base-dialog>

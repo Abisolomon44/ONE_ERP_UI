@@ -5,7 +5,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../core/services/auth.service';
 import { ThemeService } from '../core/services/theme.service';
-import { Workspace, Domain, Module } from '../core/models';
+import { Workspace, Domain, Module, SubModule } from '../core/models';
 import { BaseButton } from '../shared/base-button';
 import { BaseToast } from '../shared/base-feedback';
 
@@ -25,24 +25,22 @@ interface WorkspaceNode {
 
 interface DomainNode {
   domain: Domain;
-  modules: Module[];
+  modules: ModuleWithSubModules[];
   open: boolean;
 }
 
-const SECTION_ORDER = ['Enterprise Permissions'];
+interface ModuleWithSubModules {
+  module: Module;
+  subModules: SubModule[];
+  open: boolean;
+}
+
+const SECTION_ORDER = ['Business Master', 'Enterprise Permissions'];
 
 const ADMIN_NAV: NavItem[] = [
-  { route: 'workspaces', label: 'Workspaces', icon: 'layout-grid', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'domains', label: 'Domains', icon: 'layers', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'modules', label: 'Modules', icon: 'box', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'screens', label: 'Screens', icon: 'monitor', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'fields', label: 'Fields', icon: 'text-cursor-input', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'permission-actions-list', label: 'Actions', icon: 'zap', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'role-permission-matrix', label: 'Role Permission Matrix', icon: 'grid-3x3', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'user-permission-overrides', label: 'User Overrides', icon: 'user-cog', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'role-field-permissions', label: 'Field Permissions', icon: 'list', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'data-scopes', label: 'Data Scopes', icon: 'database', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'workflow-permissions', label: 'Workflow Permissions', icon: 'git-branch', section: 'Enterprise Permissions', adminOnly: true },
+  { route: 'business-master', label: 'Business Master', icon: 'briefcase', section: 'Business Master', adminOnly: false },
+  { route: 'enterprise-permissions', label: 'Enterprise Permissions', icon: 'shield-check', section: 'Enterprise Permissions', adminOnly: true },
+  { route: 'system-master', label: 'System Master', icon: 'settings', section: 'Enterprise Permissions', adminOnly: true },
 ];
 
 @Component({
@@ -108,6 +106,11 @@ export class AppShell {
     this.workspaces.update((list) => [...list]);
   }
 
+  protected toggleModule(mw: ModuleWithSubModules): void {
+    mw.open = !mw.open;
+    this.workspaces.update((list) => [...list]);
+  }
+
   private initIsMobile(): boolean {
     return (
       typeof window !== 'undefined' &&
@@ -144,9 +147,12 @@ export class AppShell {
       workspaces: 'Workspaces',
       domains: 'Domains',
       modules: 'Modules',
+      submodules: 'Sub Modules',
       screens: 'Screens',
       fields: 'Fields',
       settings: 'Settings',
+      'enterprise-permissions': 'Enterprise Permissions',
+      'business-master': 'Business Master',
     };
     return map[top] ?? 'ONE ERP';
   });
@@ -159,24 +165,22 @@ export class AppShell {
 
   protected async loadWorkspaces(): Promise<void> {
     try {
-      const wsList = await firstValueFrom(this.http.get<Workspace[]>('/api/workspaces'));
-      const nodes: WorkspaceNode[] = [];
-
-      for (const ws of wsList.filter((w) => w.isActive)) {
-        const domains = await firstValueFrom(
-          this.http.get<Domain[]>(`/api/domains/workspace/${ws.id}`),
-        );
-        const domainNodes: DomainNode[] = [];
-
-        for (const dom of domains.filter((d) => d.isActive)) {
-          const modules = await firstValueFrom(
-            this.http.get<Module[]>(`/api/modules/domain/${dom.id}`),
-          );
-          domainNodes.push({ domain: dom, modules: modules.filter((m) => m.isActive), open: false });
-        }
-
-        nodes.push({ workspace: ws, domains: domainNodes, open: false });
-      }
+      const nav = await firstValueFrom(this.http.get<{ workspaces: WorkspaceNode[]; permissionVersion: number }>('/api/navigation'));
+      const nodes: WorkspaceNode[] = (nav.workspaces ?? []).map((ws: any) => ({
+        workspace: { id: ws.id, workspaceCode: ws.code, workspaceName: ws.name, icon: ws.icon, isActive: true, createdDate: '', sortOrder: 0 } as Workspace,
+        open: false,
+        domains: (ws.domains ?? []).map((dom: any) => ({
+          domain: { id: dom.id, domainCode: dom.code, domainName: dom.name, icon: dom.icon, workspaceId: ws.id, isActive: true, createdDate: '', sortOrder: 0 } as Domain,
+          open: false,
+          modules: (dom.modules ?? []).map((mod: any) => ({
+            module: { id: mod.id, moduleCode: mod.code, moduleName: mod.name, icon: mod.icon, domainId: dom.id, isActive: true, createdDate: '', sortOrder: 0 } as Module,
+            open: false,
+            subModules: (mod.subModules ?? []).map((sm: any) => ({
+              id: sm.id, subModuleCode: sm.code, subModuleName: sm.name, icon: sm.icon, moduleId: mod.id, isActive: true, createdDate: '', sortOrder: 0,
+            } as SubModule)),
+          })),
+        })),
+      }));
 
       this.workspaces.set(nodes);
     } catch {

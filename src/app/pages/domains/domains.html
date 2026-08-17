@@ -70,26 +70,26 @@
 }
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Domain' : 'Create Domain'" (closeRequest)="dialogOpen.set(false)">
-  <base-dropdown label="Workspace" icon="layout-grid" placeholder="Select workspace" [options]="workspaceOptions()" [(value)]="form.workspaceId" [disabled]="!!editing()"></base-dropdown>
-  <base-input label="Domain Code" icon="hash" [(value)]="form.domainCode" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. HCM_CORE'"></base-input>
-  <base-input label="Domain Name" icon="layers" [(value)]="form.domainName"></base-input>
-  <base-input label="Icon" icon="smile" [(value)]="form.icon" hint="Lucide icon name (e.g. layers)"></base-input>
+  <base-dropdown label="Workspace" icon="layout-grid" placeholder="Select workspace" [options]="workspaceOptions()" [(value)]="workspaceId" [required]="true" [disabled]="!!editing()"></base-dropdown>
+  <base-input label="Domain Code" icon="hash" [(value)]="domainCode" [required]="true" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. HCM_CORE'"></base-input>
+  <base-input label="Domain Name" icon="layers" [(value)]="domainName" [required]="true"></base-input>
+  <base-input label="Icon" icon="smile" [(value)]="icon" hint="Lucide icon name (e.g. layers)"></base-input>
   <div class="field">
     <label class="field-label">Sort Order</label>
     <div class="input-wrap">
-      <input class="input" type="number" [value]="form.sortOrder()" (input)="form.sortOrder.set(+$any($event.target).value)" />
+      <input class="input" type="number" [value]="sortOrder()" (input)="sortOrder.set(+$any($event.target).value)" />
     </div>
   </div>
   <div class="field">
     <label class="field-label">Active</label>
     <label class="check-item">
-      <input type="checkbox" [checked]="form.isActive()" (change)="form.isActive.set($any($event.target).checked)" />
+      <input type="checkbox" [checked]="isActive()" (change)="isActive.set($any($event.target).checked)" />
       <span>Enabled</span>
     </label>
   </div>
   <div class="dialog-inner-footer">
     <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
-    <base-button [loading]="saving()" [disabled]="!form.workspaceId() || !form.domainCode() || !form.domainName()" (click)="save()">
+    <base-button [loading]="saving()" [disabled]="!workspaceId() || !domainCode() || !domainName()" (click)="save()">
       {{ editing() ? 'Save Changes' : 'Create Domain' }}
     </base-button>
   </div>

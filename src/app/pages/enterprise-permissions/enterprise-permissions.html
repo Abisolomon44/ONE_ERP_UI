@@ -1,0 +1,35 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Enterprise Permissions</h1>
+      <p class="page-sub">Manage the full permission engine from a single workspace.</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    @for (t of tabs; track t.id) {
+      <button type="button" class="tab" [class.active]="tab() === t.id" (click)="setTab(t.id)">
+        <i-lucide [name]="t.icon" [size]="16"></i-lucide>
+        {{ t.label }}
+      </button>
+    }
+  </div>
+
+  <div class="tab-panel">
+    @switch (tab()) {
+      @case ('workspaces') { <app-workspaces></app-workspaces> }
+      @case ('domains') { <app-domains></app-domains> }
+      @case ('modules') { <app-modules></app-modules> }
+      @case ('submodules') { <app-submodules></app-submodules> }
+      @case ('screens') { <app-screens></app-screens> }
+      @case ('fields') { <app-fields></app-fields> }
+      @case ('actions') { <app-actions></app-actions> }
+      @case ('role-permission-matrix') { <app-role-permission-matrix></app-role-permission-matrix> }
+      @case ('user-permission-overrides') { <app-user-permission-overrides></app-user-permission-overrides> }
+      @case ('role-field-permissions') { <app-role-field-permissions></app-role-field-permissions> }
+      @case ('data-scopes') { <app-data-scopes></app-data-scopes> }
+      @case ('user-data-scope-overrides') { <app-user-data-scope-overrides></app-user-data-scope-overrides> }
+      @case ('workflow-permissions') { <app-workflow-permissions></app-workflow-permissions> }
+    }
+  </div>
+</div>

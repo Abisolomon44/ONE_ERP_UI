@@ -23,8 +23,10 @@
           <tr>
             <th>User</th>
             <th>Email</th>
+            <th>User Name</th>
             <th>Roles</th>
             <th>Status</th>
+            <th>Password</th>
             <th>Created</th>
             <th style="width: 90px"></th>
           </tr>
@@ -45,6 +47,7 @@
                 </div>
               </td>
               <td class="text-muted">{{ user.email }}</td>
+              <td class="text-muted">{{ user.username }}</td>
               <td>
                 <div style="display:flex; gap:4px; flex-wrap:wrap">
                   @for (role of user.roleNames; track role) {
@@ -53,6 +56,14 @@
                 </div>
               </td>
               <td><base-pill [status]="user.status" [label]="user.status"></base-pill></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:8px">
+                  <span class="text-muted">••••••</span>
+                  <button type="button" class="icon-btn" *basePermission="'users.edit'" aria-label="Reset password" (click)="openReset(user)">
+                    <i-lucide name="key-round" [size]="16"></i-lucide>
+                  </button>
+                </div>
+              </td>
               <td class="text-muted">{{ user.createdDate | date: 'MMM d, yyyy' }}</td>
               <td>
                 <div style="display:flex; gap:6px">
@@ -93,10 +104,22 @@
       }
     </div>
   </div>
-  <div class="dialog-inner-footer">
-    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
-    <base-button [loading]="saving()" [disabled]="!form.username() || !form.fullName() || !form.email() || selectedRoleIds().length === 0 || (!editing() && !form.password())" (click)="save()">
-      {{ editing() ? 'Save Changes' : 'Create User' }}
-    </base-button>
-  </div>
-</base-dialog>
+    <div class="dialog-inner-footer">
+      <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+      <base-button [loading]="saving()" [disabled]="!form.username() || !form.fullName() || !form.email() || selectedRoleIds().length === 0 || (!editing() && !form.password())" (click)="save()">
+        {{ editing() ? 'Save Changes' : 'Create User' }}
+      </base-button>
+    </div>
+  </base-dialog>
+
+  <base-dialog [open]="resetOpen()" title="Reset Password" (closeRequest)="closeReset()">
+    <p class="text-muted" style="margin-top:0">
+      Set a new password for <strong>{{ resetUser()?.fullName || resetUser()?.username }}</strong>.
+    </p>
+    <base-input label="New Password" type="password" icon="key-round" [(value)]="resetPassword" hint="At least 8 characters"></base-input>
+    <div class="dialog-inner-footer">
+      <base-button variant="secondary" (click)="closeReset()">Cancel</base-button>
+      <base-button [loading]="resetSaving()" [disabled]="!resetPassword()" (click)="submitReset()">Reset Password</base-button>
+    </div>
+  </base-dialog>
+

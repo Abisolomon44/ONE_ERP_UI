@@ -1,4 +1,4 @@
-.scope-form-grid {
+.form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
@@ -71,6 +71,11 @@
 .pill-green {
   background: rgba(34, 197, 94, 0.12);
   color: #16a34a;
+}
+
+.pill-red {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
 }
 
 .pill-gray {

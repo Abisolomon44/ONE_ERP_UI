@@ -60,6 +60,15 @@ export const routes: Routes = [
       // ===========================
       // Business Masters
       // ===========================
+
+      {
+        path: 'business-master',
+        title: 'Business Master',
+        loadComponent: () =>
+          import('./pages/business-master/business-master').then(
+            (m) => m.BusinessMasterPage
+          ),
+      },
       {
         path: 'company',
         title: 'Company',
@@ -169,6 +178,14 @@ export const routes: Routes = [
       // ===========================
 
       {
+        path: 'enterprise-permissions',
+        title: 'Enterprise Permissions',
+        loadComponent: () =>
+          import('./pages/enterprise-permissions/enterprise-permissions').then(
+            (m) => m.EnterprisePermissionsPage
+          ),
+      },
+      {
         path: 'workspaces',
         title: 'Workspaces',
         loadComponent: () =>
@@ -185,6 +202,12 @@ export const routes: Routes = [
         title: 'Modules',
         loadComponent: () =>
           import('./pages/modules/modules').then((m) => m.ModulesPage),
+      },
+      {
+        path: 'submodules',
+        title: 'Sub Modules',
+        loadComponent: () =>
+          import('./pages/submodules/submodules').then((m) => m.SubModulesPage),
       },
       {
         path: 'screens',
@@ -225,6 +248,14 @@ export const routes: Routes = [
         title: 'Data Scopes',
         loadComponent: () =>
           import('./pages/data-scopes/data-scopes').then((m) => m.DataScopesPage),
+      },
+      {
+        path: 'user-data-scope-overrides',
+        title: 'User Data Scope Overrides',
+        loadComponent: () =>
+          import('./pages/user-data-scope-overrides/user-data-scope-overrides').then(
+            (m) => m.UserDataScopeOverridesPage
+          ),
       },
       {
         path: 'workflow-permissions',

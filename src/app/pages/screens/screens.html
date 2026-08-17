@@ -9,8 +9,9 @@
 </div>
 
 <div class="filters">
-  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [(value)]="filterDomainId" placeholder="All Domains"></base-dropdown>
-  <base-dropdown label="Module" icon="layers" [options]="moduleOptions()" [(value)]="filterModuleId" placeholder="All Modules"></base-dropdown>
+  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [value]="filterDomainId()" (valueChange)="onFilterDomainChange($event)" placeholder="All Domains"></base-dropdown>
+  <base-dropdown label="Module" icon="box" [options]="moduleOptions()" [value]="filterModuleId()" (valueChange)="onFilterModuleChange($event)" placeholder="All Modules"></base-dropdown>
+  <base-dropdown label="Sub Module" icon="puzzle" [options]="subModuleOptions()" [(value)]="filterSubModuleId" placeholder="All Sub Modules"></base-dropdown>
   <base-search placeholder="Search screens..." [(value)]="search"></base-search>
 </div>
 
@@ -26,12 +27,12 @@
       <div class="card">
         <div class="card-header">
           <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
-            <i-lucide name="layout" [size]="17"></i-lucide>
+            <i-lucide name="monitor" [size]="17"></i-lucide>
           </span>
           <div style="flex:1">
             <div style="display:flex; align-items:center; gap:8px">
               <h3>{{ item.screenName }}</h3>
-              <span class="badge badge-soft">{{ getModuleName(item.moduleId) }}</span>
+              <span class="badge badge-soft">{{ getSubModuleName(item.subModuleId) }}</span>
             </div>
             <div class="card-sub">{{ item.screenCode }}</div>
           </div>
@@ -64,7 +65,9 @@
 }
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Screen' : 'Create Screen'" (closeRequest)="dialogOpen.set(false)">
-  <base-dropdown label="Module" icon="layers" [options]="formModuleOptions()" [(value)]="form.moduleIdStr" placeholder="Select module" [disabled]="!!editing()"></base-dropdown>
+  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [value]="formDomainId()" (valueChange)="onFormDomainChange($event)" [disabled]="!!editing()"></base-dropdown>
+  <base-dropdown label="Module" icon="box" [options]="formModuleOptions()" [value]="formModuleId()" (valueChange)="onFormModuleChange($event)" [disabled]="!!editing() || !formDomainId()"></base-dropdown>
+  <base-dropdown label="Sub Module" icon="puzzle" [options]="formSubModuleOptions()" [(value)]="form.subModuleIdStr" placeholder="Select sub module" [disabled]="!!editing() || !formModuleId()"></base-dropdown>
   <base-input label="Screen Code" icon="tag" [(value)]="form.screenCode" [disabled]="!!editing()" hint="e.g. dashboard"></base-input>
   <base-input label="Screen Name" icon="type" [(value)]="form.screenName"></base-input>
   <base-input label="Route URL" icon="navigation" [(value)]="form.routeUrl" hint="e.g. /dashboard"></base-input>
@@ -85,7 +88,7 @@
   </div>
   <div class="dialog-inner-footer">
     <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
-    <base-button [loading]="saving()" [disabled]="!form.moduleIdStr() || !form.screenCode() || !form.screenName()" (click)="save()">
+    <base-button [loading]="saving()" [disabled]="!form.subModuleIdStr() || !form.screenCode() || !form.screenName()" (click)="save()">
       {{ editing() ? 'Save Changes' : 'Create Screen' }}
     </base-button>
   </div>

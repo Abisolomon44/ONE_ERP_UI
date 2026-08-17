@@ -46,6 +46,10 @@ export class UsersPage {
   protected readonly roleToggles = signal<RoleToggle[]>([]);
   protected readonly dialogOpen = signal(false);
   protected readonly editing = signal<UserWithRoles | null>(null);
+  protected readonly resetOpen = signal(false);
+  protected readonly resetUser = signal<UserWithRoles | null>(null);
+  protected readonly resetPassword = signal('');
+  protected readonly resetSaving = signal(false);
 
   protected readonly form = {
     username: signal(''),
@@ -147,6 +151,32 @@ export class UsersPage {
       await this.load();
     } catch {
       /* handled by interceptor */
+    }
+  }
+
+  protected openReset(user: UserWithRoles): void {
+    this.resetUser.set(user);
+    this.resetPassword.set('');
+    this.resetOpen.set(true);
+  }
+
+  protected closeReset(): void {
+    this.resetOpen.set(false);
+  }
+
+  protected async submitReset(): Promise<void> {
+    if (this.resetSaving() || !this.resetUser()) return;
+    this.resetSaving.set(true);
+    try {
+      await firstValueFrom(
+        this.http.put(`/api/users/${this.resetUser()!.userId}/password`, { password: this.resetPassword() }),
+      );
+      this.toast.success('Password reset successfully');
+      this.resetOpen.set(false);
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      this.resetSaving.set(false);
     }
   }
 

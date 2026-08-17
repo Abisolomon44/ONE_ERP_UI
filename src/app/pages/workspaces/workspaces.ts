@@ -27,6 +27,7 @@ export class WorkspacesPage {
   protected readonly saving = signal(false);
   protected readonly dialogOpen = signal(false);
   protected readonly editing = signal<Workspace | null>(null);
+  private codeTouched = false;
 
   protected readonly form = {
     workspaceCode: signal(''),
@@ -43,6 +44,7 @@ export class WorkspacesPage {
 
   protected openCreate(): void {
     this.editing.set(null);
+    this.codeTouched = false;
     this.form.workspaceCode.set('');
     this.form.workspaceName.set('');
     this.form.icon.set('');
@@ -54,6 +56,7 @@ export class WorkspacesPage {
 
   protected openEdit(ws: Workspace): void {
     this.editing.set(ws);
+    this.codeTouched = true;
     this.form.workspaceCode.set(ws.workspaceCode);
     this.form.workspaceName.set(ws.workspaceName);
     this.form.icon.set(ws.icon ?? '');
@@ -67,29 +70,21 @@ export class WorkspacesPage {
     if (this.saving()) return;
     this.saving.set(true);
     try {
+      const payload = {
+        workspaceCode: this.formatCode(this.form.workspaceCode()),
+        workspaceName: this.form.workspaceName().trim(),
+        icon: this.form.icon() || null,
+        route: this.form.route() || null,
+        sortOrder: this.form.sortOrder(),
+        isActive: this.form.isActive(),
+      };
       if (this.editing()) {
         await firstValueFrom(
-          this.http.put(`/api/workspaces/${this.editing()!.id}`, {
-            workspaceCode: this.form.workspaceCode(),
-            workspaceName: this.form.workspaceName(),
-            icon: this.form.icon() || null,
-            route: this.form.route() || null,
-            sortOrder: this.form.sortOrder(),
-            isActive: this.form.isActive(),
-          }),
+          this.http.put(`/api/workspaces/${this.editing()!.id}`, payload),
         );
         this.toast.success('Workspace updated');
       } else {
-        await firstValueFrom(
-          this.http.post('/api/workspaces', {
-            workspaceCode: this.form.workspaceCode(),
-            workspaceName: this.form.workspaceName(),
-            icon: this.form.icon() || null,
-            route: this.form.route() || null,
-            sortOrder: this.form.sortOrder(),
-            isActive: this.form.isActive(),
-          }),
-        );
+        await firstValueFrom(this.http.post('/api/workspaces', payload));
         this.toast.success('Workspace created');
       }
       this.dialogOpen.set(false);
@@ -99,6 +94,36 @@ export class WorkspacesPage {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  protected onNameChange(value: string): void {
+    this.form.workspaceName.set(value);
+    if (!this.editing() && !this.codeTouched) {
+      this.form.workspaceCode.set(this.suggestCode(value));
+    }
+  }
+
+  protected onCodeChange(value: string): void {
+    this.codeTouched = true;
+    this.form.workspaceCode.set(value.toUpperCase());
+  }
+
+  private suggestCode(name: string): string {
+    const prefix = this.formatPrefix(name);
+    return `${prefix}--${this.nextSequence()}`;
+  }
+
+  private formatPrefix(name: string): string {
+    const cleaned = name.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return cleaned || 'WS';
+  }
+
+  private nextSequence(): string {
+    return (this.rows().length + 1).toString().padStart(3, '0');
+  }
+
+  private formatCode(code: string): string {
+    return code.toUpperCase().replace(/\s+/g, '').replace(/-{2,}/g, '--');
   }
 
   protected async remove(ws: Workspace): Promise<void> {

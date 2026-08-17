@@ -9,7 +9,7 @@ import { LucideAngularModule } from 'lucide-angular';
   template: `
     <div class="field">
       @if (label()) {
-        <label class="field-label" [for]="id()">{{ label() }}</label>
+        <label class="field-label" [for]="id()">{{ label() }}@if (required()) { <span class="req">*</span> }</label>
       }
       <div class="input-wrap">
         @if (icon()) {
@@ -48,6 +48,7 @@ export class BaseInput {
   readonly hint = input('');
   readonly value = model('');
   readonly disabled = input(false);
+  readonly required = input(false);
   readonly id = input('');
   readonly autocomplete = input('');
 
@@ -77,7 +78,7 @@ export interface DropdownOption {
   template: `
     <div class="field">
       @if (label()) {
-        <label class="field-label" [for]="id()">{{ label() }}</label>
+        <label class="field-label" [for]="id()">{{ label() }}@if (required()) { <span class="req">*</span> }</label>
       }
       <div class="input-wrap">
         @if (icon()) {
@@ -89,13 +90,12 @@ export interface DropdownOption {
           [class.invalid]="!!error()"
           [id]="id()"
           [disabled]="disabled()"
-          [value]="value()"
           (change)="onSelect($event)">
           @if (placeholder()) {
-            <option [value]="''" disabled>{{ placeholder() }}</option>
+            <option [value]="''" disabled [selected]="value() === ''">{{ placeholder() }}</option>
           }
           @for (option of options(); track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
+            <option [value]="option.value" [selected]="option.value === value()">{{ option.label }}</option>
           }
         </select>
       </div>
@@ -113,11 +113,13 @@ export class BaseDropdown {
   readonly error = input('');
   readonly value = model<string | number>('');
   readonly disabled = input(false);
+  readonly required = input(false);
   readonly id = input('');
 
   protected onSelect(event: Event): void {
     const target = event.target as HTMLSelectElement;
-    this.value.set(target.value);
+    const opt = this.options().find((o) => String(o.value) === target.value);
+    this.value.set(opt ? opt.value : target.value);
   }
 }
 

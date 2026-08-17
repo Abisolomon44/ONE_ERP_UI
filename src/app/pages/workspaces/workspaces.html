@@ -59,8 +59,8 @@
 }
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Workspace' : 'Create Workspace'" (closeRequest)="dialogOpen.set(false)">
-  <base-input label="Workspace Code" icon="hash" [(value)]="form.workspaceCode" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. HCM'"></base-input>
-  <base-input label="Workspace Name" icon="layout-grid" [(value)]="form.workspaceName"></base-input>
+  <base-input label="Workspace Code" icon="hash" [value]="form.workspaceCode()" (valueChange)="onCodeChange($event)" [disabled]="!!editing()" [hint]="editing() ? '' : 'Auto-generated as PREFIX--001 (e.g. WORK--001)'"></base-input>
+  <base-input label="Workspace Name" icon="layout-grid" [value]="form.workspaceName()" (valueChange)="onNameChange($event)"></base-input>
   <base-input label="Icon" icon="smile" [(value)]="form.icon" hint="Lucide icon name (e.g. layout-grid)"></base-input>
   <base-input label="Route" icon="route" [(value)]="form.route" hint="e.g. /hcm"></base-input>
   <div class="field">

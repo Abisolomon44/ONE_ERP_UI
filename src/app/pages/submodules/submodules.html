@@ -1,0 +1,121 @@
+<div class="page-header">
+  <div>
+    <h1>Sub Modules</h1>
+    <div class="page-sub">Manage sub modules within modules.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'submodules.manage'" icon="plus" (click)="openCreate()">New Sub Module</base-button>
+  </div>
+</div>
+
+<div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap">
+  <div class="field" style="margin-bottom:0; min-width:180px">
+    <label class="field-label">Workspace</label>
+    <div class="input-wrap">
+      <select class="input" [value]="filterWorkspaceId()" (change)="onFilterWorkspaceChange($event)">
+        <option value="">All Workspaces</option>
+        @for (opt of workspaceOptions(); track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+  <div class="field" style="margin-bottom:0; min-width:180px">
+    <label class="field-label">Domain</label>
+    <div class="input-wrap">
+      <select class="input" [value]="filterDomainId()" (change)="onFilterDomainChange($event)">
+        <option value="">All Domains</option>
+        @for (opt of domainOptions(); track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+  <div class="field" style="margin-bottom:0; min-width:180px">
+    <label class="field-label">Module</label>
+    <div class="input-wrap">
+      <select class="input" [value]="filterModuleId()" (change)="onFilterModuleChange($event)">
+        <option value="">All Modules</option>
+        @for (opt of moduleOptions(); track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card"><base-empty icon="puzzle" title="No sub modules found" subtitle="Create a sub module to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (item of rows(); track item.id) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
+            @if (item.icon) {
+              <i-lucide [name]="item.icon" [size]="17"></i-lucide>
+            } @else {
+              <i-lucide name="puzzle" [size]="17"></i-lucide>
+            }
+          </span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ item.subModuleName }}</h3>
+              <span class="badge badge-soft">{{ getModuleName(item.moduleId) }}</span>
+            </div>
+            <div class="card-sub">{{ item.subModuleCode }}</div>
+          </div>
+          <base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          <p style="margin:0 0 12px; color: var(--text-2); font-size:13.5px">
+            @if (item.routeUrl) {
+              Route: <code>{{ item.routeUrl }}</code>
+            } @else {
+              No route configured
+            }
+          </p>
+          <div style="display:flex; gap:16px; font-size:13px; color: var(--text-3)">
+            <span>Sort: {{ item.sortOrder }}</span>
+            <span>Created: {{ item.createdDate | date:'mediumDate' }}</span>
+          </div>
+        </div>
+        <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+          <base-button *basePermission="'submodules.manage'" variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(item)"></base-button>
+          <base-button *basePermission="'submodules.manage'" variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(item)"></base-button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Sub Module' : 'Create Sub Module'" (closeRequest)="dialogOpen.set(false)">
+  <base-dropdown label="Module" icon="box" placeholder="Select module" [options]="moduleOptions()" [value]="form.moduleId()" (valueChange)="form.moduleId.set($event)" [required]="true" [disabled]="!!editing()"></base-dropdown>
+  <base-input label="Sub Module Code" icon="hash" [(value)]="form.subModuleCode" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. COMPANY_MASTER'"></base-input>
+  <base-input label="Sub Module Name" icon="puzzle" [(value)]="form.subModuleName"></base-input>
+  <base-input label="Icon" icon="smile" [(value)]="form.icon" hint="Lucide icon name"></base-input>
+  <base-input label="Route" icon="route" [(value)]="form.routeUrl" hint="e.g. /companies/master"></base-input>
+  <div class="field">
+    <label class="field-label">Sort Order</label>
+    <div class="input-wrap">
+      <input class="input" type="number" [value]="form.sortOrder()" (input)="form.sortOrder.set(+$any($event.target).value)" />
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Active</label>
+    <label class="check-item">
+      <input type="checkbox" [checked]="form.isActive()" (change)="form.isActive.set($any($event.target).checked)" />
+      <span>Enabled</span>
+    </label>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!form.moduleId() || !form.subModuleCode() || !form.subModuleName()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Sub Module' }}
+    </base-button>
+  </div>
+</base-dialog>

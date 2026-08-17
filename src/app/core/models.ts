@@ -92,6 +92,19 @@ export interface ErpUser {
   createdDate: string;
 }
 
+export interface User {
+  userId: number;
+  companyId: number;
+  username: string;
+  fullName: string;
+  email: string;
+  mobile?: string;
+  status: string;
+  isSuperAdmin: boolean;
+  lastLoginDate?: string;
+  createdDate: string;
+}
+
 export interface UserWithRoles {
   userId: number;
   companyId: number;
@@ -417,10 +430,23 @@ export interface Module {
   createdDate: string;
 }
 
-export interface Screen {
+export interface SubModule {
   id: number;
   moduleId: number;
   moduleName?: string;
+  subModuleCode: string;
+  subModuleName: string;
+  icon?: string;
+  routeUrl?: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdDate: string;
+}
+
+export interface Screen {
+  id: number;
+  subModuleId: number;
+  subModuleName?: string;
   screenCode: string;
   screenName: string;
   routeUrl?: string;
@@ -464,6 +490,8 @@ export interface RolePermissionEntry {
   domainName?: string;
   moduleId: number;
   moduleName?: string;
+  subModuleId: number;
+  subModuleName?: string;
   screenId: number;
   screenName?: string;
   actionId: number;
@@ -484,6 +512,8 @@ export interface UserPermissionOverride {
   domainName?: string;
   moduleId: number;
   moduleName?: string;
+  subModuleId: number;
+  subModuleName?: string;
   screenId: number;
   screenName?: string;
   actionId: number;
@@ -538,6 +568,10 @@ export interface DataScope {
   id: number;
   roleId: number;
   roleName?: string;
+  moduleId?: number;
+  moduleName?: string;
+  screenId?: number;
+  screenName?: string;
   companyId?: number;
   companyName?: string;
   branchId?: number;
@@ -549,8 +583,29 @@ export interface DataScope {
   businessUnitId?: number;
   costCenterId?: number;
   profitCenterId?: number;
-  canViewAll: boolean;
-  canEditAll: boolean;
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  isActive: boolean;
+  createdDate: string;
+}
+
+export interface UserDataScopeOverride {
+  id: number;
+  userId: number;
+  username?: string;
+  moduleId?: number;
+  moduleName?: string;
+  screenId?: number;
+  screenName?: string;
+  scopeType: string;
+  scopeValue: string;
+  permissionType: string;
+  allow: boolean;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  remarks?: string;
   isActive: boolean;
   createdDate: string;
 }
@@ -593,6 +648,14 @@ export interface PermissionTreeDomain {
 }
 
 export interface PermissionTreeModule {
+  id: number;
+  code: string;
+  name: string;
+  icon?: string;
+  subModules: PermissionTreeSubModule[];
+}
+
+export interface PermissionTreeSubModule {
   id: number;
   code: string;
   name: string;

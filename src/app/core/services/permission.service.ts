@@ -3,6 +3,7 @@ import {
   Workspace,
   Domain,
   Module,
+  SubModule,
   Screen,
   Field,
   Action,
@@ -34,6 +35,7 @@ export class PermissionService {
   readonly workspaces = signal<Workspace[]>([]);
   readonly domains = signal<Domain[]>([]);
   readonly modules = signal<Module[]>([]);
+  readonly subModules = signal<SubModule[]>([]);
   readonly screens = signal<Screen[]>([]);
   readonly fields = signal<Field[]>([]);
   readonly actions = signal<Action[]>([]);
@@ -156,7 +158,7 @@ export class PermissionService {
     return perms.some(wp => wp.moduleId === moduleId && wp.screenId === screenId && wp.canApprove && wp.isActive);
   }
 
-  buildPermissionTree(workspaces: Workspace[], domains: Domain[], modules: Module[], screens: Screen[], fields: Field[]): PermissionTreeWorkspace[] {
+  buildPermissionTree(workspaces: Workspace[], domains: Domain[], modules: Module[], subModules: SubModule[], screens: Screen[], fields: Field[]): PermissionTreeWorkspace[] {
     const domainMap = new Map<number, Domain>();
     domains.forEach(d => domainMap.set(d.id, d));
 
@@ -185,25 +187,33 @@ export class PermissionService {
               code: m.moduleCode,
               name: m.moduleName,
               icon: m.icon,
-              screens: screens
-                .filter(s => s.moduleId === m.id)
-                .map(s => ({
-                  id: s.id,
-                  code: s.screenCode,
-                  name: s.screenName,
-                  routeUrl: s.routeUrl,
-                  componentName: s.componentName,
-                  fields: fields
-                    .filter(f => f.screenId === s.id)
-                    .map(f => ({
-                      id: f.id,
-                      code: f.fieldCode,
-                      name: f.fieldName,
-                      displayName: f.displayName,
-                      dataType: f.dataType,
-                      displayOrder: f.displayOrder,
-                      isSystemField: f.isSystemField,
-                      isRequired: f.isRequired,
+              subModules: subModules
+                .filter(sm => sm.moduleId === m.id)
+                .map(sm => ({
+                  id: sm.id,
+                  code: sm.subModuleCode,
+                  name: sm.subModuleName,
+                  icon: sm.icon,
+                  screens: screens
+                    .filter(s => s.subModuleId === sm.id)
+                    .map(s => ({
+                      id: s.id,
+                      code: s.screenCode,
+                      name: s.screenName,
+                      routeUrl: s.routeUrl,
+                      componentName: s.componentName,
+                      fields: fields
+                        .filter(f => f.screenId === s.id)
+                        .map(f => ({
+                          id: f.id,
+                          code: f.fieldCode,
+                          name: f.fieldName,
+                          displayName: f.displayName,
+                          dataType: f.dataType,
+                          displayOrder: f.displayOrder,
+                          isSystemField: f.isSystemField,
+                          isRequired: f.isRequired,
+                        })),
                     })),
                 })),
             })),
@@ -219,6 +229,7 @@ export class PermissionService {
     workspaces?: Workspace[];
     domains?: Domain[];
     modules?: Module[];
+    subModules?: SubModule[];
     screens?: Screen[];
     fields?: Field[];
     actions?: Action[];
@@ -232,6 +243,7 @@ export class PermissionService {
     if (data.workspaces) this.workspaces.set(data.workspaces);
     if (data.domains) this.domains.set(data.domains);
     if (data.modules) this.modules.set(data.modules);
+    if (data.subModules) this.subModules.set(data.subModules);
     if (data.screens) this.screens.set(data.screens);
     if (data.fields) this.fields.set(data.fields);
     if (data.actions) this.actions.set(data.actions);
@@ -263,6 +275,7 @@ export class PermissionService {
     this.workspaces.set([]);
     this.domains.set([]);
     this.modules.set([]);
+    this.subModules.set([]);
     this.screens.set([]);
     this.fields.set([]);
     this.actions.set([]);

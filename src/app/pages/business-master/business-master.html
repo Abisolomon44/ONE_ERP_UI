@@ -1,0 +1,29 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Business Master</h1>
+      <p class="page-sub">Manage core organization masters from a single workspace.</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    @for (t of tabs; track t.id) {
+      <button type="button" class="tab" [class.active]="tab() === t.id" (click)="setTab(t.id)">
+        <i-lucide [name]="t.icon" [size]="16"></i-lucide>
+        {{ t.label }}
+      </button>
+    }
+  </div>
+
+  <div class="tab-panel">
+    @switch (tab()) {
+      @case ('company') { <app-company></app-company> }
+      @case ('users') { <app-users></app-users> }
+      @case ('department') { <app-department></app-department> }
+      @case ('warehouse') { <app-warehouse></app-warehouse> }
+      @case ('designation') { <app-designation></app-designation> }
+      @case ('branch') { <app-branch></app-branch> }
+      @case ('roles') { <app-roles></app-roles> }
+    }
+  </div>
+</div>

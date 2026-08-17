@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, model, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { BaseEmpty, BasePill } from '../../shared/base-data';
@@ -30,18 +30,19 @@ export class DomainsPage {
   protected readonly dialogOpen = signal(false);
   protected readonly editing = signal<Domain | null>(null);
 
-  protected readonly form = {
-    workspaceId: signal<string>(''),
-    domainCode: signal(''),
-    domainName: signal(''),
-    icon: signal(''),
-    sortOrder: signal(0),
-    isActive: signal(true),
-  };
+  protected readonly workspaceId = model<string | number>('');
+  protected readonly domainCode = model('');
+  protected readonly domainName = model('');
+  protected readonly icon = model('');
+  protected readonly sortOrder = model(0);
+  protected readonly isActive = model(true);
 
   protected readonly workspaceOptions = signal<DropdownOption[]>([]);
 
   constructor() {
+    effect(() => {
+      console.log('[Domains] workspaceId changed', this.workspaceId(), 'type:', typeof this.workspaceId());
+    });
     void this.init();
   }
 
@@ -57,52 +58,61 @@ export class DomainsPage {
 
   protected openCreate(): void {
     this.editing.set(null);
-    this.form.workspaceId.set(this.filterWorkspaceId() || '');
-    this.form.domainCode.set('');
-    this.form.domainName.set('');
-    this.form.icon.set('');
-    this.form.sortOrder.set(0);
-    this.form.isActive.set(true);
+    this.workspaceId.set(this.filterWorkspaceId() || '');
+    this.domainCode.set('');
+    this.domainName.set('');
+    this.icon.set('');
+    this.sortOrder.set(0);
+    this.isActive.set(true);
     this.dialogOpen.set(true);
   }
 
   protected openEdit(d: Domain): void {
     this.editing.set(d);
-    this.form.workspaceId.set(String(d.workspaceId));
-    this.form.domainCode.set(d.domainCode);
-    this.form.domainName.set(d.domainName);
-    this.form.icon.set(d.icon ?? '');
-    this.form.sortOrder.set(d.sortOrder);
-    this.form.isActive.set(d.isActive);
+    this.workspaceId.set(d.workspaceId);
+    this.domainCode.set(d.domainCode);
+    this.domainName.set(d.domainName);
+    this.icon.set(d.icon ?? '');
+    this.sortOrder.set(d.sortOrder);
+    this.isActive.set(d.isActive);
     this.dialogOpen.set(true);
   }
 
   protected async save(): Promise<void> {
     if (this.saving()) return;
+
+    const workspaceId = this.workspaceId();
+    const domainCode = this.domainCode().trim();
+    const domainName = this.domainName().trim();
+
+    if (!workspaceId || !domainCode || !domainName) {
+      this.toast.error('Workspace, Domain Code and Domain Name are required.');
+      return;
+    }
+
     this.saving.set(true);
     try {
       if (this.editing()) {
         await firstValueFrom(
           this.http.put(`/api/domains/${this.editing()!.id}`, {
-            domainCode: this.form.domainCode(),
-            domainName: this.form.domainName(),
-            icon: this.form.icon() || null,
-            sortOrder: this.form.sortOrder(),
-            isActive: this.form.isActive(),
+            domainCode: this.domainCode(),
+            domainName: this.domainName(),
+            icon: this.icon() || null,
+            sortOrder: this.sortOrder(),
+            isActive: this.isActive(),
           }),
         );
         this.toast.success('Domain updated');
       } else {
-        await firstValueFrom(
-          this.http.post('/api/domains', {
-            workspaceId: Number(this.form.workspaceId()),
-            domainCode: this.form.domainCode(),
-            domainName: this.form.domainName(),
-            icon: this.form.icon() || null,
-            sortOrder: this.form.sortOrder(),
-            isActive: this.form.isActive(),
-          }),
-        );
+        const payload = {
+          workspaceId: Number(workspaceId),
+          domainCode,
+          domainName,
+          icon: this.icon() || null,
+          sortOrder: this.sortOrder(),
+          isActive: this.isActive(),
+        };
+        await firstValueFrom(this.http.post('/api/domains', payload));
         this.toast.success('Domain created');
       }
       this.dialogOpen.set(false);

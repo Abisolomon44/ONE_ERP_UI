@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 import { LucideAngularModule } from 'lucide-angular';
 import { BusinessTypesPage } from '../business-types/business-types';
 import { IndustryTypesPage } from '../industry-types/industry-types';
@@ -41,6 +42,7 @@ const TABS: { id: MasterTab; label: string; icon: string }[] = [
 export class SystemMasterPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
   protected readonly tabs = TABS;
   protected readonly tab = signal<MasterTab>('business-types');
@@ -50,6 +52,10 @@ export class SystemMasterPage {
       const t = params.get('tab') as MasterTab | null;
       if (t && TABS.some((x) => x.id === t)) this.tab.set(t);
     });
+
+    if (!this.auth.user()?.isSuperAdmin) {
+      this.router.navigate(['/dashboard']);
+    }
   }
 
   protected setTab(t: MasterTab): void {

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, signal, WritableSignal } from '@angular/core';
+import { AfterViewInit, Component, computed, inject, signal, WritableSignal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { BaseEmpty, BasePill } from '../../shared/base-data';
@@ -7,13 +7,13 @@ import { BaseButton } from '../../shared/base-button';
 import { BaseDialog } from '../../shared/base-feedback';
 import { BaseInput, BaseDropdown, BaseSearch } from '../../shared/base-controls';
 import { BasePermission } from '../../shared/base-permission';
-import { Screen, Module, Domain } from '../../core/models';
+import { Screen, Module, Domain, SubModule } from '../../core/models';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DropdownOption } from '../../shared/base-controls';
 
 interface ScreenForm {
-  moduleIdStr: WritableSignal<string>;
+  subModuleIdStr: WritableSignal<string | number>;
   screenCode: WritableSignal<string>;
   screenName: WritableSignal<string>;
   routeUrl: WritableSignal<string>;
@@ -29,24 +29,28 @@ interface ScreenForm {
   templateUrl: './screens.html',
   styleUrl: './screens.css',
 })
-export class ScreensPage {
+export class ScreensPage implements AfterViewInit {
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
   protected readonly perms = inject(PermissionService);
 
   protected readonly rows = signal<Screen[]>([]);
   protected readonly modules = signal<Module[]>([]);
+  protected readonly subModules = signal<SubModule[]>([]);
   protected readonly domains = signal<Domain[]>([]);
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly dialogOpen = signal(false);
   protected readonly editing = signal<Screen | null>(null);
   protected readonly search = signal('');
-  protected readonly filterModuleId = signal('');
-  protected readonly filterDomainId = signal('');
+  protected readonly filterDomainId = signal<string | number>('');
+  protected readonly filterModuleId = signal<string | number>('');
+  protected readonly filterSubModuleId = signal<string | number>('');
+  protected readonly formDomainId = signal<string | number>('');
+  protected readonly formModuleId = signal<string | number>('');
 
   protected readonly form: ScreenForm = {
-    moduleIdStr: signal(''),
+    subModuleIdStr: signal(''),
     screenCode: signal(''),
     screenName: signal(''),
     routeUrl: signal(''),
@@ -61,52 +65,74 @@ export class ScreensPage {
 
   protected readonly moduleOptions = computed<DropdownOption[]>(() => {
     const domainId = this.filterDomainId();
-    const list = this.modules();
-    const filtered = domainId ? list.filter((m) => m.domainId === +domainId) : list;
-    return filtered.map((m) => ({ value: m.id, label: `${m.moduleName}` }));
+    const ms = this.modules();
+    return (domainId ? ms.filter((m) => m.domainId === +domainId) : ms).map((m) => ({ value: m.id, label: m.moduleName }));
   });
 
-  protected readonly formModuleOptions = computed<DropdownOption[]>(() =>
-    this.modules().map((m) => ({ value: m.id, label: m.moduleName }))
-  );
+  protected readonly subModuleOptions = computed<DropdownOption[]>(() => {
+    const domainId = this.filterDomainId();
+    const moduleId = this.filterModuleId();
+    let ms = this.modules();
+    if (domainId) ms = ms.filter((m) => m.domainId === +domainId);
+    if (moduleId) ms = ms.filter((m) => m.id === +moduleId);
+    const modIds = new Set(ms.map((m) => m.id));
+    return this.subModules().filter((sm) => modIds.has(sm.moduleId)).map((sm) => ({ value: sm.id, label: sm.subModuleName }));
+  });
+
+  protected readonly formModuleOptions = computed<DropdownOption[]>(() => {
+    const domainId = this.formDomainId();
+    const ms = this.modules();
+    return (domainId ? ms.filter((m) => m.domainId === +domainId) : ms).map((m) => ({ value: m.id, label: m.moduleName }));
+  });
+
+  protected readonly formSubModuleOptions = computed<DropdownOption[]>(() => {
+    const moduleId = this.formModuleId();
+    const sms = this.subModules();
+    return (moduleId ? sms.filter((sm) => sm.moduleId === +moduleId) : sms).map((sm) => ({ value: sm.id, label: sm.subModuleName }));
+  });
 
   protected readonly filteredRows = computed(() => {
     let list = this.rows();
     const domainId = this.filterDomainId();
-    const moduleId = this.filterModuleId();
+    const subModuleId = this.filterSubModuleId();
     const q = this.search().toLowerCase();
 
     if (domainId) {
       const modIds = new Set(this.modules().filter((m) => m.domainId === +domainId).map((m) => m.id));
-      list = list.filter((s) => modIds.has(s.moduleId));
+      const smIds = new Set(this.subModules().filter((sm) => modIds.has(sm.moduleId)).map((sm) => sm.id));
+      list = list.filter((s) => smIds.has(s.subModuleId));
     }
-    if (moduleId) {
-      list = list.filter((s) => s.moduleId === +moduleId);
+    if (subModuleId) {
+      list = list.filter((s) => s.subModuleId === +subModuleId);
     }
     if (q) {
       list = list.filter(
         (s) =>
           s.screenCode.toLowerCase().includes(q) ||
           s.screenName.toLowerCase().includes(q) ||
-          s.moduleName?.toLowerCase().includes(q),
+          s.subModuleName?.toLowerCase().includes(q),
       );
     }
     return list;
   });
 
-  protected readonly moduleMap = computed(() => {
-    const map = new Map<number, Module>();
-    this.modules().forEach((m) => map.set(m.id, m));
+  protected readonly subModuleMap = computed(() => {
+    const map = new Map<number, SubModule>();
+    this.subModules().forEach((sm) => map.set(sm.id, sm));
     return map;
   });
 
-  constructor() {
+  constructor() {}
+
+  ngAfterViewInit(): void {
     void this.load();
   }
 
   protected openCreate(): void {
     this.editing.set(null);
-    this.form.moduleIdStr.set('');
+    this.formDomainId.set('');
+    this.formModuleId.set('');
+    this.form.subModuleIdStr.set('');
     this.form.screenCode.set('');
     this.form.screenName.set('');
     this.form.routeUrl.set('');
@@ -118,7 +144,11 @@ export class ScreensPage {
 
   protected openEdit(item: Screen): void {
     this.editing.set(item);
-    this.form.moduleIdStr.set(item.moduleId.toString());
+    const sm = this.subModules().find((s) => s.id === item.subModuleId);
+    const mod = sm ? this.modules().find((m) => m.id === sm.moduleId) : undefined;
+    this.formDomainId.set(mod ? mod.domainId : '');
+    this.formModuleId.set(sm ? sm.moduleId : '');
+    this.form.subModuleIdStr.set(item.subModuleId.toString());
     this.form.screenCode.set(item.screenCode);
     this.form.screenName.set(item.screenName);
     this.form.routeUrl.set(item.routeUrl ?? '');
@@ -128,12 +158,34 @@ export class ScreensPage {
     this.dialogOpen.set(true);
   }
 
+  protected onFilterDomainChange(value: string | number): void {
+    this.filterDomainId.set(value);
+    this.filterModuleId.set('');
+    this.filterSubModuleId.set('');
+  }
+
+  protected onFilterModuleChange(value: string | number): void {
+    this.filterModuleId.set(value);
+    this.filterSubModuleId.set('');
+  }
+
+  protected onFormDomainChange(value: string | number): void {
+    this.formDomainId.set(value);
+    this.formModuleId.set('');
+    this.form.subModuleIdStr.set('');
+  }
+
+  protected onFormModuleChange(value: string | number): void {
+    this.formModuleId.set(value);
+    this.form.subModuleIdStr.set('');
+  }
+
   protected async save(): Promise<void> {
     if (this.saving()) return;
     this.saving.set(true);
     try {
       const payload = {
-        moduleId: parseInt(this.form.moduleIdStr(), 10),
+        subModuleId: parseInt(String(this.form.subModuleIdStr()), 10),
         screenCode: this.form.screenCode(),
         screenName: this.form.screenName(),
         routeUrl: this.form.routeUrl() || null,
@@ -175,13 +227,15 @@ export class ScreensPage {
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const [screens, modules, domains] = await Promise.all([
+      const [screens, modules, subModules, domains] = await Promise.all([
         firstValueFrom(this.http.get<Screen[]>('/api/screens')),
         firstValueFrom(this.http.get<Module[]>('/api/modules')),
+        firstValueFrom(this.http.get<SubModule[]>('/api/submodules')),
         firstValueFrom(this.http.get<Domain[]>('/api/domains')),
       ]);
       this.rows.set(screens);
       this.modules.set(modules);
+      this.subModules.set(subModules);
       this.domains.set(domains);
     } catch {
       this.toast.error('Failed to load screens');
@@ -190,7 +244,7 @@ export class ScreensPage {
     }
   }
 
-  protected getModuleName(moduleId: number): string {
-    return this.moduleMap().get(moduleId)?.moduleName ?? 'Unknown';
+  protected getSubModuleName(subModuleId: number): string {
+    return this.subModuleMap().get(subModuleId)?.subModuleName ?? 'Unknown';
   }
 }

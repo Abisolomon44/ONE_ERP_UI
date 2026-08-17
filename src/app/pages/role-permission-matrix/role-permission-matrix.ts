@@ -10,6 +10,7 @@ import {
   Workspace,
   Domain,
   Module,
+  SubModule,
   Screen,
   Action,
   Role,
@@ -22,7 +23,15 @@ interface ScreenNode {
   id: number;
   name: string;
   code: string;
+  subModuleId: number;
+}
+
+interface SubModuleNode {
+  id: number;
+  name: string;
+  code: string;
   moduleId: number;
+  screens: ScreenNode[];
 }
 
 interface ModuleNode {
@@ -30,7 +39,7 @@ interface ModuleNode {
   name: string;
   code: string;
   domainId: number;
-  screens: ScreenNode[];
+  subModules: SubModuleNode[];
 }
 
 interface DomainNode {
@@ -68,6 +77,7 @@ export class RolePermissionMatrixPage {
   protected readonly workspaces = signal<Workspace[]>([]);
   protected readonly domains = signal<Domain[]>([]);
   protected readonly modules = signal<Module[]>([]);
+  protected readonly subModules = signal<SubModule[]>([]);
   protected readonly screens = signal<Screen[]>([]);
   protected readonly actions = signal<Action[]>([]);
   protected readonly existingPermissions = signal<RolePermissionEntry[]>([]);
@@ -75,6 +85,7 @@ export class RolePermissionMatrixPage {
   protected readonly expandedWorkspaces = signal<Set<number>>(new Set());
   protected readonly expandedDomains = signal<Set<number>>(new Set());
   protected readonly expandedModules = signal<Set<number>>(new Set());
+  protected readonly expandedSubModules = signal<Set<number>>(new Set());
   protected readonly expandedScreens = signal<Set<number>>(new Set());
 
   protected readonly permissionState = signal<Map<string, boolean>>(new Map());
@@ -102,18 +113,29 @@ export class RolePermissionMatrixPage {
         name: m.moduleName,
         code: m.moduleCode,
         domainId: m.domainId,
-        screens: [],
+        subModules: [],
       };
       moduleMap.set(m.id, moduleNode);
       domainNode?.modules.push(moduleNode);
     }
+    for (const sm of this.subModules()) {
+      const moduleNode = moduleMap.get(sm.moduleId);
+      const subModuleNode: SubModuleNode = {
+        id: sm.id,
+        name: sm.subModuleName,
+        code: sm.subModuleCode,
+        moduleId: sm.moduleId,
+        screens: [],
+      };
+      moduleNode?.subModules.push(subModuleNode);
+    }
     for (const s of this.screens()) {
-      const moduleNode = moduleMap.get(s.moduleId);
-      moduleNode?.screens.push({
+      const subModuleNode = [...moduleMap.values()].flatMap((mn) => mn.subModules).find((sm) => sm.id === s.subModuleId);
+      subModuleNode?.screens.push({
         id: s.id,
         name: s.screenName,
         code: s.screenCode,
-        moduleId: s.moduleId,
+        subModuleId: s.subModuleId,
       });
     }
     const workspaceMap = new Map<number, WorkspaceNode>();
@@ -153,11 +175,12 @@ export class RolePermissionMatrixPage {
   private async loadInitial(): Promise<void> {
     this.loading.set(true);
     try {
-      const [roles, workspaces, domains, modules, screens, actions] = await Promise.all([
+      const [roles, workspaces, domains, modules, subModules, screens, actions] = await Promise.all([
         firstValueFrom(this.http.get<Role[]>('/api/roles')),
         firstValueFrom(this.http.get<Workspace[]>('/api/workspaces')),
         firstValueFrom(this.http.get<Domain[]>('/api/domains')),
         firstValueFrom(this.http.get<Module[]>('/api/modules')),
+        firstValueFrom(this.http.get<SubModule[]>('/api/submodules')),
         firstValueFrom(this.http.get<Screen[]>('/api/screens')),
         firstValueFrom(this.http.get<Action[]>('/api/actions')),
       ]);
@@ -165,6 +188,7 @@ export class RolePermissionMatrixPage {
       this.workspaces.set(workspaces.filter((w) => w.isActive));
       this.domains.set(domains.filter((d) => d.isActive));
       this.modules.set(modules.filter((m) => m.isActive));
+      this.subModules.set(subModules.filter((s) => s.isActive));
       this.screens.set(screens.filter((s) => s.isActive));
       this.actions.set(actions.filter((a) => a.isActive));
     } catch {
@@ -226,9 +250,11 @@ export class RolePermissionMatrixPage {
     const next = new Map(this.permissionState());
     for (const domain of ws.domains) {
       for (const mod of domain.modules) {
-        for (const screen of mod.screens) {
-          for (const action of this.actions()) {
-            next.set(this.makeKey(screen.id, action.id), checked);
+        for (const sub of mod.subModules) {
+          for (const screen of sub.screens) {
+            for (const action of this.actions()) {
+              next.set(this.makeKey(screen.id, action.id), checked);
+            }
           }
         }
       }
@@ -240,9 +266,11 @@ export class RolePermissionMatrixPage {
     const checked = (event.target as HTMLInputElement).checked;
     const next = new Map(this.permissionState());
     for (const mod of domain.modules) {
-      for (const screen of mod.screens) {
-        for (const action of this.actions()) {
-          next.set(this.makeKey(screen.id, action.id), checked);
+      for (const sub of mod.subModules) {
+        for (const screen of sub.screens) {
+          for (const action of this.actions()) {
+            next.set(this.makeKey(screen.id, action.id), checked);
+          }
         }
       }
     }
@@ -252,7 +280,20 @@ export class RolePermissionMatrixPage {
   protected toggleModule(mod: ModuleNode, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     const next = new Map(this.permissionState());
-    for (const screen of mod.screens) {
+    for (const sub of mod.subModules) {
+      for (const screen of sub.screens) {
+        for (const action of this.actions()) {
+          next.set(this.makeKey(screen.id, action.id), checked);
+        }
+      }
+    }
+    this.permissionState.set(next);
+  }
+
+  protected toggleSubModule(sub: SubModuleNode, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const next = new Map(this.permissionState());
+    for (const screen of sub.screens) {
       for (const action of this.actions()) {
         next.set(this.makeKey(screen.id, action.id), checked);
       }
@@ -275,8 +316,10 @@ export class RolePermissionMatrixPage {
     for (const ws of this.tree()) {
       for (const domain of ws.domains) {
         for (const mod of domain.modules) {
-          for (const screen of mod.screens) {
-            next.set(this.makeKey(screen.id, actionId), checked);
+          for (const sub of mod.subModules) {
+            for (const screen of sub.screens) {
+              next.set(this.makeKey(screen.id, actionId), checked);
+            }
           }
         }
       }
@@ -287,9 +330,11 @@ export class RolePermissionMatrixPage {
   protected isWorkspaceChecked(ws: WorkspaceNode): boolean {
     for (const domain of ws.domains) {
       for (const mod of domain.modules) {
-        for (const screen of mod.screens) {
-          for (const action of this.actions()) {
-            if (!this.isAllowed(screen.id, action.id)) return false;
+        for (const sub of mod.subModules) {
+          for (const screen of sub.screens) {
+            for (const action of this.actions()) {
+              if (!this.isAllowed(screen.id, action.id)) return false;
+            }
           }
         }
       }
@@ -301,9 +346,11 @@ export class RolePermissionMatrixPage {
     if (this.isWorkspaceChecked(ws)) return false;
     for (const domain of ws.domains) {
       for (const mod of domain.modules) {
-        for (const screen of mod.screens) {
-          for (const action of this.actions()) {
-            if (this.isAllowed(screen.id, action.id)) return true;
+        for (const sub of mod.subModules) {
+          for (const screen of sub.screens) {
+            for (const action of this.actions()) {
+              if (this.isAllowed(screen.id, action.id)) return true;
+            }
           }
         }
       }
@@ -313,9 +360,11 @@ export class RolePermissionMatrixPage {
 
   protected isDomainChecked(domain: DomainNode): boolean {
     for (const mod of domain.modules) {
-      for (const screen of mod.screens) {
-        for (const action of this.actions()) {
-          if (!this.isAllowed(screen.id, action.id)) return false;
+      for (const sub of mod.subModules) {
+        for (const screen of sub.screens) {
+          for (const action of this.actions()) {
+            if (!this.isAllowed(screen.id, action.id)) return false;
+          }
         }
       }
     }
@@ -325,7 +374,32 @@ export class RolePermissionMatrixPage {
   protected isDomainIndeterminate(domain: DomainNode): boolean {
     if (this.isDomainChecked(domain)) return false;
     for (const mod of domain.modules) {
-      for (const screen of mod.screens) {
+      for (const sub of mod.subModules) {
+        for (const screen of sub.screens) {
+          for (const action of this.actions()) {
+            if (this.isAllowed(screen.id, action.id)) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  protected isModuleChecked(mod: ModuleNode): boolean {
+    for (const sub of mod.subModules) {
+      for (const screen of sub.screens) {
+        for (const action of this.actions()) {
+          if (!this.isAllowed(screen.id, action.id)) return false;
+        }
+      }
+    }
+    return mod.subModules.length > 0;
+  }
+
+  protected isModuleIndeterminate(mod: ModuleNode): boolean {
+    if (this.isModuleChecked(mod)) return false;
+    for (const sub of mod.subModules) {
+      for (const screen of sub.screens) {
         for (const action of this.actions()) {
           if (this.isAllowed(screen.id, action.id)) return true;
         }
@@ -334,18 +408,18 @@ export class RolePermissionMatrixPage {
     return false;
   }
 
-  protected isModuleChecked(mod: ModuleNode): boolean {
-    for (const screen of mod.screens) {
+  protected isSubModuleChecked(sub: SubModuleNode): boolean {
+    for (const screen of sub.screens) {
       for (const action of this.actions()) {
         if (!this.isAllowed(screen.id, action.id)) return false;
       }
     }
-    return mod.screens.length > 0;
+    return sub.screens.length > 0;
   }
 
-  protected isModuleIndeterminate(mod: ModuleNode): boolean {
-    if (this.isModuleChecked(mod)) return false;
-    for (const screen of mod.screens) {
+  protected isSubModuleIndeterminate(sub: SubModuleNode): boolean {
+    if (this.isSubModuleChecked(sub)) return false;
+    for (const screen of sub.screens) {
       for (const action of this.actions()) {
         if (this.isAllowed(screen.id, action.id)) return true;
       }
@@ -372,8 +446,10 @@ export class RolePermissionMatrixPage {
     for (const ws of this.tree()) {
       for (const domain of ws.domains) {
         for (const mod of domain.modules) {
-          for (const screen of mod.screens) {
-            if (!this.isAllowed(screen.id, actionId)) return false;
+          for (const sub of mod.subModules) {
+            for (const screen of sub.screens) {
+              if (!this.isAllowed(screen.id, actionId)) return false;
+            }
           }
         }
       }
@@ -386,8 +462,10 @@ export class RolePermissionMatrixPage {
     for (const ws of this.tree()) {
       for (const domain of ws.domains) {
         for (const mod of domain.modules) {
-          for (const screen of mod.screens) {
-            if (this.isAllowed(screen.id, actionId)) return true;
+          for (const sub of mod.subModules) {
+            for (const screen of sub.screens) {
+              if (this.isAllowed(screen.id, actionId)) return true;
+            }
           }
         }
       }
@@ -425,6 +503,16 @@ export class RolePermissionMatrixPage {
     this.expandedModules.set(set);
   }
 
+  protected toggleSubModuleExpand(subModuleId: number): void {
+    const set = new Set(this.expandedSubModules());
+    if (set.has(subModuleId)) {
+      set.delete(subModuleId);
+    } else {
+      set.add(subModuleId);
+    }
+    this.expandedSubModules.set(set);
+  }
+
   protected isWorkspaceExpanded(wsId: number): boolean {
     return this.expandedWorkspaces().has(wsId);
   }
@@ -437,13 +525,19 @@ export class RolePermissionMatrixPage {
     return this.expandedModules().has(moduleId);
   }
 
+  protected isSubModuleExpanded(subModuleId: number): boolean {
+    return this.expandedSubModules().has(subModuleId);
+  }
+
   private expandAll(): void {
     const wsIds = new Set(this.tree().map((w) => w.id));
     const domainIds = new Set(this.domains().map((d) => d.id));
     const moduleIds = new Set(this.modules().map((m) => m.id));
+    const subModuleIds = new Set(this.subModules().map((sm) => sm.id));
     this.expandedWorkspaces.set(wsIds);
     this.expandedDomains.set(domainIds);
     this.expandedModules.set(moduleIds);
+    this.expandedSubModules.set(subModuleIds);
   }
 
   protected expandAllNodes(): void {
@@ -454,6 +548,8 @@ export class RolePermissionMatrixPage {
     this.expandedWorkspaces.set(new Set());
     this.expandedDomains.set(new Set());
     this.expandedModules.set(new Set());
+    this.expandedSubModules.set(new Set());
+    this.expandedScreens.set(new Set());
   }
 
   protected selectAll(): void {
@@ -461,9 +557,11 @@ export class RolePermissionMatrixPage {
     for (const ws of this.tree()) {
       for (const domain of ws.domains) {
         for (const mod of domain.modules) {
-          for (const screen of mod.screens) {
-            for (const action of this.actions()) {
-              next.set(this.makeKey(screen.id, action.id), true);
+          for (const sub of mod.subModules) {
+            for (const screen of sub.screens) {
+              for (const action of this.actions()) {
+                next.set(this.makeKey(screen.id, action.id), true);
+              }
             }
           }
         }
@@ -485,6 +583,7 @@ export class RolePermissionMatrixPage {
         workspaceId: number;
         domainId: number;
         moduleId: number;
+        subModuleId: number;
         screenId: number;
         actionId: number;
         allow: boolean;
@@ -493,18 +592,21 @@ export class RolePermissionMatrixPage {
       for (const ws of this.tree()) {
         for (const domain of ws.domains) {
           for (const mod of domain.modules) {
-            for (const screen of mod.screens) {
-              for (const action of this.actions()) {
-                const key = this.makeKey(screen.id, action.id);
-                if (state.has(key)) {
-                  permissions.push({
-                    workspaceId: ws.id,
-                    domainId: domain.id,
-                    moduleId: mod.id,
-                    screenId: screen.id,
-                    actionId: action.id,
-                    allow: state.get(key)!,
-                  });
+            for (const sub of mod.subModules) {
+              for (const screen of sub.screens) {
+                for (const action of this.actions()) {
+                  const key = this.makeKey(screen.id, action.id);
+                  if (state.has(key)) {
+                    permissions.push({
+                      workspaceId: ws.id,
+                      domainId: domain.id,
+                      moduleId: mod.id,
+                      subModuleId: sub.id,
+                      screenId: screen.id,
+                      actionId: action.id,
+                      allow: state.get(key)!,
+                    });
+                  }
                 }
               }
             }
@@ -526,7 +628,9 @@ export class RolePermissionMatrixPage {
     let count = 0;
     for (const domain of ws.domains) {
       for (const mod of domain.modules) {
-        count += mod.screens.length;
+        for (const sub of mod.subModules) {
+          count += sub.screens.length;
+        }
       }
     }
     return count;
@@ -535,7 +639,9 @@ export class RolePermissionMatrixPage {
   protected getDomainScreenCount(domain: DomainNode): number {
     let count = 0;
     for (const mod of domain.modules) {
-      count += mod.screens.length;
+      for (const sub of mod.subModules) {
+        count += sub.screens.length;
+      }
     }
     return count;
   }

@@ -11,7 +11,8 @@
 <div class="filters">
   <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [(value)]="filterDomainId" placeholder="All Domains"></base-dropdown>
   <base-dropdown label="Module" icon="layers" [options]="moduleOptions()" [(value)]="filterModuleId" placeholder="All Modules"></base-dropdown>
-  <base-dropdown label="Screen" icon="layout" [options]="screenOptions()" [(value)]="filterScreenId" placeholder="All Screens"></base-dropdown>
+  <base-dropdown label="Sub Module" icon="puzzle" [options]="subModuleOptions()" [(value)]="filterSubModuleId" placeholder="All Sub Modules"></base-dropdown>
+  <base-dropdown label="Screen" icon="monitor" [options]="screenOptions()" [(value)]="filterScreenId" placeholder="All Screens"></base-dropdown>
   <base-search placeholder="Search fields..." [(value)]="search"></base-search>
 </div>
 
