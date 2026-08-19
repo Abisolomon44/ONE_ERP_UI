@@ -265,6 +265,22 @@ export const routes: Routes = [
             (m) => m.WorkflowPermissionsPage
           ),
       },
+      {
+        path: 'business-partner-roles',
+        title: 'Business Partner Roles',
+        loadComponent: () =>
+          import('./pages/business-partner-roles/business-partner-roles').then(
+            (m) => m.BusinessPartnerRolesPage
+          ),
+      },
+      {
+        path: 'business-partners',
+        title: 'Business Partners',
+        loadComponent: () =>
+          import('./pages/business-partners/business-partners').then(
+            (m) => m.BusinessPartnersPage
+          ),
+      },
     ],
   },
 

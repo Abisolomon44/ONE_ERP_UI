@@ -225,7 +225,19 @@
             <!-- Everything else: floating-label field -->
             @else {
               <div class="ff" [class.area]="field.type == 'textarea'">
-                <div class="ff-wrap" [class.area]="field.type == 'textarea'" [class.floated]="isFieldFilled(field)">
+                <!--
+                  A <select> always displays a value (even the placeholder
+                  "Select" option) so it never has a genuinely "empty" state
+                  the way a text input does. isFieldFilled() correctly
+                  returns false for an unset dropdown, but that means
+                  .floated never gets applied and the label sits centered
+                  on top of the select's own text. Dropdowns should always
+                  render with a floated label.
+                -->
+                <div
+                  class="ff-wrap"
+                  [class.area]="field.type == 'textarea'"
+                  [class.floated]="field.type == 'dropdown' || isFieldFilled(field)">
 
                   @if (field.type == 'text' || field.type == 'email' || field.type == 'password' || field.type == 'number' || field.type == 'date') {
                     <input
@@ -253,18 +265,19 @@
                   }
 
                   @if (field.type == 'dropdown') {
-               <select
-    class="ff-control"
-    [(ngModel)]="userModel[field.name]">
+                    <select
+                      class="ff-control ff-control-select filled"
+                      [(ngModel)]="userModel[field.name]"
+                      [disabled]="field.disabled ?? false">
 
-    <option [ngValue]="null">Select</option>
+                      <option [ngValue]="null" disabled>Select</option>
 
-    @for (option of field.options; track option.value) {
-        <option [ngValue]="option.value">
-            {{ option.label }}
-        </option>
-    }
-</select>
+                      @for (option of field.options; track option.value) {
+                        <option [ngValue]="option.value">
+                          {{ option.label }}
+                        </option>
+                      }
+                    </select>
                   }
 
                   <label class="ff-label">

@@ -9,8 +9,9 @@ import { Warehouse } from '../adminitration/business-master/warehouse/warehouse'
 import { Designation } from '../adminitration/business-master/designation/designation';
 import { BranchPage } from '../branch/branch';
 import { RolesPage } from '../roles/roles';
+import { BusinessPartnersPage } from '../business-partners/business-partners';
 
-type BusinessMasterTab = 'company' | 'users' | 'department' | 'warehouse' | 'designation' | 'branch' | 'roles';
+type BusinessMasterTab = 'company' | 'users' | 'department' | 'warehouse' | 'designation' | 'branch' | 'roles' | 'business-partners';
 
 const TABS: { id: BusinessMasterTab; label: string; icon: string }[] = [
   { id: 'company', label: 'Company Master', icon: 'building-2' },
@@ -20,6 +21,7 @@ const TABS: { id: BusinessMasterTab; label: string; icon: string }[] = [
   { id: 'warehouse', label: 'Warehouse', icon: 'warehouse' },
   { id: 'designation', label: 'Designation', icon: 'badge' },
   { id: 'branch', label: 'Branch Master', icon: 'git-branch' },
+  { id: 'business-partners', label: 'Business Partners', icon: 'users' },
 ];
 
 @Component({
@@ -34,6 +36,7 @@ const TABS: { id: BusinessMasterTab; label: string; icon: string }[] = [
     Designation,
     BranchPage,
     RolesPage,
+    BusinessPartnersPage,
   ],
   templateUrl: './business-master.html',
   styleUrl: './business-master.css',

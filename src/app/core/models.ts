@@ -152,6 +152,37 @@ export interface IndustryType {
   isActive: boolean;
 }
 
+export interface BusinessPartnerRole {
+  businessPartnerRoleId: number;
+  code: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface BusinessPartner {
+  id: number;
+  companyId: number;
+  partnerCode: string;
+  partnerName: string;
+  patnerRoleIds: string;
+  contactPerson?: string;
+  mobileNo?: string;
+  email?: string;
+  taxRegistrationNo?: string;
+  creditLimit: number;
+  creditDays: number;
+  paymentTermId?: number | null;
+  currencyId?: number | null;
+  priceListId?: number | null;
+  notes?: string;
+  isActive: boolean;
+  createdBy?: number | null;
+  createdAt?: string;
+  modifiedBy?: number | null;
+  modifiedAt?: string | null;
+}
+
 export interface CompanyGroup {
   companyGroupId: number;
   groupCode: string;

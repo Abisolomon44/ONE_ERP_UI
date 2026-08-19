@@ -1,0 +1,123 @@
+<div class="page-header">
+  <div>
+    <h1>Business Partners</h1>
+    <div class="page-sub">Manage customers, vendors and other business parties.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'business-partners.manage'" icon="plus" (click)="openCreate()">New Partner</base-button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card"><base-empty icon="users" title="No business partners found" subtitle="Create a business partner to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (item of rows(); track item.id) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
+            <i-lucide name="users" [size]="17"></i-lucide>
+          </span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ item.partnerName }}</h3>
+            </div>
+            <div class="card-sub">{{ item.partnerCode }}</div>
+          </div>
+          <base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          <p style="margin:0 0 8px; color: var(--text-2); font-size:13.5px">
+            @if (getRoleNames(item.patnerRoleIds)) {
+              <strong>Roles:</strong> {{ getRoleNames(item.patnerRoleIds) }}
+            } @else {
+              No roles assigned
+            }
+          </p>
+          <div style="display:flex; gap:16px; font-size:13px; color: var(--text-3)">
+            <span>{{ item.contactPerson || 'No contact' }}</span>
+            <span>{{ item.mobileNo || '-' }}</span>
+          </div>
+        </div>
+        <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+          <base-button *basePermission="'business-partners.manage'" variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(item)"></base-button>
+          <base-button *basePermission="'business-partners.manage'" variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(item)"></base-button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Partner' : 'Create Partner'" (closeRequest)="dialogOpen.set(false)">
+  <div class="bp-grid">
+    <base-input label="Partner Code" icon="hash" [(value)]="partnerCode" [disabled]="!!editing()" hint="Unique code, e.g. CUST001"></base-input>
+    <base-input label="Partner Name" icon="users" [(value)]="partnerName"></base-input>
+    <base-input label="Contact Person" icon="user" [(value)]="contactPerson"></base-input>
+    <base-input label="Mobile No" icon="phone" [(value)]="mobileNo"></base-input>
+    <base-input label="Email" icon="mail" [(value)]="email"></base-input>
+    <base-input label="Tax Reg. No" icon="receipt" [(value)]="taxRegistrationNo"></base-input>
+    <div class="field">
+      <label class="field-label">Credit Limit</label>
+      <div class="input-wrap">
+        <input class="input" type="number" step="0.01" [value]="creditLimit()" (input)="creditLimit.set(+$any($event.target).value)" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Credit Days</label>
+      <div class="input-wrap">
+        <input class="input" type="number" [value]="creditDays()" (input)="creditDays.set(+$any($event.target).value)" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Payment Term Id</label>
+      <div class="input-wrap">
+        <input class="input" type="number" [value]="paymentTermId() ?? ''" (input)="paymentTermId.set($any($event.target).value === '' ? null : +$any($event.target).value)" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Currency Id</label>
+      <div class="input-wrap">
+        <input class="input" type="number" [value]="currencyId() ?? ''" (input)="currencyId.set($any($event.target).value === '' ? null : +$any($event.target).value)" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Price List Id</label>
+      <div class="input-wrap">
+        <input class="input" type="number" [value]="priceListId() ?? ''" (input)="priceListId.set($any($event.target).value === '' ? null : +$any($event.target).value)" />
+      </div>
+    </div>
+    <base-input label="Notes" icon="align-left" [(value)]="notes" class="bp-full"></base-input>
+  </div>
+
+  <div class="field" style="margin-top:12px">
+    <label class="field-label">Partner Roles</label>
+    <div class="role-box">
+      @for (role of roles(); track role.businessPartnerRoleId) {
+        <label class="check-item">
+          <input type="checkbox" [checked]="isRoleSelected(role.businessPartnerRoleId)" (change)="toggleRole(role.businessPartnerRoleId, $any($event.target).checked)" />
+          <span>{{ role.name }}</span>
+        </label>
+      } @empty {
+        <span class="muted">No roles available</span>
+      }
+    </div>
+  </div>
+
+  <div class="field" style="margin-top:12px">
+    <label class="check-item">
+      <input type="checkbox" [checked]="isActive()" (change)="isActive.set($any($event.target).checked)" />
+      <span>Active</span>
+    </label>
+  </div>
+
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!partnerCode() || !partnerName() || selectedRoleIds().length === 0" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Partner' }}
+    </base-button>
+  </div>
+</base-dialog>

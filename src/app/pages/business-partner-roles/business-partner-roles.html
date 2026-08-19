@@ -1,0 +1,68 @@
+<div class="page-header">
+  <div>
+    <h1>Business Partner Roles</h1>
+    <div class="page-sub">Define the roles a party can play in your business relationships.</div>
+  </div>
+  <div class="page-actions">
+    <base-button *basePermission="'business-partner-roles.manage'" icon="plus" (click)="openCreate()">New Role</base-button>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding: 44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (rows().length === 0) {
+  <div class="card"><base-empty icon="users-round" title="No business partner roles found" subtitle="Create a role to get started."></base-empty></div>
+} @else {
+  <div class="grid grid-2" style="align-items: stretch; gap: 20px">
+    @for (item of rows(); track item.businessPartnerRoleId) {
+      <div class="card">
+        <div class="card-header">
+          <span class="avatar" style="background: var(--accent-soft); color: var(--accent)">
+            <i-lucide name="users-round" [size]="17"></i-lucide>
+          </span>
+          <div style="flex:1">
+            <div style="display:flex; align-items:center; gap:8px">
+              <h3>{{ item.name }}</h3>
+            </div>
+            <div class="card-sub">{{ item.code }}</div>
+          </div>
+          <base-pill [status]="item.isActive ? 'Active' : 'Inactive'" [label]="item.isActive ? 'Active' : 'Inactive'"></base-pill>
+        </div>
+        <div class="card-body">
+          <p style="margin:0; color: var(--text-2); font-size:13.5px">
+            @if (item.description) {
+              {{ item.description }}
+            } @else {
+              No description
+            }
+          </p>
+        </div>
+        <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+          <base-button *basePermission="'business-partner-roles.manage'" variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(item)"></base-button>
+          <base-button *basePermission="'business-partner-roles.manage'" variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(item)"></base-button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Role' : 'Create Role'" (closeRequest)="dialogOpen.set(false)">
+  <base-input label="Code" icon="hash" [(value)]="code" [disabled]="!!editing()" hint="Unique code, e.g. CUSTOMER"></base-input>
+  <base-input label="Name" icon="users-round" [(value)]="name"></base-input>
+  <base-input label="Description" icon="align-left" [(value)]="description" hint="Optional"></base-input>
+  <div class="field">
+    <label class="field-label">Active</label>
+    <label class="check-item">
+      <input type="checkbox" [checked]="isActive()" (change)="isActive.set($any($event.target).checked)" />
+      <span>Enabled</span>
+    </label>
+  </div>
+  <div class="dialog-inner-footer">
+    <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
+    <base-button [loading]="saving()" [disabled]="!code() || !name()" (click)="save()">
+      {{ editing() ? 'Save Changes' : 'Create Role' }}
+    </base-button>
+  </div>
+</base-dialog>
