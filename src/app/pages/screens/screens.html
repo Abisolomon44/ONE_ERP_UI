@@ -9,8 +9,8 @@
 </div>
 
 <div class="filters">
-  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [value]="filterDomainId()" (valueChange)="onFilterDomainChange($event)" placeholder="All Domains"></base-dropdown>
-  <base-dropdown label="Module" icon="box" [options]="moduleOptions()" [value]="filterModuleId()" (valueChange)="onFilterModuleChange($event)" placeholder="All Modules"></base-dropdown>
+  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [(value)]="filterDomainId" placeholder="All Domains"></base-dropdown>
+  <base-dropdown label="Module" icon="box" [options]="moduleOptions()" [(value)]="filterModuleId" placeholder="All Modules"></base-dropdown>
   <base-dropdown label="Sub Module" icon="puzzle" [options]="subModuleOptions()" [(value)]="filterSubModuleId" placeholder="All Sub Modules"></base-dropdown>
   <base-search placeholder="Search screens..." [(value)]="search"></base-search>
 </div>
@@ -65,8 +65,8 @@
 }
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Screen' : 'Create Screen'" (closeRequest)="dialogOpen.set(false)">
-  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [value]="formDomainId()" (valueChange)="onFormDomainChange($event)" [disabled]="!!editing()"></base-dropdown>
-  <base-dropdown label="Module" icon="box" [options]="formModuleOptions()" [value]="formModuleId()" (valueChange)="onFormModuleChange($event)" [disabled]="!!editing() || !formDomainId()"></base-dropdown>
+  <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [(value)]="formDomainId" [disabled]="!!editing()"></base-dropdown>
+  <base-dropdown label="Module" icon="box" [options]="formModuleOptions()" [(value)]="formModuleId" [disabled]="!!editing() || !formDomainId()"></base-dropdown>
   <base-dropdown label="Sub Module" icon="puzzle" [options]="formSubModuleOptions()" [(value)]="form.subModuleIdStr" placeholder="Select sub module" [disabled]="!!editing() || !formModuleId()"></base-dropdown>
   <base-input label="Screen Code" icon="tag" [(value)]="form.screenCode" [disabled]="!!editing()" hint="e.g. dashboard"></base-input>
   <base-input label="Screen Name" icon="type" [(value)]="form.screenName"></base-input>

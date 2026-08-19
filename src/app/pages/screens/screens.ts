@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { AfterViewInit, Component, computed, inject, signal, WritableSignal } from '@angular/core';
+import { AfterViewInit, Component, computed, inject, model, signal, WritableSignal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { BaseEmpty, BasePill } from '../../shared/base-data';
@@ -43,11 +43,11 @@ export class ScreensPage implements AfterViewInit {
   protected readonly dialogOpen = signal(false);
   protected readonly editing = signal<Screen | null>(null);
   protected readonly search = signal('');
-  protected readonly filterDomainId = signal<string | number>('');
-  protected readonly filterModuleId = signal<string | number>('');
-  protected readonly filterSubModuleId = signal<string | number>('');
-  protected readonly formDomainId = signal<string | number>('');
-  protected readonly formModuleId = signal<string | number>('');
+  protected readonly filterDomainId = model<string | number>('');
+  protected readonly filterModuleId = model<string | number>('');
+  protected readonly filterSubModuleId = model<string | number>('');
+  protected readonly formDomainId = model<string | number>('');
+  protected readonly formModuleId = model<string | number>('');
 
   protected readonly form: ScreenForm = {
     subModuleIdStr: signal(''),
@@ -156,28 +156,6 @@ export class ScreensPage implements AfterViewInit {
     this.form.sortOrderStr.set(item.sortOrder.toString());
     this.form.isActive.set(item.isActive);
     this.dialogOpen.set(true);
-  }
-
-  protected onFilterDomainChange(value: string | number): void {
-    this.filterDomainId.set(value);
-    this.filterModuleId.set('');
-    this.filterSubModuleId.set('');
-  }
-
-  protected onFilterModuleChange(value: string | number): void {
-    this.filterModuleId.set(value);
-    this.filterSubModuleId.set('');
-  }
-
-  protected onFormDomainChange(value: string | number): void {
-    this.formDomainId.set(value);
-    this.formModuleId.set('');
-    this.form.subModuleIdStr.set('');
-  }
-
-  protected onFormModuleChange(value: string | number): void {
-    this.formModuleId.set(value);
-    this.form.subModuleIdStr.set('');
   }
 
   protected async save(): Promise<void> {

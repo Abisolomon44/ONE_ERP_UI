@@ -94,7 +94,7 @@
 }
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Sub Module' : 'Create Sub Module'" (closeRequest)="dialogOpen.set(false)">
-  <base-dropdown label="Module" icon="box" placeholder="Select module" [options]="moduleOptions()" [value]="form.moduleId()" (valueChange)="form.moduleId.set($event)" [required]="true" [disabled]="!!editing()"></base-dropdown>
+  <base-dropdown label="Module" icon="box" placeholder="Select module" [options]="moduleOptions()" [(value)]="moduleId" [required]="true" [disabled]="!!editing()"></base-dropdown>
   <base-input label="Sub Module Code" icon="hash" [(value)]="form.subModuleCode" [disabled]="!!editing()" [hint]="editing() ? '' : 'e.g. COMPANY_MASTER'"></base-input>
   <base-input label="Sub Module Name" icon="puzzle" [(value)]="form.subModuleName"></base-input>
   <base-input label="Icon" icon="smile" [(value)]="form.icon" hint="Lucide icon name"></base-input>
@@ -114,7 +114,7 @@
   </div>
   <div class="dialog-inner-footer">
     <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
-    <base-button [loading]="saving()" [disabled]="!form.moduleId() || !form.subModuleCode() || !form.subModuleName()" (click)="save()">
+    <base-button [loading]="saving()" [disabled]="!moduleId() || !form.subModuleCode() || !form.subModuleName()" (click)="save()">
       {{ editing() ? 'Save Changes' : 'Create Sub Module' }}
     </base-button>
   </div>

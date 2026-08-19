@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, model, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { BaseEmpty, BasePill } from '../../shared/base-data';
@@ -34,8 +34,9 @@ export class SubModulesPage {
   protected readonly dialogOpen = signal(false);
   protected readonly editing = signal<SubModule | null>(null);
 
+  protected readonly moduleId = model<string | number>('');
+
   protected readonly form = {
-    moduleId: signal<string | number>(''),
     subModuleCode: signal(''),
     subModuleName: signal(''),
     icon: signal(''),
@@ -85,7 +86,7 @@ export class SubModulesPage {
 
   protected openCreate(): void {
     this.editing.set(null);
-    this.form.moduleId.set(this.filterModuleId() || '');
+    this.moduleId.set(this.filterModuleId() || '');
     this.form.subModuleCode.set('');
     this.form.subModuleName.set('');
     this.form.icon.set('');
@@ -97,7 +98,7 @@ export class SubModulesPage {
 
   protected openEdit(item: SubModule): void {
     this.editing.set(item);
-    this.form.moduleId.set(String(item.moduleId));
+    this.moduleId.set(String(item.moduleId));
     this.form.subModuleCode.set(item.subModuleCode);
     this.form.subModuleName.set(item.subModuleName);
     this.form.icon.set(item.icon ?? '');
@@ -126,7 +127,7 @@ export class SubModulesPage {
       } else {
         await firstValueFrom(
           this.http.post('/api/submodules', {
-            moduleId: Number(this.form.moduleId()),
+            moduleId: Number(this.moduleId()),
             subModuleCode: this.form.subModuleCode(),
             subModuleName: this.form.subModuleName(),
             icon: this.form.icon() || null,
