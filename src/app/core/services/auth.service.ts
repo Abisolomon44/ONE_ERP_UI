@@ -1,5 +1,6 @@
-﻿import { Injectable, computed, signal } from '@angular/core';
+﻿import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { LoginResponse } from '../models';
 import { PermissionService, UserPermission } from './permission.service';
@@ -20,6 +21,8 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this.token());
 
   readonly user = signal<LoginResponse['user'] | null>(this.readUser());
+
+  private readonly router = inject(Router);
 
   constructor(
     private http: HttpClient,
@@ -104,6 +107,8 @@ export class AuthService {
     this.user.set(null);
     this.perms.permissions.set([]);
     this.perms.userPermissions.set([]);
+
+    this.router.navigate(['/login']);
   }
 
   private currentUsername(): string | null {

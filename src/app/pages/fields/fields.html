@@ -69,7 +69,7 @@
 }
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Field' : 'Create Field'" (closeRequest)="dialogOpen.set(false)">
-  <base-dropdown label="Screen" icon="layout" [options]="formScreenOptions()" [(value)]="form.screenIdStr" placeholder="Select screen" [disabled]="!!editing()"></base-dropdown>
+  <base-dropdown label="Screen" icon="layout-grid" [options]="formScreenOptions()" [(value)]="form.screenIdStr" placeholder="Select screen" [disabled]="!!editing()"></base-dropdown>
   <base-input label="Field Code" icon="tag" [(value)]="form.fieldCode" [disabled]="!!editing()" hint="e.g. customer_name"></base-input>
   <base-input label="Field Name" icon="type" [(value)]="form.fieldName"></base-input>
   <base-input label="Display Name" icon="text" [(value)]="form.displayName"></base-input>

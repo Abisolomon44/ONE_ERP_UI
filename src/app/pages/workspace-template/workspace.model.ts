@@ -76,9 +76,38 @@ export interface Favorite {
 
 }
 
+export interface WorkspaceScreenLink {
+  id: number;
+  title: string;
+  route: string;
+}
+
+export interface WorkspaceSubModuleModel {
+  id: number;
+  title: string;
+  icon?: string;
+  screens: WorkspaceScreenLink[];
+}
+
+export interface WorkspaceModuleModel {
+  id: number;
+  title: string;
+  icon?: string;
+  subModules: WorkspaceSubModuleModel[];
+}
+
+export interface WorkspaceDomainModel {
+  id: number;
+  title: string;
+  icon?: string;
+  modules: WorkspaceModuleModel[];
+}
+
 export interface WorkspaceModel {
 
   id: number;
+
+  domains?: WorkspaceDomainModel[];
 
   title: string;
 

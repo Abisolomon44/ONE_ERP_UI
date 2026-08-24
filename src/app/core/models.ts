@@ -480,6 +480,7 @@ export interface Screen {
   subModuleName?: string;
   screenCode: string;
   screenName: string;
+  screenType?: string;
   routeUrl?: string;
   componentName?: string;
   sortOrder: number;

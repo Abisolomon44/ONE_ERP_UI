@@ -15,71 +15,75 @@
     <div class="workspace-header-actions">
       <div class="search-box">
         <i-lucide name="Search" [size]="15" class="input-prefix"></i-lucide>
-        <input
-          class="input search-input has-prefix"
-          placeholder="Search..."
-        />
+        <input class="input search-input has-prefix" placeholder="Search..." />
       </div>
-
       <button class="icon-btn" type="button">
         <i-lucide name="Bell" [size]="17"></i-lucide>
       </button>
-
       <button class="icon-btn" type="button">
         <i-lucide name="CircleUserRound" [size]="17"></i-lucide>
       </button>
     </div>
-  </div><!-- Quick Actions -->
-<div class="workspace-actions">
-  @for (action of workspace.quickActions; track action.id) {
+  </div>
 
-    <a
-      class="btn btn-{{ action.color }}"
-      [routerLink]="action.route">
-
-      @if (action.icon) {
-        <i-lucide
-          [name]="action.icon"
-          [size]="16">
-        </i-lucide>
+  @if (workspace.quickActions?.length) {
+    <!-- Quick Actions -->
+    <div class="workspace-actions">
+      @for (action of workspace.quickActions; track action.id) {
+        <a class="btn btn-{{ action.color }}" [routerLink]="action.route">
+          @if (action.icon) {
+            <i-lucide [name]="action.icon" [size]="16"></i-lucide>
+          }
+          {{ action.title }}
+        </a>
       }
-
-      {{ action.title }}
-
-    </a>
-
+    </div>
   }
-</div>
 
-<!-- Shortcut Cards -->
-<div class="shortcut-grid">
-  @for (card of workspace.shortcuts; track card.id) {
-
-    <a
-      class="shortcut-card"
-      [routerLink]="card.route">
-
-      <div class="shortcut-icon">
-        @if (card.icon) {
-          <i-lucide
-            [name]="card.icon"
-            [size]="28">
-          </i-lucide>
-        } @else {
-          <i-lucide
-            name="Circle"
-            [size]="28">
-          </i-lucide>
-        }
-      </div>
-
-      <h5>{{ card.title }}</h5>
-
-      <p>{{ card.description }}</p>
-
-   
-
-    </a>
-
+  @if (workspace.shortcuts?.length) {
+    <!-- Shortcut Cards -->
+    <div class="shortcut-grid">
+      @for (card of workspace.shortcuts; track card.id) {
+        <a class="shortcut-card" [routerLink]="card.route">
+          <div class="shortcut-icon">
+            @if (card.icon) {
+              <i-lucide [name]="card.icon" [size]="28"></i-lucide>
+            } @else {
+              <i-lucide name="Circle" [size]="28"></i-lucide>
+            }
+          </div>
+          <h5>{{ card.title }}</h5>
+          <p>{{ card.description }}</p>
+        </a>
+      }
+    </div>
   }
+
+  @if (workspace.domains?.length) {
+    <!-- Domain Groups -->
+    <div class="domain-groups">
+      @for (domain of workspace.domains; track domain.id) {
+        <div class="card domain-group">
+          <div class="domain-group-header">
+            <i-lucide [name]="domain.icon || 'layers'" [size]="18"></i-lucide>
+            <span>{{ domain.title }}</span>
+          </div>
+          @for (module of domain.modules; track module.id) {
+            <div class="domain-module">
+              <div class="domain-module-name">{{ module.title }}</div>
+              @for (sub of module.subModules; track sub.id) {
+                <div class="domain-submodule">
+                  <div class="domain-submodule-name">{{ sub.title }}</div>
+                  @for (screen of sub.screens; track screen.id) {
+                    <a class="domain-screen-link" [routerLink]="screen.route" (click)="onScreenClick(screen)">{{ screen.title }}</a>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
 </div>

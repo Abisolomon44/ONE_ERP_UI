@@ -38,7 +38,7 @@ interface ModuleWithSubModules {
 const SECTION_ORDER = ['Business Master', 'Enterprise Permissions'];
 
 const ADMIN_NAV: NavItem[] = [
-  { route: 'business-master', label: 'Business Master', icon: 'briefcase', section: 'Business Master', adminOnly: false },
+  { route: 'business-master', label: 'Business Master', icon: 'briefcase', section: 'Business Master', adminOnly: true },
   { route: 'enterprise-permissions', label: 'Enterprise Permissions', icon: 'shield-check', section: 'Enterprise Permissions', adminOnly: true },
   { route: 'system-master', label: 'System Master', icon: 'settings', section: 'Enterprise Permissions', adminOnly: true },
 ];
@@ -128,6 +128,15 @@ export class AppShell {
     if (this.isMobile()) this.mobileOpen.set(false);
   }
 
+  protected onWorkspaceClick(ws: WorkspaceNode): void {
+    console.log('[sidebar] workspace clicked:', {
+      id: ws.workspace.id,
+      name: ws.workspace.workspaceName,
+      route: `/workspace/${ws.workspace.id}`,
+    });
+    this.closeMobile();
+  }
+
   protected readonly tenantLabel = computed(() => {
     const raw = localStorage.getItem('oneerp-erp-tenant');
     return raw ? `Tenant \u00B7 ${raw.toUpperCase()}` : 'Tenant Workspace';
@@ -144,6 +153,7 @@ export class AppShell {
     const top = parts[0] ?? '';
     const map: Record<string, string> = {
       dashboard: 'Dashboard',
+      workspace: 'Workspace',
       workspaces: 'Workspaces',
       domains: 'Domains',
       modules: 'Modules',

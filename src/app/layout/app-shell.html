@@ -19,45 +19,12 @@
       </a>
 
       @for (ws of workspaces(); track ws.workspace.id) {
-        <div class="nav-group">
-          <button type="button" class="nav-item nav-group-toggle" (click)="toggleWorkspace(ws)">
-            <i-lucide [name]="ws.workspace.icon || 'layout-grid'" [size]="18"></i-lucide>
-            @if (!collapsed()) {
-              <span class="nav-group-label">{{ ws.workspace.workspaceName }}</span>
-              <i-lucide class="nav-group-chevron" [name]="ws.open ? 'chevron-down' : 'chevron-right'" [size]="14"></i-lucide>
-            }
-          </button>
-          @if (ws.open && !collapsed()) {
-            @for (dn of ws.domains; track dn.domain.id) {
-              <div class="nav-subgroup">
-                <button type="button" class="nav-item nav-subgroup-toggle" (click)="toggleDomain(dn)">
-                  <i-lucide [name]="dn.domain.icon || 'layers'" [size]="16"></i-lucide>
-                  <span class="nav-group-label">{{ dn.domain.domainName }}</span>
-                  <i-lucide class="nav-group-chevron" [name]="dn.open ? 'chevron-down' : 'chevron-right'" [size]="12"></i-lucide>
-                </button>
-                @if (dn.open) {
-                  @for (mw of dn.modules; track mw.module.id) {
-                    <div class="nav-item-group">
-                      <button type="button" class="nav-item nav-subgroup-toggle" (click)="toggleModule(mw)" style="padding-left: 28px">
-                        <i-lucide [name]="mw.module.icon || 'box'" [size]="14"></i-lucide>
-                        <span>{{ mw.module.moduleName }}</span>
-                        <i-lucide class="nav-group-chevron" [name]="mw.open ? 'chevron-down' : 'chevron-right'" [size]="12"></i-lucide>
-                      </button>
-                      @if (mw.open) {
-                        @for (sub of mw.subModules; track sub.id) {
-                          <a class="nav-item nav-leaf" [routerLink]="sub.routeUrl || mw.module.routeUrl || '/dashboard'" routerLinkActive="active" (click)="closeMobile()" style="padding-left: 44px">
-                            <i-lucide [name]="sub.icon || 'puzzle'" [size]="12"></i-lucide>
-                            <span>{{ sub.subModuleName }}</span>
-                          </a>
-                        }
-                      }
-                    </div>
-                  }
-                }
-              </div>
-            }
+        <a class="nav-item" [routerLink]="['/workspace', ws.workspace.id]" routerLinkActive="active" (click)="onWorkspaceClick(ws)">
+          <i-lucide [name]="ws.workspace.icon || 'layout-grid'" [size]="18"></i-lucide>
+          @if (!collapsed()) {
+            <span>{{ ws.workspace.workspaceName }}</span>
           }
-        </div>
+        </a>
       }
 
       @for (section of adminSections(); track section.name) {

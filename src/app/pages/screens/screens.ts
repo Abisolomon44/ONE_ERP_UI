@@ -16,6 +16,7 @@ interface ScreenForm {
   subModuleIdStr: WritableSignal<string | number>;
   screenCode: WritableSignal<string>;
   screenName: WritableSignal<string>;
+  screenType: WritableSignal<string>;
   routeUrl: WritableSignal<string>;
   componentName: WritableSignal<string>;
   sortOrderStr: WritableSignal<string>;
@@ -53,11 +54,20 @@ export class ScreensPage implements AfterViewInit {
     subModuleIdStr: signal(''),
     screenCode: signal(''),
     screenName: signal(''),
+    screenType: signal('MASTER'),
     routeUrl: signal(''),
     componentName: signal(''),
     sortOrderStr: signal('0'),
     isActive: signal(true),
   };
+
+  protected readonly screenTypeOptions = [
+    { value: 'MASTER', label: 'Master' },
+    { value: 'PAGE', label: 'Page' },
+    { value: 'DIALOG', label: 'Dialog' },
+    { value: 'TAB', label: 'Tab' },
+    { value: 'REPORT', label: 'Report' },
+  ];
 
   protected readonly domainOptions = computed<DropdownOption[]>(() =>
     this.domains().map((d) => ({ value: d.id, label: d.domainName }))
@@ -139,6 +149,7 @@ export class ScreensPage implements AfterViewInit {
     this.form.componentName.set('');
     this.form.sortOrderStr.set('0');
     this.form.isActive.set(true);
+    this.form.screenType.set('MASTER');
     this.dialogOpen.set(true);
   }
 
@@ -155,6 +166,7 @@ export class ScreensPage implements AfterViewInit {
     this.form.componentName.set(item.componentName ?? '');
     this.form.sortOrderStr.set(item.sortOrder.toString());
     this.form.isActive.set(item.isActive);
+    this.form.screenType.set(item.screenType ?? 'MASTER');
     this.dialogOpen.set(true);
   }
 
@@ -166,6 +178,7 @@ export class ScreensPage implements AfterViewInit {
         subModuleId: parseInt(String(this.form.subModuleIdStr()), 10),
         screenCode: this.form.screenCode(),
         screenName: this.form.screenName(),
+        screenType: this.form.screenType(),
         routeUrl: this.form.routeUrl() || null,
         componentName: this.form.componentName() || null,
         sortOrder: this.form.sortOrderStr() ? parseInt(this.form.sortOrderStr(), 10) : 0,
@@ -173,9 +186,9 @@ export class ScreensPage implements AfterViewInit {
       };
 
       if (this.editing()) {
-        const { screenCode, screenName, routeUrl, componentName, sortOrder, isActive } = payload;
+        const { screenCode, screenName, screenType, routeUrl, componentName, sortOrder, isActive } = payload;
         await firstValueFrom(
-          this.http.put(`/api/screens/${this.editing()!.id}`, { screenCode, screenName, routeUrl, componentName, sortOrder, isActive }),
+          this.http.put(`/api/screens/${this.editing()!.id}`, { screenCode, screenName, screenType, routeUrl, componentName, sortOrder, isActive }),
         );
         this.toast.success('Screen updated');
       } else {

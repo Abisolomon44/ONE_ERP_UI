@@ -1,0 +1,11 @@
+@if (loading()) {
+  <div class="card flex" style="justify-content:center; padding:44px">
+    <span class="spinner spinner-lg" style="color: var(--accent)"></span>
+  </div>
+} @else if (notFound() || !model()) {
+  <div class="card">
+    <div class="empty-state">Workspace not found.</div>
+  </div>
+} @else {
+  <app-workspace-template [workspace]="model()!"></app-workspace-template>
+}

@@ -29,7 +29,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/auth/login') && !req.url.includes('/auth/refresh')) {
+      if (
+        error.status === 401 &&
+        !req.url.includes('/auth/login') &&
+        !req.url.includes('/auth/refresh') &&
+        !req.url.includes('/auth/logout')
+      ) {
         return from(auth.refresh()).pipe(
           switchMap((ok) => {
             if (!ok) {
@@ -57,9 +62,12 @@ export const apiInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(apiReq).pipe(
     map((event: HttpEvent<unknown>) => {
-      if (event instanceof HttpResponse && event.body && typeof event.body === 'object' && 'success' in event.body) {
-        const body = event.body as ApiResponse<unknown>;
-        return event.clone({ body: body.data });
+      if (event instanceof HttpResponse && event.body && typeof event.body === 'object') {
+        const body = event.body as Record<string, unknown>;
+        if ('success' in body || 'Success' in body) {
+          const data = 'data' in body ? body['data'] : body['Data'];
+          return event.clone({ body: data });
+        }
       }
       return event;
     }),

@@ -30,6 +30,13 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardPage),
       },
 
+      // Workspace (drill-down template)
+      {
+        path: 'workspace/:id',
+        title: 'Workspace',
+        loadComponent: () => import('./pages/workspace/workspace').then((m) => m.WorkspacePage),
+      },
+
       // Users
       {
         path: 'users',

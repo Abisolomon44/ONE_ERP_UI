@@ -279,3 +279,40 @@
   margin: 0 0 10px;
   line-height: 1.4;
 }
+
+/* ---------- Domain Groups ---------- */
+.domain-groups {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+@media (max-width: 860px) { .domain-groups { grid-template-columns: 1fr; } }
+
+.domain-group { padding: 18px 20px; }
+.domain-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.domain-module { padding: 8px 0; border-top: 1px solid var(--border); }
+.domain-module:first-of-type { border-top: none; }
+.domain-module-name { font-weight: 600; font-size: 13.5px; color: var(--text-2); margin: 6px 0; }
+.domain-submodule { padding: 4px 0 4px 14px; }
+.domain-submodule-name { font-size: 13px; color: var(--text-3); margin-bottom: 4px; }
+.domain-screen-link {
+  display: inline-block;
+  margin: 3px 8px 3px 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 160ms ease;
+}
+.domain-screen-link:hover { background: var(--accent); color: #fff; }

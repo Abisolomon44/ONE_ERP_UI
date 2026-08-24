@@ -4,7 +4,7 @@
     <div class="page-sub">Manage screens within permission modules.</div>
   </div>
   <div class="page-actions">
-    <base-button *basePermission="'screens.manage'" icon="plus" (click)="openCreate()">New Screen</base-button>
+    <base-button icon="plus" (click)="openCreate()">New Screen</base-button>
   </div>
 </div>
 
@@ -20,7 +20,7 @@
     <span class="spinner spinner-lg" style="color: var(--accent)"></span>
   </div>
 } @else if (filteredRows().length === 0) {
-  <div class="card"><base-empty icon="layout" title="No screens found" subtitle="Create a screen to get started."></base-empty></div>
+  <div class="card"><base-empty icon="layout-grid" title="No screens found" subtitle="Create a screen to get started."></base-empty></div>
 } @else {
   <div class="grid grid-2" style="align-items: stretch; gap: 20px">
     @for (item of filteredRows(); track item.id) {
@@ -53,12 +53,10 @@
             Sort Order: <strong>{{ item.sortOrder }}</strong>
           </p>
         </div>
-        @if (perms.has('screens.manage')) {
-          <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
-            <base-button variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(item)"></base-button>
-            <base-button variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(item)"></base-button>
-          </div>
-        }
+        <div class="card-footer" style="display:flex; justify-content:flex-end; gap:8px">
+          <base-button variant="secondary" size="sm" icon="square-pen" label="Edit" (click)="openEdit(item)"></base-button>
+          <base-button variant="danger" size="sm" icon="trash-2" label="Delete" (click)="remove(item)"></base-button>
+        </div>
       </div>
     }
   </div>
@@ -66,8 +64,9 @@
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Screen' : 'Create Screen'" (closeRequest)="dialogOpen.set(false)">
   <base-dropdown label="Domain" icon="globe" [options]="domainOptions()" [(value)]="formDomainId" [disabled]="!!editing()"></base-dropdown>
-  <base-dropdown label="Module" icon="box" [options]="formModuleOptions()" [(value)]="formModuleId" [disabled]="!!editing() || !formDomainId()"></base-dropdown>
-  <base-dropdown label="Sub Module" icon="puzzle" [options]="formSubModuleOptions()" [(value)]="form.subModuleIdStr" placeholder="Select sub module" [disabled]="!!editing() || !formModuleId()"></base-dropdown>
+  <base-dropdown label="Module" icon="box" [options]="formModuleOptions()" [(value)]="formModuleId" [disabled]="!!editing()"></base-dropdown>
+  <base-dropdown label="Sub Module" icon="puzzle" [options]="formSubModuleOptions()" [(value)]="form.subModuleIdStr" placeholder="Select sub module" [disabled]="!!editing()"></base-dropdown>
+  <base-dropdown label="Screen Type" icon="layout-grid" [options]="screenTypeOptions" [(value)]="form.screenType" placeholder="Select type"></base-dropdown>
   <base-input label="Screen Code" icon="tag" [(value)]="form.screenCode" [disabled]="!!editing()" hint="e.g. dashboard"></base-input>
   <base-input label="Screen Name" icon="type" [(value)]="form.screenName"></base-input>
   <base-input label="Route URL" icon="navigation" [(value)]="form.routeUrl" hint="e.g. /dashboard"></base-input>
