@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, distinctUntilChanged, finalize, forkJoin, map, of, switchMap, tap, Observable } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { WorkspaceTemplate } from '../workspace-template/workspace-template';
+import { PermissionService } from '../../core/services/permission.service';
 import {
   WorkspaceModel,
   WorkspaceDomainModel,
@@ -21,6 +22,7 @@ import {
 export class WorkspacePage {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
+  private readonly perm = inject(PermissionService);
 
   protected readonly loading = signal(true);
   protected readonly notFound = signal(false);
@@ -109,26 +111,32 @@ export class WorkspacePage {
     const moduleIds = new Set(myModules.map((m) => m.id));
     const mySubs = subModules.filter((sm) => moduleIds.has(sm.moduleId));
     const subIds = new Set(mySubs.map((sm) => sm.id));
-    const myScreens = screens.filter((s) => subIds.has(s.subModuleId));
+    const myScreens = (screens as any[])
+      .filter((s) => subIds.has(s.subModuleId))
+      .filter((s) => this.canAccessScreen(s.permissionCode));
 
-    const domainsModel: WorkspaceDomainModel[] = myDomains.map((d) => {
-      const dModules = myModules
-        .filter((m) => m.domainId === d.id)
-        .map((m) => {
-          const mSubs: WorkspaceSubModuleModel[] = mySubs
-            .filter((sm) => sm.moduleId === m.id)
-            .map((sm) => ({
-              id: sm.id,
-              title: sm.subModuleName,
-              icon: sm.icon,
-              screens: myScreens
-                .filter((s) => s.subModuleId === sm.id && s.routeUrl)
-                .map((s) => ({ id: s.id, title: s.screenName, route: s.routeUrl })),
-            }));
-          return { id: m.id, title: m.moduleName, icon: m.icon, subModules: mSubs } as WorkspaceModuleModel;
-        });
-      return { id: d.id, title: d.domainName, icon: d.icon, modules: dModules } as WorkspaceDomainModel;
-    });
+    const domainsModel: WorkspaceDomainModel[] = myDomains
+      .map((d) => {
+        const dModules = myModules
+          .filter((m) => m.domainId === d.id)
+          .map((m) => {
+            const mSubs: WorkspaceSubModuleModel[] = mySubs
+              .filter((sm) => sm.moduleId === m.id)
+              .map((sm) => ({
+                id: sm.id,
+                title: sm.subModuleName,
+                icon: sm.icon,
+                screens: myScreens
+                  .filter((s) => s.subModuleId === sm.id && s.routeUrl)
+                  .map((s) => ({ id: s.id, title: s.screenName, route: s.routeUrl })),
+              }))
+              .filter((sub) => sub.screens.length > 0);
+            return { id: m.id, title: m.moduleName, icon: m.icon, subModules: mSubs } as WorkspaceModuleModel;
+          })
+          .filter((mod) => mod.subModules.length > 0);
+        return { id: d.id, title: d.domainName, icon: d.icon, modules: dModules } as WorkspaceDomainModel;
+      })
+      .filter((dom) => dom.modules.length > 0);
 
     return {
       id: ws.id,
@@ -141,5 +149,17 @@ export class WorkspacePage {
       favorites: [],
       domains: domainsModel,
     };
+  }
+
+  /**
+   * A screen is shown when the current user holds at least one permission
+   * under its PermissionCode (e.g. `branches.view`), or the bare screen code, or
+   * the super-admin wildcard. Screens without a PermissionCode are not
+   * permission-managed, so they are visible to all signed-in users.
+   */
+  private canAccessScreen(permissionCode: string | null | undefined): boolean {
+    if (!permissionCode) return true;
+    const code = permissionCode.trim().toLowerCase();
+    return this.perm.has(`${code}.view`) || this.perm.has(code);
   }
 }

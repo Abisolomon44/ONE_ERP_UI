@@ -121,7 +121,10 @@ export class AuthService {
   localStorage.setItem(REFRESH_KEY, data.refreshToken);
   localStorage.setItem(TENANT_KEY, data.tenantCode);
   localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-  localStorage.setItem(PERMS_KEY, JSON.stringify(data.permissions));
+  // Super admins bypass authorization server-side, so treat them as having
+  // every permission on the client too (otherwise their UI controls hide).
+  const effectivePermissions = data.user?.isSuperAdmin ? ['*'] : data.permissions;
+  localStorage.setItem(PERMS_KEY, JSON.stringify(effectivePermissions));
   localStorage.setItem('companyId', data.user.companyId.toString());
   localStorage.setItem('userId', data.user.userId.toString());
 
@@ -129,7 +132,7 @@ export class AuthService {
 
   this.token.set(data.accessToken);
   this.user.set(data.user);
-  this.perms.permissions.set(data.permissions);
+  this.perms.permissions.set(effectivePermissions);
 
   // Load module-scoped permissions
   this.loadModulePermissions();

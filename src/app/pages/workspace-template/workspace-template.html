@@ -75,7 +75,10 @@
                 <div class="domain-submodule">
                   <div class="domain-submodule-name">{{ sub.title }}</div>
                   @for (screen of sub.screens; track screen.id) {
-                    <a class="domain-screen-link" [routerLink]="screen.route" (click)="onScreenClick(screen)">{{ screen.title }}</a>
+                    <a class="domain-screen-link" [routerLink]="screen.route" (click)="onScreenClick(screen)">
+                      <span>{{ screen.title }}</span>
+                      <i-lucide name="ChevronRight" [size]="14"></i-lucide>
+                    </a>
                   }
                 </div>
               }

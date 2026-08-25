@@ -32,21 +32,28 @@
         </button>
       }
 
-      @if (config.allowImport && !showEntry) {
-        <button class="btn btn-success" type="button">
-          <i-lucide name="Upload" [size]="15"></i-lucide>
-          Import
-        </button>
+      @if (!showEntry && visibleToolbarActions().length > 0) {
+        <div class="action-menu">
+          <button class="icon-btn" type="button" (click)="toggleMenu()" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" aria-label="Actions">
+            <i-lucide name="EllipsisVertical" [size]="16"></i-lucide>
+          </button>
+          @if (menuOpen()) {
+            <div class="action-dropdown" role="menu">
+              @for (a of visibleToolbarActions(); track a.code) {
+                <button class="action-item" type="button" role="menuitem" (click)="selectAction(a.code)">
+                  <i-lucide [name]="a.icon || actionIcon(a.code)" [size]="15"></i-lucide>
+                  {{ a.label || a.code }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+      @if (menuOpen()) {
+        <div class="menu-backdrop" (click)="closeMenu()"></div>
       }
 
-      @if (config.allowExport && !showEntry) {
-        <button class="btn btn-warning" type="button">
-          <i-lucide name="Download" [size]="15"></i-lucide>
-          Export
-        </button>
-      }
-
-      @if (!showEntry && config.allowCreate !== false) {
+      @if (!showEntry && canShowCreate()) {
         <button class="btn btn-primary" type="button" (click)="create()">
           <i-lucide name="Plus" [size]="15"></i-lucide>
           {{ config.createLabel || 'New' }}
@@ -134,12 +141,12 @@
                     </td>
                   }
                   <td class="cell-actions">
-                    @if (config.allowEdit !== false) {
+                    @if (canShowEdit()) {
                       <button class="btn btn-sm btn-secondary" type="button" (click)="edit(row)">
                         <i-lucide name="Pencil" [size]="13"></i-lucide>
                       </button>
                     }
-                    @if (config.allowDelete !== false) {
+                    @if (canShowDelete()) {
                       <button class="btn btn-sm btn-danger-soft" type="button" (click)="delete(row)">
                         <i-lucide name="Trash2" [size]="13"></i-lucide>
                       </button>

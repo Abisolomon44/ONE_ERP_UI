@@ -77,64 +77,7 @@
 .btn-info { background: var(--info-soft); color: var(--info); }
 .btn-info:hover { background: rgba(8, 145, 178, 0.2); }
 
-/* ---------- Shortcut grid ---------- */
-.shortcut-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  margin-bottom: 32px;
-}
-@media (max-width: 1100px) { .shortcut-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 860px)  { .shortcut-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px)  { .shortcut-grid { grid-template-columns: 1fr; } }
-
-.shortcut-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: 26px 22px;
-  text-align: center;
-  cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.shortcut-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--border-strong);
-}
-
-.shortcut-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius);
-  background: var(--accent-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-}
-
-.shortcut-icon i {
-  font-size: 30px;
-  color: var(--accent);
-}
-
-.shortcut-card h5 {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 6px;
-}
-
-.shortcut-card p {
-  color: var(--text-3);
-  font-size: 12.5px;
-  min-height: 36px;
-  margin: 0 0 14px;
-  line-height: 1.5;
-}
+/* (shortcut card styles are consolidated in the block below) */
 
 /* ---------- Bottom section ---------- */
 .workspace-bottom {
@@ -219,7 +162,7 @@
 }
 
 
-/* ---------- Shortcut grid ---------- */
+/* ---------- Shortcut cards ---------- */
 .shortcut-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -233,37 +176,58 @@
 @media (max-width: 400px)  { .shortcut-grid { grid-template-columns: 1fr; } }
 
 .shortcut-card {
-  background: var(--surface);
+  position: relative;
+  background: linear-gradient(160deg, var(--surface) 0%, var(--accent-soft) 220%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  padding: 16px 14px;
+  padding: 18px 14px 16px;
   text-align: center;
   cursor: pointer;
+  overflow: hidden;
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.shortcut-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 160ms ease;
 }
 
 .shortcut-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
-  border-color: var(--border-strong);
+  border-color: var(--accent);
 }
+.shortcut-card:hover::before { opacity: 1; }
 
 .shortcut-icon {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: var(--radius-sm);
-  background: var(--accent-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 10px;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.shortcut-card:hover .shortcut-icon {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
-.shortcut-icon i {
+.shortcut-icon i-lucide {
   font-size: 20px;
   color: var(--accent);
+  transition: color 160ms ease;
 }
+.shortcut-card:hover .shortcut-icon i-lucide { color: #fff; }
 
 .shortcut-card h5 {
   font-size: 13px;
@@ -275,8 +239,7 @@
 .shortcut-card p {
   color: var(--text-3);
   font-size: 11.5px;
-  min-height: 0;
-  margin: 0 0 10px;
+  margin: 0;
   line-height: 1.4;
 }
 
@@ -304,7 +267,9 @@
 .domain-submodule { padding: 4px 0 4px 14px; }
 .domain-submodule-name { font-size: 13px; color: var(--text-3); margin-bottom: 4px; }
 .domain-screen-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin: 3px 8px 3px 0;
   padding: 5px 12px;
   border-radius: 999px;
@@ -313,6 +278,8 @@
   font-size: 12.5px;
   font-weight: 600;
   text-decoration: none;
-  transition: background 160ms ease;
+  transition: background 160ms ease, color 160ms ease;
 }
 .domain-screen-link:hover { background: var(--accent); color: #fff; }
+.domain-screen-link i-lucide { opacity: 0.7; transition: opacity 160ms ease; }
+.domain-screen-link:hover i-lucide { opacity: 1; }
