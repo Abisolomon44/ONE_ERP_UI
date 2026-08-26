@@ -117,6 +117,11 @@ export const routes: Routes = [
         title: 'Products',
         loadComponent: () => import('./pages/product/product').then((m) => m.ProductPage),
       },
+      {
+        path: 'tax-type-systems',
+        title: 'Tax Type Systems',
+        loadComponent: () => import('./pages/tax-type-system/tax-type-system').then((m) => m.TaxTypeSystemPage),
+      },
 
       {
         path: 'department',

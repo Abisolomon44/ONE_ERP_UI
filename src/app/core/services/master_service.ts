@@ -311,6 +311,38 @@ class ProductService {
 }
 
 // ============================================================
+// Tax Type Systems (System Master)
+// ============================================================
+
+export interface TaxTypeSystemDto {
+  id: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type CreateTaxTypeSystemRequest = {
+  code: string;
+  name: string;
+  description?: string | null;
+};
+export type UpdateTaxTypeSystemRequest = CreateTaxTypeSystemRequest & { isActive: boolean };
+
+class TaxTypeSystemService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<TaxTypeSystemDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<TaxTypeSystemDto>>('/api/tax-type-systems', { params }));
+  }
+  getById(id: number): Promise<TaxTypeSystemDto> { return firstValueFrom(this.http.get<TaxTypeSystemDto>(`/api/tax-type-systems/${id}`)); }
+  create(req: CreateTaxTypeSystemRequest): Promise<TaxTypeSystemDto> { return firstValueFrom(this.http.post<TaxTypeSystemDto>('/api/tax-type-systems', req)); }
+  update(id: number, req: UpdateTaxTypeSystemRequest): Promise<TaxTypeSystemDto> { return firstValueFrom(this.http.put<TaxTypeSystemDto>(`/api/tax-type-systems/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/tax-type-systems/${id}`)).then(() => undefined); }
+}
+
+// ============================================================
 // Master service — single injection point for every
 // Administration sub-resource.
 // ============================================================
@@ -328,6 +360,7 @@ export class AdministrationService {
   readonly productBrands: ProductBrandService;
   readonly productUnits: ProductUnitService;
   readonly products: ProductService;
+  readonly taxTypeSystems: TaxTypeSystemService;
 
   constructor(http: HttpClient) {
     this.company = new CompanyService(http);
@@ -341,5 +374,6 @@ export class AdministrationService {
     this.productBrands = new ProductBrandService(http);
     this.productUnits = new ProductUnitService(http);
     this.products = new ProductService(http);
+    this.taxTypeSystems = new TaxTypeSystemService(http);
   }
 }
