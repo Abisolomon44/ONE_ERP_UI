@@ -88,6 +88,36 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/branch/branch').then((m) => m.BranchPage),
       },
 
+      // ===========================
+      // Product / Billing Masters
+      // ===========================
+
+      {
+        path: 'product-categories',
+        title: 'Product Categories',
+        loadComponent: () => import('./pages/category/category').then((m) => m.CategoryPage),
+      },
+      {
+        path: 'product-subcategories',
+        title: 'Product Sub Categories',
+        loadComponent: () => import('./pages/subcategory/subcategory').then((m) => m.SubCategoryPage),
+      },
+      {
+        path: 'brands',
+        title: 'Brands',
+        loadComponent: () => import('./pages/brand/brand').then((m) => m.BrandPage),
+      },
+      {
+        path: 'units',
+        title: 'Units',
+        loadComponent: () => import('./pages/unit/unit').then((m) => m.UnitPage),
+      },
+      {
+        path: 'products',
+        title: 'Products',
+        loadComponent: () => import('./pages/product/product').then((m) => m.ProductPage),
+      },
+
       {
         path: 'department',
         title: 'Department',

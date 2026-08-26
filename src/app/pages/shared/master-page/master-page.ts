@@ -365,6 +365,10 @@ ngOnChanges(changes: SimpleChanges): void {
   }
 
   get currentTabFields() {
+    if (!this.config.tabs || this.config.tabs.length === 0) {
+      return this.config.fields;
+    }
+
     if (!this.currentTab) {
       return [];
     }

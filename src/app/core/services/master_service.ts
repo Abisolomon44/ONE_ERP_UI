@@ -138,6 +138,179 @@ export type CreateTimeZoneRequest = Pick<TimeZone, 'name' | 'timeZoneName' | 'ut
 export type UpdateTimeZoneRequest = CreateTimeZoneRequest & { isActive: boolean };
 
 // ============================================================
+// Product / Billing masters
+// ============================================================
+
+export interface ProductCategoryDto {
+  id: number;
+  categoryCode: string;
+  categoryName: string;
+  description?: string | null;
+  parentCategoryId?: number | null;
+  sortOrder?: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+export type CreateProductCategoryRequest = Pick<ProductCategoryDto, 'categoryCode' | 'categoryName' | 'description' | 'parentCategoryId' | 'sortOrder'>;
+export type UpdateProductCategoryRequest = CreateProductCategoryRequest & { isActive: boolean };
+
+export interface ProductSubCategoryDto {
+  id: number;
+  categoryId: number;
+  subCategoryCode: string;
+  subCategoryName: string;
+  description?: string | null;
+  sortOrder?: number | null;
+  categoryName?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+export type CreateProductSubCategoryRequest = Pick<ProductSubCategoryDto, 'categoryId' | 'subCategoryCode' | 'subCategoryName' | 'description' | 'sortOrder'>;
+export type UpdateProductSubCategoryRequest = CreateProductSubCategoryRequest & { isActive: boolean };
+
+export interface ProductBrandDto {
+  id: number;
+  brandCode: string;
+  brandName: string;
+  description?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+export type CreateProductBrandRequest = Pick<ProductBrandDto, 'brandCode' | 'brandName' | 'description'>;
+export type UpdateProductBrandRequest = CreateProductBrandRequest & { isActive: boolean };
+
+export interface ProductUnitDto {
+  id: number;
+  unitCode: string;
+  unitName: string;
+  symbol?: string | null;
+  decimalPlaces: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+export type CreateProductUnitRequest = Pick<ProductUnitDto, 'unitCode' | 'unitName' | 'symbol' | 'decimalPlaces'>;
+export type UpdateProductUnitRequest = CreateProductUnitRequest & { isActive: boolean };
+
+class ProductCategoryService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<ProductCategoryDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<ProductCategoryDto>>('/api/product-categories', { params }));
+  }
+  getById(id: number): Promise<ProductCategoryDto> { return firstValueFrom(this.http.get<ProductCategoryDto>(`/api/product-categories/${id}`)); }
+  create(req: CreateProductCategoryRequest): Promise<ProductCategoryDto> { return firstValueFrom(this.http.post<ProductCategoryDto>('/api/product-categories', req)); }
+  update(id: number, req: UpdateProductCategoryRequest): Promise<ProductCategoryDto> { return firstValueFrom(this.http.put<ProductCategoryDto>(`/api/product-categories/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/product-categories/${id}`)).then(() => undefined); }
+}
+
+class ProductSubCategoryService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<ProductSubCategoryDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<ProductSubCategoryDto>>('/api/product-subcategories', { params }));
+  }
+  getById(id: number): Promise<ProductSubCategoryDto> { return firstValueFrom(this.http.get<ProductSubCategoryDto>(`/api/product-subcategories/${id}`)); }
+  create(req: CreateProductSubCategoryRequest): Promise<ProductSubCategoryDto> { return firstValueFrom(this.http.post<ProductSubCategoryDto>('/api/product-subcategories', req)); }
+  update(id: number, req: UpdateProductSubCategoryRequest): Promise<ProductSubCategoryDto> { return firstValueFrom(this.http.put<ProductSubCategoryDto>(`/api/product-subcategories/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/product-subcategories/${id}`)).then(() => undefined); }
+}
+
+class ProductBrandService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<ProductBrandDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<ProductBrandDto>>('/api/brands', { params }));
+  }
+  getById(id: number): Promise<ProductBrandDto> { return firstValueFrom(this.http.get<ProductBrandDto>(`/api/brands/${id}`)); }
+  create(req: CreateProductBrandRequest): Promise<ProductBrandDto> { return firstValueFrom(this.http.post<ProductBrandDto>('/api/brands', req)); }
+  update(id: number, req: UpdateProductBrandRequest): Promise<ProductBrandDto> { return firstValueFrom(this.http.put<ProductBrandDto>(`/api/brands/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/brands/${id}`)).then(() => undefined); }
+}
+
+class ProductUnitService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<ProductUnitDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<ProductUnitDto>>('/api/units', { params }));
+  }
+  getById(id: number): Promise<ProductUnitDto> { return firstValueFrom(this.http.get<ProductUnitDto>(`/api/units/${id}`)); }
+  create(req: CreateProductUnitRequest): Promise<ProductUnitDto> { return firstValueFrom(this.http.post<ProductUnitDto>('/api/units', req)); }
+  update(id: number, req: UpdateProductUnitRequest): Promise<ProductUnitDto> { return firstValueFrom(this.http.put<ProductUnitDto>(`/api/units/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/units/${id}`)).then(() => undefined); }
+}
+
+// ============================================================
+// Products
+// ============================================================
+
+export interface ProductDto {
+  id: number;
+  companyId: number;
+  branchId?: number | null;
+  productCode: string;
+  productName: string;
+  categoryId?: number | null;
+  subCategoryId?: number | null;
+  brandId?: number | null;
+  uomId: number;
+  sku?: string | null;
+  barcode?: string | null;
+  mrp?: number | null;
+  purchasePrice?: number | null;
+  salesPrice?: number | null;
+  taxId?: number | null;
+  isStockItem: boolean;
+  isSaleable: boolean;
+  isPurchaseable: boolean;
+  isActive: boolean;
+  description?: string | null;
+  categoryName?: string | null;
+  subCategoryName?: string | null;
+  brandName?: string | null;
+  uomName?: string | null;
+  branchName?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export type CreateProductRequest = {
+  productCode: string;
+  productName: string;
+  categoryId?: number | null;
+  subCategoryId?: number | null;
+  brandId?: number | null;
+  uomId: number;
+  branchId?: number | null;
+  sku?: string | null;
+  barcode?: string | null;
+  mrp?: number | null;
+  purchasePrice?: number | null;
+  salesPrice?: number | null;
+  taxId?: number | null;
+  isStockItem?: boolean;
+  isSaleable?: boolean;
+  isPurchaseable?: boolean;
+  description?: string | null;
+};
+export type UpdateProductRequest = CreateProductRequest & { isActive: boolean };
+
+class ProductService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<ProductDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<ProductDto>>('/api/products', { params }));
+  }
+  getById(id: number): Promise<ProductDto> { return firstValueFrom(this.http.get<ProductDto>(`/api/products/${id}`)); }
+  create(req: CreateProductRequest): Promise<ProductDto> { return firstValueFrom(this.http.post<ProductDto>('/api/products', req)); }
+  update(id: number, req: UpdateProductRequest): Promise<ProductDto> { return firstValueFrom(this.http.put<ProductDto>(`/api/products/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/products/${id}`)).then(() => undefined); }
+}
+
+// ============================================================
 // Master service — single injection point for every
 // Administration sub-resource.
 // ============================================================
@@ -150,6 +323,11 @@ export class AdministrationService {
   readonly gstRegistrationTypes: LookupService<GstRegistrationType, CreateGstRegistrationTypeRequest, UpdateGstRegistrationTypeRequest>;
   readonly languages: LookupService<Language, CreateLanguageRequest, UpdateLanguageRequest>;
   readonly timeZones: LookupService<TimeZone, CreateTimeZoneRequest, UpdateTimeZoneRequest>;
+  readonly productCategories: ProductCategoryService;
+  readonly productSubCategories: ProductSubCategoryService;
+  readonly productBrands: ProductBrandService;
+  readonly productUnits: ProductUnitService;
+  readonly products: ProductService;
 
   constructor(http: HttpClient) {
     this.company = new CompanyService(http);
@@ -158,5 +336,10 @@ export class AdministrationService {
     this.gstRegistrationTypes = new LookupService(http, '/api/gst-registration-types');
     this.languages = new LookupService(http, '/api/languages');
     this.timeZones = new LookupService(http, '/api/timezones');
+    this.productCategories = new ProductCategoryService(http);
+    this.productSubCategories = new ProductSubCategoryService(http);
+    this.productBrands = new ProductBrandService(http);
+    this.productUnits = new ProductUnitService(http);
+    this.products = new ProductService(http);
   }
 }
