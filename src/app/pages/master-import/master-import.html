@@ -1,0 +1,192 @@
+<div class="import-container">
+  <header class="page-head">
+    <div>
+      <h1>Master Import</h1>
+      <p>Bulk import masters via CSV using a validated, audited flow.</p>
+    </div>
+    <button class="btn ghost" (click)="toggleLogs()">
+      <i-lucide name="history"></i-lucide> Import Logs
+    </button>
+  </header>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view master imports.</div>
+  } @else if (loading()) {
+    <div class="empty">Loading…</div>
+  } @else {
+    <!-- Stepper -->
+    <ol class="stepper">
+      <li [class.active]="step() >= 0" [class.done]="step() > 0"><span>1</span> Select Master</li>
+      <li [class.active]="step() >= 1" [class.done]="step() > 1"><span>2</span> Columns</li>
+      <li [class.active]="step() >= 2" [class.done]="step() > 2"><span>3</span> Upload</li>
+      <li [class.active]="step() >= 3" [class.done]="step() > 3"><span>4</span> Preview</li>
+      <li [class.active]="step() >= 4"><span>5</span> Done</li>
+    </ol>
+
+    <!-- Step 1: select master -->
+    @if (step() === 0) {
+      <section class="card">
+        <h2>Select a master to import</h2>
+        <div class="master-grid">
+          @for (m of masters(); track m.name) {
+            <button class="master-tile" (click)="onSelectMaster(m)">
+              <i-lucide name="table"></i-lucide>
+              <strong>{{ m.label }}</strong>
+              <small>{{ m.description }}</small>
+            </button>
+          }
+        </div>
+        @if (masters().length === 0) {
+          <div class="empty">No importable masters available.</div>
+        }
+      </section>
+    }
+
+    <!-- Step 2: columns -->
+    @if (step() === 1 && selectedMaster()) {
+      <section class="card">
+        <h2>Choose columns — {{ selectedMaster()!.label }}</h2>
+        <p class="hint">Mandatory columns are required and cannot be removed.</p>
+        <table class="col-table">
+          <thead>
+            <tr><th>Import</th><th>Column</th><th>Type</th><th>Reference</th><th>Mandatory</th></tr>
+          </thead>
+          <tbody>
+            @for (c of selectedMaster()!.columns; track c.key) {
+              <tr>
+                <td>
+                  <input type="checkbox" [checked]="isColumnChecked(c.key)"
+                         [disabled]="c.isMandatory" (change)="toggleColumn(c, $event.target.checked)" />
+                </td>
+                <td><code>{{ c.key }}</code><div class="col-label">{{ c.label }}</div></td>
+                <td>{{ c.dataType }}</td>
+                <td>{{ c.referenceMaster || '—' }}</td>
+                <td>@if (c.isMandatory) { <span class="badge-error">Yes</span> } @else { No }</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div class="actions">
+          <button class="btn ghost" (click)="reset()">Back</button>
+          <button class="btn" (click)="downloadTemplate()"><i-lucide name="download"></i-lucide> Download Template</button>
+          <button class="btn primary" (click)="step.set(2)">Next: Upload</button>
+        </div>
+      </section>
+    }
+
+    <!-- Step 3: upload -->
+    @if (step() === 2) {
+      <section class="card">
+        <h2>Upload filled CSV</h2>
+        <p class="hint">First row must be the header (column keys). Data rows follow.</p>
+        <input type="file" accept=".csv,text/csv" (change)="onFileChange($event)" />
+        @if (parsedFile()) {
+          <div class="ok-line"><i-lucide name="check-circle"></i-lucide>
+            {{ parsedFile()!.name }} — {{ parsedFile()!.dataRows.length }} data row(s) loaded.</div>
+        }
+        <div class="actions">
+          <button class="btn ghost" (click)="step.set(1)">Back</button>
+          <button class="btn primary" [disabled]="!parsedFile()" (click)="doPreview()">
+            <i-lucide name="scan"></i-lucide> Validate / Preview
+          </button>
+        </div>
+      </section>
+    }
+
+    <!-- Step 4: preview -->
+    @if (step() === 3 && preview()) {
+      <section class="card">
+        <h2>Preview — {{ preview()!.entityName }}</h2>
+        <div class="summary">
+          <span class="badge">Total: {{ preview()!.totalRows }}</span>
+          <span class="badge-success">Valid: {{ preview()!.validRowsCount }}</span>
+          <span class="badge-error">Errors: {{ preview()!.errorRowsCount }}</span>
+        </div>
+        <div class="table-wrap">
+          <table class="preview-table">
+            <thead>
+              <tr><th>#</th><th>Status</th>
+                @for (c of selectedColumnList(); track c.key) { <th>{{ c.key }}</th> }
+                <th>Errors</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of preview()!.rows; track r.rowNumber) {
+                <tr [class.row-error]="!r.valid">
+                  <td>{{ r.rowNumber }}</td>
+                  <td>@if (r.valid) { <span class="badge-success">OK</span> } @else { <span class="badge-error">ERR</span> }</td>
+                  @for (c of selectedColumnList(); track c.key) {
+                    <td [class.cell-error]="hasError(r, c.key)">{{ r.values[c.key] }}</td>
+                  }
+                  <td class="err-cell">
+                    @for (e of r.errors; track e.field) {
+                      <div class="err-msg"><code>{{ e.field }}</code>: {{ e.message }}</div>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" (click)="step.set(2)">Back</button>
+          @if (canManage()) {
+            <button class="btn primary" [disabled]="confirming() || validRows().length === 0" (click)="doConfirm()">
+              <i-lucide name="upload-cloud"></i-lucide>
+              {{ confirming() ? 'Importing…' : 'Confirm Import (' + validRows().length + ')' }}
+            </button>
+          } @else {
+            <span class="hint">You need <code>master-import.manage</code> to confirm.</span>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Step 5: done -->
+    @if (step() === 4 && result()) {
+      <section class="card done-card">
+        <i-lucide name="party-popper" class="big-ok"></i-lucide>
+        <h2>Import complete</h2>
+        <div class="summary">
+          <span class="badge">Total: {{ result()!.totalRows }}</span>
+          <span class="badge-success">Imported: {{ result()!.successCount }}</span>
+          <span class="badge-error">Skipped: {{ result()!.errorCount }}</span>
+        </div>
+        @if (result()!.message) { <p class="hint">{{ result()!.message }}</p> }
+        <div class="actions">
+          <button class="btn ghost" (click)="reset()">Import another</button>
+        </div>
+      </section>
+    }
+  }
+
+  @if (showLogs()) {
+    <section class="card logs-card">
+      <h2>Import Logs</h2>
+      @if (loadingLogs()) { <div class="empty">Loading…</div> }
+      @else if (logs().length === 0) { <div class="empty">No import logs yet.</div> }
+      @else {
+        <table class="preview-table">
+          <thead>
+            <tr><th>ID</th><th>Entity</th><th>File</th><th>Status</th><th>Total</th><th>OK</th><th>Err</th><th>At</th><th>By</th></tr>
+          </thead>
+          <tbody>
+            @for (l of logs(); track l.id) {
+              <tr>
+                <td>{{ l.id }}</td>
+                <td>{{ l.entityName }}</td>
+                <td>{{ l.fileName || '—' }}</td>
+                <td><span [class]="statusClass(l.status)">{{ l.status }}</span></td>
+                <td>{{ l.totalRows }}</td>
+                <td>{{ l.successRows }}</td>
+                <td>{{ l.errorRows }}</td>
+                <td>{{ l.createdAt | slice:0:19 }}</td>
+                <td>{{ l.createdByName || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+</div>

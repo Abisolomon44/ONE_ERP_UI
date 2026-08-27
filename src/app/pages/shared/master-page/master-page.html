@@ -275,6 +275,7 @@
                     <select
                       class="ff-control ff-control-select filled"
                       [(ngModel)]="userModel[field.name]"
+                      (ngModelChange)="onFieldChange(field.name, $event)"
                       [disabled]="field.disabled ?? false">
 
                       <option [ngValue]="null" disabled>Select</option>

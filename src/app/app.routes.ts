@@ -122,6 +122,21 @@ export const routes: Routes = [
         title: 'Tax Type Systems',
         loadComponent: () => import('./pages/tax-type-system/tax-type-system').then((m) => m.TaxTypeSystemPage),
       },
+      {
+        path: 'taxes',
+        title: 'Taxes',
+        loadComponent: () => import('./pages/tax/tax').then((m) => m.TaxPage),
+      },
+      {
+        path: 'master-import',
+        title: 'Master Import',
+        loadComponent: () => import('./pages/master-import/master-import').then((m) => m.MasterImportPage),
+      },
+      {
+        path: 'import-logs',
+        title: 'Import Logs',
+        loadComponent: () => import('./pages/master-import/master-import').then((m) => m.MasterImportPage),
+      },
 
       {
         path: 'department',

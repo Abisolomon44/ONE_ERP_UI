@@ -39,6 +39,8 @@ const SECTION_ORDER = ['Business Master', 'Enterprise Permissions'];
 
 const ADMIN_NAV: NavItem[] = [
   { route: 'business-master', label: 'Business Master', icon: 'briefcase', section: 'Business Master', adminOnly: true },
+  { route: 'master-import', label: 'Master Import', icon: 'upload', section: 'Business Master' },
+  { route: 'import-logs', label: 'Import Logs', icon: 'history', section: 'Business Master' },
   { route: 'enterprise-permissions', label: 'Enterprise Permissions', icon: 'shield-check', section: 'Enterprise Permissions', adminOnly: true },
   { route: 'system-master', label: 'System Master', icon: 'settings', section: 'Enterprise Permissions', adminOnly: true },
 ];

@@ -225,6 +225,9 @@ export class MasterPage implements OnInit, OnChanges {
   @Output()
   actionClick = new EventEmitter<string>();
 
+  @Output()
+  fieldChange = new EventEmitter<{ name: string; value: any }>();
+
   //===========================
   // Variables
   //===========================
@@ -348,6 +351,10 @@ ngOnChanges(changes: SimpleChanges): void {
 
   refresh() {
     this.refreshClick.emit();
+  }
+
+  onFieldChange(name: string, value: any): void {
+    this.fieldChange.emit({ name, value });
   }
 
   //===========================

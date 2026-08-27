@@ -64,7 +64,7 @@ export class CompanyPage implements OnInit {
     ],
 
     fields: [
-      { name: 'companyCode', label: 'Company Code', type: 'text', required: true, maxLength: 20 },
+      { name: 'companyCode', label: 'Company Code', type: 'text', required: true, maxLength: 20, readonly: true },
       { name: 'companyName', label: 'Company Name', type: 'text', required: true, maxLength: 200 },
       { name: 'shortName', label: 'Short Name', type: 'text', maxLength: 50 },
       { name: 'abbreviation', label: 'Abbreviation', type: 'text', maxLength: 20 },
@@ -247,29 +247,29 @@ export class CompanyPage implements OnInit {
   }
 }
   private async loadDropdowns(): Promise<void> {
-    try {
-      const [currencies, languages, timeZones, industryTypes, gstTypes] = await Promise.all([
-        this.admin.currency.getAll(false),
-        this.admin.languages.getAll(false),
-        this.admin.timeZones.getAll(false),
-        this.admin.industryTypes.getAll(false),
-        this.admin.gstRegistrationTypes.getAll(false),
-      ]);
+    const load = async (
+      field: string,
+      url: string,
+      labelFn: (x: any) => string,
+      valueFn: (x: any) => any
+    ): Promise<void> => {
+      try {
+        const res: any = await firstValueFrom(this.http.get(url));
+        const list: any[] = Array.isArray(res) ? res : (res?.items ?? res?.data ?? []);
+        this.setOptions(field, list.map((x: any) => ({ value: valueFn(x), label: labelFn(x) })));
+      } catch {
+        this.setOptions(field, []);
+      }
+    };
 
-      this.setOptions('currencyId', currencies.map((c: any) => ({ value: c.id, label: `${c.currencyCode} - ${c.currencyName}` })));
-      this.setOptions('languageId', languages.map((l: any) => ({ value: l.languageId, label: l.name })));
-      this.setOptions('timeZoneId', timeZones.map((t: any) => ({ value: t.timeZoneId, label: t.name })));
-      this.setOptions('industryTypeId', industryTypes.map((i: any) => ({ value: i.industryTypeId, label: i.name })));
-      this.setOptions('gstRegistrationTypeId', gstTypes.map((g: any) => ({ value: g.gstRegistrationTypeId, label: g.name })));
-
-      // Business Type has no dedicated lookup service yet — placeholder until one exists.
-      this.setOptions('businessTypeId', [
-        { value: 1, label: 'Manufacturing' },
-        { value: 2, label: 'Trading' },
-        { value: 3, label: 'Services' },
-      ]);
-    } catch {
-    }
+    await Promise.all([
+      load('currencyId', '/api/Administration/currencies?includeInactive=false', c => `${c.currencyCode} - ${c.currencyName}`, c => c.id),
+      load('languageId', '/api/languages', l => l.name, l => l.languageId),
+      load('timeZoneId', '/api/timezones', t => t.name, t => t.timeZoneId),
+      load('industryTypeId', '/api/industry-types', i => i.name, i => i.industryTypeId),
+      load('gstRegistrationTypeId', '/api/gst-registration-types', g => g.name, g => g.gstRegistrationTypeId),
+      load('businessTypeId', '/api/business-types', b => b.name ?? b.businessTypeName, b => b.id ?? b.businessTypeId)
+    ]);
   }
 
   private setOptions(fieldName: string, options: { value: any; label: string }[]): void {
@@ -281,10 +281,17 @@ export class CompanyPage implements OnInit {
   // MasterPage event handlers
   //===========================
 
-  protected createCompany(): void {
+  protected async createCompany(): Promise<void> {
     this.editing.set(null);
+    let nextCode = '';
+    try {
+      const res: any = await firstValueFrom(this.http.get('/api/companies/next-code'));
+      nextCode = res?.code ?? res ?? '';
+    } catch {
+      nextCode = '';
+    }
     this.userModel = {
-      companyCode: '',
+      companyCode: nextCode,
       companyName: '',
       shortName: '',
       abbreviation: '',

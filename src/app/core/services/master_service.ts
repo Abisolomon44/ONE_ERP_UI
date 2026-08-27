@@ -280,6 +280,7 @@ export interface ProductDto {
 export type CreateProductRequest = {
   productCode: string;
   productName: string;
+  companyId: number;
   categoryId?: number | null;
   subCategoryId?: number | null;
   brandId?: number | null;
@@ -343,6 +344,52 @@ class TaxTypeSystemService {
 }
 
 // ============================================================
+// Taxes (actual tax rates)
+// ============================================================
+
+export interface TaxDto {
+  id: number;
+  companyId: number;
+  branchId?: number | null;
+  taxTypeSystemId: number;
+  taxCode: string;
+  taxName: string;
+  taxRate: number;
+  isInclusive: boolean;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  isActive: boolean;
+  description?: string | null;
+  taxTypeSystemName?: string | null;
+  createdAt: string;
+}
+
+export type CreateTaxRequest = {
+  branchId?: number | null;
+  taxTypeSystemId: number;
+  taxCode: string;
+  taxName: string;
+  taxRate: number;
+  isInclusive: boolean;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  description?: string | null;
+};
+export type UpdateTaxRequest = CreateTaxRequest & { isActive: boolean };
+
+class TaxService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<TaxDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<TaxDto>>('/api/taxes', { params }));
+  }
+  getById(id: number): Promise<TaxDto> { return firstValueFrom(this.http.get<TaxDto>(`/api/taxes/${id}`)); }
+  create(req: CreateTaxRequest): Promise<TaxDto> { return firstValueFrom(this.http.post<TaxDto>('/api/taxes', req)); }
+  update(id: number, req: UpdateTaxRequest): Promise<TaxDto> { return firstValueFrom(this.http.put<TaxDto>(`/api/taxes/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/taxes/${id}`)).then(() => undefined); }
+}
+
+// ============================================================
 // Master service — single injection point for every
 // Administration sub-resource.
 // ============================================================
@@ -361,6 +408,7 @@ export class AdministrationService {
   readonly productUnits: ProductUnitService;
   readonly products: ProductService;
   readonly taxTypeSystems: TaxTypeSystemService;
+  readonly taxes: TaxService;
 
   constructor(http: HttpClient) {
     this.company = new CompanyService(http);
@@ -375,5 +423,106 @@ export class AdministrationService {
     this.productUnits = new ProductUnitService(http);
     this.products = new ProductService(http);
     this.taxTypeSystems = new TaxTypeSystemService(http);
+    this.taxes = new TaxService(http);
+  }
+}
+
+// ============================================================
+// Master Import — generic bulk import engine
+// ============================================================
+
+export interface ImportColumnMetaDto {
+  key: string;
+  label: string;
+  isMandatory: boolean;
+  isReference: boolean;
+  referenceMaster?: string | null;
+  dataType: string;
+  example?: string | null;
+}
+
+export interface MasterImportMetaDto {
+  name: string;
+  label: string;
+  description: string;
+  columns: ImportColumnMetaDto[];
+}
+
+export interface ImportRowErrorField {
+  field: string;
+  message: string;
+}
+
+export interface ImportRowResultDto {
+  rowNumber: number;
+  valid: boolean;
+  errors: ImportRowErrorField[];
+  values: Record<string, string>;
+}
+
+export interface ImportPreviewResponse {
+  fileName?: string | null;
+  entityName: string;
+  totalRows: number;
+  validRowsCount: number;
+  errorRowsCount: number;
+  rows: ImportRowResultDto[];
+}
+
+export interface ImportConfirmResponse {
+  importLogId: number;
+  fileName?: string | null;
+  entityName: string;
+  totalRows: number;
+  successCount: number;
+  errorCount: number;
+  message?: string | null;
+}
+
+export interface ImportConfirmRequest {
+  entityName: string;
+  fileName?: string | null;
+  rows: string[][];
+}
+
+export interface ImportLogDto {
+  id: number;
+  importType: string;
+  fileName?: string | null;
+  entityName: string;
+  status: string;
+  totalRows: number;
+  successRows: number;
+  errorRows: number;
+  errorMessage?: string | null;
+  createdAt: string;
+  createdByName?: string | null;
+}
+
+@Injectable({ providedIn: 'root' })
+export class MasterImportService {
+  constructor(private readonly http: HttpClient) {}
+
+  getMasters(): Promise<MasterImportMetaDto[]> {
+    return firstValueFrom(this.http.get<MasterImportMetaDto[]>('/api/import/masters'));
+  }
+
+  preview(entityName: string, fileName: string | null, rows: string[][]): Promise<ImportPreviewResponse> {
+    return firstValueFrom(
+      this.http.post<ImportPreviewResponse>('/api/import/preview', { entityName, fileName, rows }),
+    );
+  }
+
+  confirm(request: ImportConfirmRequest): Promise<ImportConfirmResponse> {
+    return firstValueFrom(this.http.post<ImportConfirmResponse>('/api/import/confirm', request));
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class ImportLogService {
+  constructor(private readonly http: HttpClient) {}
+
+  getAll(): Promise<ImportLogDto[]> {
+    return firstValueFrom(this.http.get<ImportLogDto[]>('/api/import-logs'));
   }
 }

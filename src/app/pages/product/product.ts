@@ -49,8 +49,8 @@ export class ProductPage implements OnInit {
     allowExport: true,
     allowRefresh: true,
     tabs: [
-      { name: 'General', fields: ['productCode', 'productName', 'categoryId', 'subCategoryId', 'brandId', 'uomId', 'branchId', 'sku', 'barcode'] },
-      { name: 'Pricing', fields: ['mrp', 'purchasePrice', 'salesPrice'] },
+      { name: 'General', fields: ['productCode', 'productName', 'categoryId', 'subCategoryId', 'brandId', 'uomId', 'companyId', 'branchId', 'sku', 'barcode'] },
+      { name: 'Pricing', fields: ['mrp', 'purchasePrice', 'salesPrice', 'taxId'] },
       { name: 'Classification', fields: ['isStockItem', 'isSaleable', 'isPurchaseable'] },
       { name: 'Status', fields: ['description', 'isActive'] },
     ],
@@ -65,18 +65,20 @@ export class ProductPage implements OnInit {
       { field: 'isActive', header: 'Active', type: 'checkbox', width: '90px' },
     ],
     fields: [
-      { name: 'productCode', label: 'Product Code', type: 'text', required: true, maxLength: 30 },
+      { name: 'productCode', label: 'Product Code', type: 'text', required: true, maxLength: 30, readonly: true },
       { name: 'productName', label: 'Product Name', type: 'text', required: true, maxLength: 200 },
       { name: 'categoryId', label: 'Category', type: 'dropdown', options: [] },
       { name: 'subCategoryId', label: 'Sub Category', type: 'dropdown', options: [] },
       { name: 'brandId', label: 'Brand', type: 'dropdown', options: [] },
       { name: 'uomId', label: 'UOM', type: 'dropdown', required: true, options: [] },
+      { name: 'companyId', label: 'Company', type: 'dropdown', required: true, options: [] },
       { name: 'branchId', label: 'Branch', type: 'dropdown', options: [] },
       { name: 'sku', label: 'SKU', type: 'text', maxLength: 50 },
       { name: 'barcode', label: 'Barcode', type: 'text', maxLength: 100 },
       { name: 'mrp', label: 'MRP', type: 'number' },
       { name: 'purchasePrice', label: 'Purchase Price', type: 'number' },
       { name: 'salesPrice', label: 'Sales Price', type: 'number' },
+      { name: 'taxId', label: 'Tax', type: 'dropdown', options: [] },
       { name: 'isStockItem', label: 'Stock Item', type: 'checkbox' },
       { name: 'isSaleable', label: 'Saleable', type: 'checkbox' },
       { name: 'isPurchaseable', label: 'Purchaseable', type: 'checkbox' },
@@ -184,12 +186,37 @@ export class ProductPage implements OnInit {
     } catch {
     }
     try {
-      const branchRes: any = await firstValueFrom(
-        this.http.get('/api/organization/branches?page=1&size=1000'),
+      const companyRes: any = await firstValueFrom(
+        this.http.get('/api/companies?page=1&size=1000'),
       );
-      const branches: any[] = branchRes?.items ?? [];
+      const companies: any[] = companyRes?.items ?? [];
+      this.setOptions('companyId', companies.map((c: any) => ({ value: c.id, label: c.companyName })));
+    } catch {
+    }
+    try {
+      const taxes = await this.admin.taxes.getPaged(1, 1000, '');
+      this.setOptions('taxId', (taxes.items ?? []).map((t: any) => ({ value: t.id, label: t.taxName })));
+    } catch {
+    }
+  }
+
+  protected onFieldChange(evt: { name: string; value: any }): void {
+    if (evt.name === 'companyId') {
+      void this.loadBranches(evt.value);
+    }
+  }
+
+  private async loadBranches(companyId: any): Promise<void> {
+    this.setOptions('branchId', []);
+    if (!companyId) return;
+    try {
+      const res: any = await firstValueFrom(
+        this.http.get(`/api/organization/branches?companyId=${companyId}&page=1&size=1000`),
+      );
+      const branches: any[] = res?.items ?? [];
       this.setOptions('branchId', branches.map((b: any) => ({ value: b.id, label: b.branchName })));
     } catch {
+      this.setOptions('branchId', []);
     }
   }
 
@@ -198,15 +225,29 @@ export class ProductPage implements OnInit {
     if (field) field.options = options;
   }
 
-  protected createRow(): void {
+  protected async createRow(): Promise<void> {
     this.editing.set(null);
+    let nextCode = '';
+    try {
+      nextCode = await firstValueFrom(this.http.get<string>('/api/products/next-code'));
+    } catch {
+      /* code will be generated server-side on save */
+    }
+    let companyId: any = null;
+    try {
+      const cur: any = await firstValueFrom(this.http.get('/api/companies/current'));
+      companyId = cur?.id ?? cur?.companyId ?? null;
+    } catch {
+      companyId = null;
+    }
     this.userModel = {
-      productCode: '',
+      productCode: nextCode,
       productName: '',
       categoryId: null,
       subCategoryId: null,
       brandId: null,
       uomId: null,
+      companyId,
       branchId: null,
       sku: '',
       barcode: '',
@@ -220,12 +261,14 @@ export class ProductPage implements OnInit {
       isActive: true,
     };
     this.showEntry.set(true);
+    void this.loadBranches(companyId);
   }
 
   protected editRow(row: Record<string, any>): void {
     this.editing.set(row as ProductDto);
     this.userModel = { ...row };
     this.showEntry.set(true);
+    void this.loadBranches(row['companyId']);
   }
 
   protected async save(): Promise<void> {
@@ -236,6 +279,7 @@ export class ProductPage implements OnInit {
       const payload: CreateProductRequest = {
         productCode: this.userModel['productCode']?.trim().toUpperCase(),
         productName: this.userModel['productName']?.trim(),
+        companyId: this.userModel['companyId'] || 0,
         categoryId: this.userModel['categoryId'] || null,
         subCategoryId: this.userModel['subCategoryId'] || null,
         brandId: this.userModel['brandId'] || null,
@@ -246,6 +290,7 @@ export class ProductPage implements OnInit {
         mrp: this.userModel['mrp'] ?? null,
         purchasePrice: this.userModel['purchasePrice'] ?? null,
         salesPrice: this.userModel['salesPrice'] ?? null,
+        taxId: this.userModel['taxId'] || null,
         isStockItem: this.userModel['isStockItem'] ?? true,
         isSaleable: this.userModel['isSaleable'] ?? true,
         isPurchaseable: this.userModel['isPurchaseable'] ?? true,
