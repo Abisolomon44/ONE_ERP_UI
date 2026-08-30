@@ -482,7 +482,7 @@ export interface ImportConfirmResponse {
 export interface ImportConfirmRequest {
   entityName: string;
   fileName?: string | null;
-  rows: string[][];
+  rows: Record<string, unknown>[];
 }
 
 export interface ImportLogDto {
@@ -507,7 +507,7 @@ export class MasterImportService {
     return firstValueFrom(this.http.get<MasterImportMetaDto[]>('/api/import/masters'));
   }
 
-  preview(entityName: string, fileName: string | null, rows: string[][]): Promise<ImportPreviewResponse> {
+  preview(entityName: string, fileName: string | null, rows: Record<string, unknown>[]): Promise<ImportPreviewResponse> {
     return firstValueFrom(
       this.http.post<ImportPreviewResponse>('/api/import/preview', { entityName, fileName, rows }),
     );

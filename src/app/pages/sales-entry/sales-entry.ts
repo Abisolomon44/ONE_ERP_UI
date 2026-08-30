@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, viewChild, ElementRef, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DecimalPipe, SlicePipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import {
@@ -35,10 +35,39 @@ interface DraftItem {
   remarks?: string | null;
 }
 
+interface SaleTabState {
+  saleTabId: string;
+  saleLabel: string;
+  salesNo: string;
+  editingId: number | null;
+  branchId: number | null;
+  warehouseId: number | null;
+  companyId: number | null;
+  customerId: number | null;
+  customerPhone: string;
+  customerPoNo: string;
+  salesperson: string;
+  invoiceDate: string;
+  referenceNo: string;
+  referenceDate: string;
+  sourceType: string;
+  paymentTypeID: number | null;
+  paymentMethodID: number | null;
+  remarks: string;
+  payAmount: number;
+  payTypeID: number | null;
+  payMethodID: number | null;
+  payReferenceNo: string;
+  payRemarks: string;
+  items: DraftItem[];
+  isDirty: boolean;
+  isSaved: boolean;
+}
+
 @Component({
   selector: 'app-sales-entry',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, SlicePipe, LucideAngularModule],
+  imports: [FormsModule, DecimalPipe, LucideAngularModule],
   templateUrl: './sales-entry.html',
   styleUrl: './sales-entry.css',
 })
@@ -60,11 +89,16 @@ export class SalesEntryPage implements OnInit {
   protected readonly lookups = signal<SalesLookupsDto | null>(null);
   protected readonly sales = signal<SalesInvoiceDto[]>([]);
   protected readonly showHelp = signal(false);
+  protected readonly tabs = signal<SaleTabState[]>([]);
+  protected readonly activeTabId = signal<string | null>(null);
 
   protected branchId: number | null = null;
   protected warehouseId: number | null = null;
   protected companyId: number | null = null;
   protected customerId: number | null = null;
+  protected customerPhone = '';
+  protected customerPoNo = '';
+  protected salesperson = '';
   protected salesNo = '';
   protected invoiceDate = new Date().toISOString().slice(0, 10);
   protected referenceNo = '';
@@ -104,7 +138,7 @@ export class SalesEntryPage implements OnInit {
           const d = await this.svc.getById(req.id);
           if (d) await this.edit(d);
         } catch {
-          /* ignore missing record */
+          // ignore missing record
         }
       }
     });
@@ -114,6 +148,7 @@ export class SalesEntryPage implements OnInit {
     this.canView.set(this.perm.has('sales.view'));
     this.canManage.set(this.perm.has('sales.manage'));
     this.registerShortcuts();
+
     if (this.canView()) {
       await this.refreshLookups();
       await this.loadList();
@@ -123,8 +158,12 @@ export class SalesEntryPage implements OnInit {
           const d = await this.svc.getById(Number(idParam));
           if (d) this.edit(d);
         } catch {
-          /* ignore missing record */
+          // ignore missing record
         }
+      }
+
+      if (!this.tabs().length) {
+        await this.newDoc();
       }
     }
   }
@@ -134,29 +173,205 @@ export class SalesEntryPage implements OnInit {
     this.kbDeregs = [];
   }
 
+  protected get activeTab(): SaleTabState | null {
+    const id = this.activeTabId();
+    if (!id) return null;
+    return this.tabs().find((tab) => tab.saleTabId === id) ?? null;
+  }
+
+  protected markDirty(): void {
+    const tab = this.activeTab;
+    if (!tab) return;
+    tab.isDirty = true;
+    tab.isSaved = false;
+  }
+
+  private syncActiveTabFromForm(): void {
+    const tab = this.activeTab;
+    if (!tab) return;
+    tab.branchId = this.branchId;
+    tab.warehouseId = this.warehouseId;
+    tab.companyId = this.companyId;
+    tab.customerId = this.customerId;
+    tab.customerPhone = this.customerPhone;
+    tab.customerPoNo = this.customerPoNo;
+    tab.salesperson = this.salesperson;
+    tab.salesNo = this.salesNo;
+    tab.invoiceDate = this.invoiceDate;
+    tab.referenceNo = this.referenceNo;
+    tab.referenceDate = this.referenceDate;
+    tab.sourceType = this.sourceType;
+    tab.paymentTypeID = this.paymentTypeID;
+    tab.paymentMethodID = this.paymentMethodID;
+    tab.remarks = this.remarks;
+    tab.payAmount = this.payAmount;
+    tab.payTypeID = this.payTypeID;
+    tab.payMethodID = this.payMethodID;
+    tab.payReferenceNo = this.payReferenceNo;
+    tab.payRemarks = this.payRemarks;
+    tab.items = [...this.items()];
+    tab.editingId = this.editingId;
+    tab.isDirty = true;
+  }
+
+  private applyTabState(tab: SaleTabState | null): void {
+    if (!tab) {
+      this.editingId = null;
+      this.branchId = null;
+      this.warehouseId = null;
+      this.companyId = null;
+      this.customerId = null;
+      this.customerPhone = '';
+      this.customerPoNo = '';
+      this.salesperson = '';
+      this.salesNo = '';
+      this.invoiceDate = new Date().toISOString().slice(0, 10);
+      this.referenceNo = '';
+      this.referenceDate = '';
+      this.sourceType = 'SALES';
+      this.paymentTypeID = null;
+      this.paymentMethodID = null;
+      this.remarks = '';
+      this.payAmount = 0;
+      this.payTypeID = null;
+      this.payMethodID = null;
+      this.payReferenceNo = '';
+      this.payRemarks = '';
+      this.items.set([]);
+      return;
+    }
+
+    this.editingId = tab.editingId;
+    this.branchId = tab.branchId;
+    this.warehouseId = tab.warehouseId;
+    this.companyId = tab.companyId;
+    this.customerId = tab.customerId;
+    this.customerPhone = tab.customerPhone;
+    this.customerPoNo = tab.customerPoNo;
+    this.salesperson = tab.salesperson;
+    this.salesNo = tab.salesNo;
+    this.invoiceDate = tab.invoiceDate;
+    this.referenceNo = tab.referenceNo;
+    this.referenceDate = tab.referenceDate;
+    this.sourceType = tab.sourceType;
+    this.paymentTypeID = tab.paymentTypeID;
+    this.paymentMethodID = tab.paymentMethodID;
+    this.remarks = tab.remarks;
+    this.payAmount = tab.payAmount;
+    this.payTypeID = tab.payTypeID;
+    this.payMethodID = tab.payMethodID;
+    this.payReferenceNo = tab.payReferenceNo;
+    this.payRemarks = tab.payRemarks;
+    this.items.set(tab.items.length ? [...tab.items] : [this.blankItem()]);
+  }
+
+  protected async newDoc(): Promise<void> {
+    this.syncActiveTabFromForm();
+    const nextTab = this.createTabState();
+    this.tabs.update((tabs) => [...tabs, nextTab]);
+    this.activeTabId.set(nextTab.saleTabId);
+    this.applyTabState(nextTab);
+
+    try {
+      const nextNumber = await this.svc.getNextNumber();
+      nextTab.salesNo = nextNumber;
+      this.salesNo = nextNumber;
+    } catch {
+      nextTab.salesNo = '';
+      this.salesNo = '';
+    }
+
+    nextTab.isDirty = false;
+    nextTab.isSaved = false;
+  }
+
+  private createTabState(): SaleTabState {
+    const index = this.tabs().length + 1;
+    return {
+      saleTabId: `sale-tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      saleLabel: `Sale #${index}`,
+      salesNo: '',
+      editingId: null,
+      branchId: this.lookups()?.branches?.[0]?.id ?? null,
+      warehouseId: this.lookups()?.warehouses?.[0]?.id ?? null,
+      companyId: this.lookups()?.currentCompanyId ?? this.lookups()?.companies?.[0]?.id ?? null,
+      customerId: null,
+      customerPhone: '',
+      customerPoNo: '',
+      salesperson: '',
+      invoiceDate: new Date().toISOString().slice(0, 10),
+      referenceNo: '',
+      referenceDate: '',
+      sourceType: 'SALES',
+      paymentTypeID: null,
+      paymentMethodID: null,
+      remarks: '',
+      payAmount: 0,
+      payTypeID: null,
+      payMethodID: null,
+      payReferenceNo: '',
+      payRemarks: '',
+      items: [this.blankItem()],
+      isDirty: false,
+      isSaved: false,
+    };
+  }
+
+  protected switchTab(tabId: string): void {
+    const selected = this.tabs().find((tab) => tab.saleTabId === tabId);
+    if (!selected) return;
+    this.syncActiveTabFromForm();
+    this.activeTabId.set(tabId);
+    this.applyTabState(selected);
+  }
+
+  protected closeTab(tabId: string, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    const target = this.tabs().find((tab) => tab.saleTabId === tabId);
+    if (!target) return;
+    if (target.isDirty && !confirm('Unsaved changes will be lost. Close this sale?')) return;
+
+    this.tabs.update((tabs) => tabs.filter((tab) => tab.saleTabId !== tabId));
+    if (!this.tabs().length) {
+      this.activeTabId.set(null);
+      this.applyTabState(null);
+      return;
+    }
+
+    const next = this.tabs()[0];
+    this.activeTabId.set(next.saleTabId);
+    this.applyTabState(next);
+  }
+
+  protected closeActiveSale(): void {
+    const current = this.activeTab;
+    if (!current) return;
+    this.closeTab(current.saleTabId);
+  }
+
+  protected selectNextTab(delta: number): void {
+    const list = this.tabs();
+    if (!list.length) return;
+    const currentId = this.activeTabId();
+    const currentIndex = list.findIndex((tab) => tab.saleTabId === currentId);
+    const nextIndex = currentIndex < 0 ? 0 : (currentIndex + delta + list.length) % list.length;
+    this.switchTab(list[nextIndex].saleTabId);
+  }
+
   private registerShortcuts(): void {
-    const reg = (cfg: Parameters<KeyboardShortcutService['register']>[0]) =>
-      this.kbDeregs.push(this.kb.register(cfg));
+    const reg = (cfg: Parameters<KeyboardShortcutService['register']>[0]) => this.kbDeregs.push(this.kb.register(cfg));
     const G = 'Sales Entry';
 
     reg({ combo: 'ctrl+n', global: true, preventDefault: true, group: G, description: 'New Invoice', handler: () => this.newDoc() });
     reg({ combo: 'ctrl+s', global: true, preventDefault: true, group: G, description: 'Save Invoice', handler: () => this.save() });
-    reg({ combo: 'ctrl+e', global: true, group: G, description: 'Edit selected Invoice', handler: () => this.editSelected() });
-    reg({ combo: 'ctrl+d', global: true, preventDefault: true, group: G, description: 'Delete selected Invoice', handler: () => this.deleteSelected() });
-    reg({ combo: 'ctrl+f', global: true, preventDefault: true, group: G, description: 'Search invoices', handler: () => this.focusSearch() });
-    reg({ combo: 'ctrl+p', global: true, preventDefault: true, group: G, description: 'Print Invoice', handler: () => this.printInvoice() });
+    reg({ combo: 'ctrl+tab', global: true, preventDefault: true, group: G, description: 'Next tab', handler: () => this.selectNextTab(1) });
+    reg({ combo: 'ctrl+shift+tab', global: true, preventDefault: true, group: G, description: 'Previous tab', handler: () => this.selectNextTab(-1) });
     reg({ combo: 'escape', global: true, group: G, description: 'Close popup / cancel', handler: (e) => this.onEscape(e) });
     reg({ combo: 'f6', global: true, group: G, description: 'Focus item grid', handler: () => this.focusGrid() });
     reg({ combo: 'f3', global: true, group: G, description: 'Product search', handler: () => this.openProductSearch() });
     reg({ combo: '?', global: true, group: G, description: 'Keyboard shortcuts help', handler: () => this.showHelp.update((v) => !v) });
-
-    reg({ combo: 'alt+s', group: G, description: 'Focus Sales Date', handler: () => this.focusField('invoiceDate') });
-    reg({ combo: 'alt+c', group: G, description: 'Focus Customer', handler: () => this.focusField('customer') });
-    reg({ combo: 'alt+b', group: G, description: 'Focus Branch', handler: () => this.focusField('branch') });
-    reg({ combo: 'alt+w', group: G, description: 'Focus Warehouse', handler: () => this.focusField('warehouse') });
-    reg({ combo: 'alt+p', group: G, description: 'Focus Payment Type', handler: () => this.focusField('paymentType') });
-    reg({ combo: 'alt+m', group: G, description: 'Focus Payment Method', handler: () => this.focusField('paymentMethod') });
-
     reg({ combo: 'insert', group: G, description: 'Add item row', handler: () => this.onInsertRow() });
     reg({ combo: 'delete', group: G, description: 'Delete item row', handler: (e) => this.onDeleteRow(e) });
     reg({ combo: 'arrowup', group: G, description: 'Previous row', handler: (e) => this.onArrow('up', e) });
@@ -199,7 +414,7 @@ export class SalesEntryPage implements OnInit {
   protected focusGrid(): void {
     const rows = this.items().length;
     if (!rows) {
-      this.newDoc();
+      void this.newDoc();
       return;
     }
     const cur = this.currentCell(document.activeElement);
@@ -330,14 +545,13 @@ export class SalesEntryPage implements OnInit {
     if (value && it.productId != null) it.productId = null;
     this.productOpen = row;
     this.productQuery(it);
+    this.markDirty();
   }
 
   private productQuery(it: DraftItem): void {
     const q = (it.productText ?? '').trim().toLowerCase();
     const all = this.lookups()?.products ?? [];
-    this.productResults = q
-      ? all.filter((p) => p.name?.toLowerCase().includes(q) || p.code?.toLowerCase().includes(q))
-      : all.slice(0, 50);
+    this.productResults = q ? all.filter((p) => p.name?.toLowerCase().includes(q) || p.code?.toLowerCase().includes(q)) : all.slice(0, 50);
     this.productHi = 0;
   }
 
@@ -353,6 +567,7 @@ export class SalesEntryPage implements OnInit {
     it.productText = `${p.name} (${p.code})`;
     this.closeProduct();
     this.focusCell(row, 1);
+    this.markDirty();
   }
 
   private selectProductHighlighted(): void {
@@ -396,8 +611,9 @@ export class SalesEntryPage implements OnInit {
       this.showHelp.set(false);
       return;
     }
-    if (this.editingId !== null || this.items().length) {
-      this.resetForm();
+    if (this.activeTabId()) {
+      this.closeActiveSale();
+      e.preventDefault();
     }
   }
 
@@ -408,30 +624,39 @@ export class SalesEntryPage implements OnInit {
   }
 
   private editSelected(): void {
-    let target = this.editingId;
-    if (!target) target = this.selectedId;
-    if (!target && this.sales().length) target = this.sales()[0].salesInvoiceId;
-    const rec = this.sales().find((p) => p.salesInvoiceId === target);
-    if (rec) this.edit(rec);
-    else this.toast.error('No invoice selected');
+    const first = this.tabs().find((tab) => tab.editingId != null);
+    if (first) {
+      this.switchTab(first.saleTabId);
+      return;
+    }
+    this.toast.error('No sale tab selected');
   }
 
   private deleteSelected(): void {
-    let target = this.editingId ?? this.selectedId;
-    if (!target && this.sales().length) target = this.sales()[0].salesInvoiceId;
-    const rec = this.sales().find((p) => p.salesInvoiceId === target);
-    if (!rec) {
-      this.toast.error('No invoice selected');
+    const current = this.activeTab;
+    if (!current) {
+      this.toast.error('No sale selected');
       return;
     }
-    if (confirm('Delete this sales invoice? This cannot be undone.')) {
-      void this.remove(rec);
+
+    if (current.editingId != null) {
+      const invoice = this.sales().find((item) => item.salesInvoiceId === current.editingId);
+      if (invoice) {
+        if (confirm('Delete this sales invoice? This cannot be undone.')) {
+          void this.remove(invoice);
+        }
+        return;
+      }
+    }
+
+    if (confirm('Delete this unsaved sale tab?')) {
+      this.closeTab(current.saleTabId);
     }
   }
 
   private printInvoice(): void {
-    if (this.editingId === null && !this.items().length) {
-      this.toast.error('Open an invoice to print');
+    if (!this.activeTab) {
+      this.toast.error('Open a sale to print');
       return;
     }
     window.print();
@@ -453,53 +678,12 @@ export class SalesEntryPage implements OnInit {
     }
   }
 
-  protected filteredSales(): SalesInvoiceDto[] {
-    const q = this.searchText.trim().toLowerCase();
-    if (!q) return this.sales();
-    return this.sales().filter(
-      (p) =>
-        p.salesInvoiceNo.toLowerCase().includes(q) ||
-        (p.customerNameSnapshot ?? '').toLowerCase().includes(q) ||
-        (p.companyNameSnapshot ?? '').toLowerCase().includes(q),
-    );
-  }
-
-  protected selectRow(p: SalesInvoiceDto): void {
-    this.selectedId = p.salesInvoiceId;
-  }
-
-  protected async newDoc(): Promise<void> {
-    this.editingId = null;
-    this.branchId = this.lookups()?.branches?.[0]?.id ?? null;
-    this.warehouseId = this.lookups()?.warehouses?.[0]?.id ?? null;
-    this.companyId = this.lookups()?.currentCompanyId ?? this.lookups()?.companies?.[0]?.id ?? null;
-    this.customerId = null;
-    this.salesNo = '';
-    this.invoiceDate = new Date().toISOString().slice(0, 10);
-    this.referenceNo = '';
-    this.referenceDate = '';
-    this.sourceType = 'SALES';
-    this.paymentTypeID = null;
-    this.paymentMethodID = null;
-    this.remarks = '';
-    this.payAmount = 0;
-    this.payTypeID = null;
-    this.payMethodID = null;
-    this.payReferenceNo = '';
-    this.payRemarks = '';
-    await this.refreshLookups();
-    try {
-      this.salesNo = await this.svc.getNextNumber();
-    } catch {
-      this.salesNo = '';
-    }
-    this.items.set([this.blankItem()]);
-  }
-
   protected blankItem(): DraftItem {
     return {
       productId: null,
       unitID: null,
+      productName: null,
+      productText: '',
       quantity: 1,
       freeQuantity: 0,
       rate: 0,
@@ -514,11 +698,13 @@ export class SalesEntryPage implements OnInit {
   }
 
   protected addItem(): void {
-    this.items.update((i) => [...i, this.blankItem()]);
+    this.items.update((items) => [...items, this.blankItem()]);
+    this.markDirty();
   }
 
   protected removeItem(idx: number): void {
-    this.items.update((i) => i.filter((_, n) => n !== idx));
+    this.items.update((items) => items.filter((_, index) => index !== idx));
+    this.markDirty();
   }
 
   protected openImport(): void {
@@ -557,15 +743,14 @@ export class SalesEntryPage implements OnInit {
     const map = this.detectColumns(header);
     const hasHeader = Object.values(map).some((i) => i >= 0);
     const data = hasHeader ? rows.slice(1) : rows;
-
     const products = this.lookups()?.products ?? [];
     const units = this.lookups()?.units ?? [];
     const imported: DraftItem[] = [];
     const skipped: string[] = [];
 
-    for (const r of data) {
-      if (r.every((c) => !c.trim())) continue;
-      const get = (f: string): string => (map[f] >= 0 ? (r[map[f]] ?? '').trim() : '');
+    for (const row of data) {
+      if (row.every((c) => !c.trim())) continue;
+      const get = (field: string): string => (map[field] >= 0 ? (row[map[field]] ?? '').trim() : '');
       const pval = get('product');
       const prod = this.matchProduct(products, pval);
       if (!prod) {
@@ -573,25 +758,28 @@ export class SalesEntryPage implements OnInit {
         continue;
       }
       const unit = this.matchUnit(units, get('unit'));
-      const it = this.blankItem();
-      it.productId = prod.id;
-      it.productName = prod.name;
-      it.productText = `${prod.name} (${prod.code})`;
-      it.unitID = unit ? unit.id : null;
-      it.quantity = this.num(get('qty')) || 1;
-      it.freeQuantity = this.num(get('free'));
-      it.rate = this.num(get('rate'));
-      it.discountPercentage = this.num(get('disc'));
-      it.gstPercent = this.num(get('gst'));
-      it.cessPercent = this.num(get('cess'));
-      imported.push(it);
+      const item = this.blankItem();
+      item.productId = prod.id;
+      item.productName = prod.name;
+      item.productText = `${prod.name} (${prod.code})`;
+      item.unitID = unit ? unit.id : null;
+      item.quantity = this.num(get('qty')) || 1;
+      item.freeQuantity = this.num(get('free'));
+      item.rate = this.num(get('rate'));
+      item.discountPercentage = this.num(get('disc'));
+      item.gstPercent = this.num(get('gst'));
+      item.cessPercent = this.num(get('cess'));
+      imported.push(item);
     }
 
     if (!imported.length) {
       this.toast.error('No valid rows imported', skipped[0] ?? '');
       return;
     }
+
     this.items.update((cur) => (cur.length ? [...cur, ...imported] : imported));
+    this.markDirty();
+
     if (skipped.length) {
       this.toast.error(`Imported ${imported.length}, skipped ${skipped.length}`, skipped.slice(0, 3).join('; '));
     } else {
@@ -610,6 +798,7 @@ export class SalesEntryPage implements OnInit {
       gst: ['gst', 'gst%', 'gstpct', 'gstpercentage', 'gst percentage'],
       cess: ['cess', 'cess%', 'cesspct', 'cess percentage'],
     };
+
     const map: Record<string, number> = {};
     for (const key of Object.keys(aliases)) {
       map[key] = header.findIndex((h) => aliases[key].includes(h));
@@ -617,36 +806,28 @@ export class SalesEntryPage implements OnInit {
     return map;
   }
 
-  private matchProduct(products: LookupItem[], val: string): LookupItem | undefined {
-    const v = val.trim().toLowerCase();
+  private matchProduct(products: LookupItem[], value: string): LookupItem | undefined {
+    const v = value.trim().toLowerCase();
     if (!v) return undefined;
     return (
       products.find((p) => (p.code ?? '').toLowerCase() === v) ||
       products.find((p) => (p.name ?? '').toLowerCase() === v) ||
-      products.find(
-        (p) =>
-          (p.name ?? '').toLowerCase().includes(v) ||
-          (p.code ?? '').toLowerCase().includes(v),
-      )
+      products.find((p) => (p.name ?? '').toLowerCase().includes(v) || (p.code ?? '').toLowerCase().includes(v))
     );
   }
 
-  private matchUnit(units: LookupItem[], val: string): LookupItem | undefined {
-    const v = val.trim().toLowerCase();
+  private matchUnit(units: LookupItem[], value: string): LookupItem | undefined {
+    const v = value.trim().toLowerCase();
     if (!v) return undefined;
     return (
       units.find((u) => (u.code ?? '').toLowerCase() === v) ||
       units.find((u) => (u.name ?? '').toLowerCase() === v) ||
-      units.find(
-        (u) =>
-          (u.name ?? '').toLowerCase().includes(v) ||
-          (u.code ?? '').toLowerCase().includes(v),
-      )
+      units.find((u) => (u.name ?? '').toLowerCase().includes(v) || (u.code ?? '').toLowerCase().includes(v))
     );
   }
 
-  private num(v: string): number {
-    const n = parseFloat((v ?? '').replace(/,/g, ''));
+  private num(value: string): number {
+    const n = parseFloat((value ?? '').replace(/,/g, ''));
     return isFinite(n) ? n : 0;
   }
 
@@ -655,78 +836,101 @@ export class SalesEntryPage implements OnInit {
     let row: string[] = [];
     let field = '';
     let inQuotes = false;
-    const src = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    for (let i = 0; i < src.length; i++) {
-      const c = src[i];
+    const source = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    for (let i = 0; i < source.length; i++) {
+      const char = source[i];
       if (inQuotes) {
-        if (c === '"') {
-          if (src[i + 1] === '"') {
+        if (char === '"') {
+          if (source[i + 1] === '"') {
             field += '"';
             i++;
-          } else inQuotes = false;
-        } else field += c;
-      } else if (c === '"') inQuotes = true;
-      else if (c === ',') {
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          field += char;
+        }
+      } else if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
         row.push(field);
         field = '';
-      } else if (c === '\n') {
+      } else if (char === '\n') {
         row.push(field);
         rows.push(row);
         row = [];
         field = '';
-      } else field += c;
+      } else {
+        field += char;
+      }
     }
+
     row.push(field);
     rows.push(row);
-    return rows.map((r) => r.map((c) => c.trim()));
+    return rows.map((r) => r.map((cell) => cell.trim()));
   }
 
   protected lineBase(it: DraftItem): number {
     return (it.quantity || 0) * (it.rate || 0);
   }
+
   protected lineDisc(it: DraftItem): number {
     return (this.lineBase(it) * (it.discountPercentage || 0)) / 100;
   }
+
   protected lineTaxable(it: DraftItem): number {
     return round2(this.lineBase(it) - this.lineDisc(it));
   }
+
   protected lineCgst(it: DraftItem): number {
     return round2((this.lineTaxable(it) * (it.cgstPercent || 0)) / 100);
   }
+
   protected lineSgst(it: DraftItem): number {
     return round2((this.lineTaxable(it) * (it.sgstPercent || 0)) / 100);
   }
+
   protected lineIgst(it: DraftItem): number {
     return round2((this.lineTaxable(it) * (it.igstPercent || 0)) / 100);
   }
+
   protected lineCess(it: DraftItem): number {
     return round2((this.lineTaxable(it) * (it.cessPercent || 0)) / 100);
   }
+
   protected lineTotal(it: DraftItem): number {
     return round2(this.lineTaxable(it) + this.lineCgst(it) + this.lineSgst(it) + this.lineIgst(it) + this.lineCess(it));
   }
 
   protected get totalGross(): number {
-    return round2(this.items().reduce((s, it) => s + this.lineBase(it), 0));
+    return round2(this.items().reduce((sum, it) => sum + this.lineBase(it), 0));
   }
+
   protected get totalDiscount(): number {
-    return round2(this.items().reduce((s, it) => s + this.lineDisc(it), 0));
+    return round2(this.items().reduce((sum, it) => sum + this.lineDisc(it), 0));
   }
+
   protected get taxable(): number {
-    return round2(this.items().reduce((s, it) => s + this.lineTaxable(it), 0));
+    return round2(this.items().reduce((sum, it) => sum + this.lineTaxable(it), 0));
   }
+
   protected get totalCgst(): number {
-    return round2(this.items().reduce((s, it) => s + this.lineCgst(it), 0));
+    return round2(this.items().reduce((sum, it) => sum + this.lineCgst(it), 0));
   }
+
   protected get totalSgst(): number {
-    return round2(this.items().reduce((s, it) => s + this.lineSgst(it), 0));
+    return round2(this.items().reduce((sum, it) => sum + this.lineSgst(it), 0));
   }
+
   protected get totalIgst(): number {
-    return round2(this.items().reduce((s, it) => s + this.lineIgst(it), 0));
+    return round2(this.items().reduce((sum, it) => sum + this.lineIgst(it), 0));
   }
+
   protected get totalCess(): number {
-    return round2(this.items().reduce((s, it) => s + this.lineCess(it), 0));
+    return round2(this.items().reduce((sum, it) => sum + this.lineCess(it), 0));
   }
+
   protected get grandTotal(): number {
     return round2(this.taxable + this.totalCgst + this.totalSgst + this.totalIgst + this.totalCess);
   }
@@ -765,16 +969,17 @@ export class SalesEntryPage implements OnInit {
       items: this.toItems(),
       payment: null,
     };
+
     if (this.payAmount > 0) {
-      const pay: CreateSalesPaymentInput = {
+      req.payment = {
         amount: this.payAmount,
         paymentTypeID: this.payTypeID ?? this.paymentTypeID ?? null,
         paymentMethodID: this.payMethodID ?? this.paymentMethodID ?? null,
         referenceNo: this.payReferenceNo || null,
         remarks: this.payRemarks || null,
       };
-      req.payment = pay;
     }
+
     return req;
   }
 
@@ -804,36 +1009,42 @@ export class SalesEntryPage implements OnInit {
       this.focusGrid();
       return 'grid';
     }
-    for (let i = 0; i < this.items().length; i++) {
-      const it = this.items()[i];
-      if (!it.productId) {
-        this.focusCell(i, 0);
-        this.toast.error(`Product is required on row ${i + 1}`);
+
+    for (let index = 0; index < this.items().length; index++) {
+      const item = this.items()[index];
+      if (!item.productId) {
+        this.focusCell(index, 0);
+        this.toast.error(`Product is required on row ${index + 1}`);
         return 'grid';
       }
-      if (!it.unitID) {
-        this.focusCell(i, 1);
-        this.toast.error(`Unit is required on row ${i + 1}`);
+      if (!item.unitID) {
+        this.focusCell(index, 1);
+        this.toast.error(`Unit is required on row ${index + 1}`);
         return 'grid';
       }
-      if (!(it.quantity > 0)) {
-        this.focusCell(i, 2);
-        this.toast.error(`Quantity must be greater than 0 on row ${i + 1}`);
+      if (!(item.quantity > 0)) {
+        this.focusCell(index, 2);
+        this.toast.error(`Quantity must be greater than 0 on row ${index + 1}`);
         return 'grid';
       }
     }
+
     return null;
   }
 
   protected async save(): Promise<void> {
     if (this.saving) return;
     if (!this.canManage()) return;
+    this.syncActiveTabFromForm();
+    const tab = this.activeTab;
+    if (!tab) return;
     if (this.validate() !== null) return;
+
     this.saving = true;
     try {
       const req = this.toRequest();
-      if (this.editingId) {
-        const up: UpdateSalesRequest = {
+      if (tab.editingId) {
+        const update: UpdateSalesRequest = {
           branchId: req.branchId,
           warehouseId: req.warehouseId,
           customerId: req.customerId,
@@ -847,13 +1058,15 @@ export class SalesEntryPage implements OnInit {
           remarks: req.remarks,
           items: req.items,
         };
-        await this.svc.update(this.editingId, up);
+        await this.svc.update(tab.editingId, update);
       } else {
         await this.svc.create(req);
       }
-      this.toast.success('Sales invoice saved');
+
+      tab.isDirty = false;
+      tab.isSaved = true;
+      this.toast.success('Sale saved');
       await this.loadList();
-      this.resetForm();
     } catch (e: any) {
       this.toast.error('Failed to save', e?.error?.message ?? e?.message ?? '');
     } finally {
@@ -863,37 +1076,42 @@ export class SalesEntryPage implements OnInit {
 
   protected async edit(p: SalesInvoiceDto): Promise<void> {
     await this.refreshLookups();
-    this.editingId = p.salesInvoiceId;
-    this.branchId = p.branchId;
-    this.warehouseId = p.warehouseId;
-    this.companyId = p.companyId ?? null;
-    this.customerId = p.customerId;
-    this.salesNo = p.salesInvoiceNo;
-    this.invoiceDate = p.invoiceDate ? p.invoiceDate.slice(0, 10) : this.invoiceDate;
-    this.referenceNo = p.referenceNo ?? '';
-    this.referenceDate = p.referenceDate ? p.referenceDate.slice(0, 10) : '';
-    this.sourceType = p.sourceType || 'SALES';
-    this.paymentTypeID = p.paymentTypeID ?? null;
-    this.paymentMethodID = p.paymentMethodID ?? null;
-    this.remarks = p.remarks ?? '';
-    this.items.set(
-      p.items.map((i) => ({
-        productId: i.productId,
-        unitID: i.unitID,
-        productName: i.productNameSnapshot ?? null,
-        productText: i.productNameSnapshot ?? null,
-        quantity: i.quantity,
-        freeQuantity: i.freeQuantity,
-        rate: i.rate,
-        discountPercentage: i.discountPercentage,
-        gstPercent: i.gstPercent,
-        cgstPercent: i.cgstPercent,
-        sgstPercent: i.sgstPercent,
-        igstPercent: i.igstPercent,
-        cessPercent: i.cessPercent,
-        remarks: i.remarks ?? null,
-      })),
-    );
+    const tab = this.createTabState();
+    tab.editingId = p.salesInvoiceId;
+    tab.branchId = p.branchId;
+    tab.warehouseId = p.warehouseId;
+    tab.companyId = p.companyId ?? null;
+    tab.customerId = p.customerId;
+    tab.salesNo = p.salesInvoiceNo;
+    tab.invoiceDate = p.invoiceDate ? p.invoiceDate.slice(0, 10) : tab.invoiceDate;
+    tab.referenceNo = p.referenceNo ?? '';
+    tab.referenceDate = p.referenceDate ? p.referenceDate.slice(0, 10) : '';
+    tab.sourceType = p.sourceType || 'SALES';
+    tab.paymentTypeID = p.paymentTypeID ?? null;
+    tab.paymentMethodID = p.paymentMethodID ?? null;
+    tab.remarks = p.remarks ?? '';
+    tab.items = p.items.map((i) => ({
+      productId: i.productId,
+      unitID: i.unitID,
+      productName: i.productNameSnapshot ?? null,
+      productText: i.productNameSnapshot ?? null,
+      quantity: i.quantity,
+      freeQuantity: i.freeQuantity,
+      rate: i.rate,
+      discountPercentage: i.discountPercentage,
+      gstPercent: i.gstPercent,
+      cgstPercent: i.cgstPercent,
+      sgstPercent: i.sgstPercent,
+      igstPercent: i.igstPercent,
+      cessPercent: i.cessPercent,
+      remarks: i.remarks ?? null,
+    }));
+    tab.isDirty = false;
+    tab.isSaved = true;
+
+    this.tabs.update((tabs) => [...tabs, tab]);
+    this.activeTabId.set(tab.saleTabId);
+    this.applyTabState(tab);
   }
 
   protected async remove(p: SalesInvoiceDto): Promise<void> {
@@ -914,6 +1132,9 @@ export class SalesEntryPage implements OnInit {
     this.warehouseId = null;
     this.companyId = null;
     this.customerId = null;
+    this.customerPhone = '';
+    this.customerPoNo = '';
+    this.salesperson = '';
     this.salesNo = '';
     this.invoiceDate = new Date().toISOString().slice(0, 10);
     this.referenceNo = '';
@@ -930,9 +1151,9 @@ export class SalesEntryPage implements OnInit {
     this.items.set([]);
   }
 
-  protected readonly trackByIndex = (i: number): number => i;
+  protected readonly trackByIndex = (index: number): number => index;
 }
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
 }

@@ -35,7 +35,7 @@ export class MasterImportPage implements OnInit {
   protected readonly selectedMaster = signal<MasterImportMetaDto | null>(null);
   protected readonly selectedColumns = signal<Record<string, boolean>>({});
 
-  protected readonly parsedFile = signal<{ name: string; dataRows: string[][] } | null>(null);
+  protected readonly parsedFile = signal<{ name: string; dataRows: Record<string, unknown>[] } | null>(null);
   protected readonly preview = signal<ImportPreviewResponse | null>(null);
   protected readonly confirming = signal(false);
   protected readonly result = signal<ImportConfirmResponse | null>(null);
@@ -117,7 +117,17 @@ export class MasterImportPage implements OnInit {
           this.toast.error('Invalid file', 'File must contain a header row and at least one data row.');
           return;
         }
-        const dataRows = rows.slice(1).filter((r) => r.some((c) => (c ?? '').trim() !== ''));
+        const header = rows[0].map((h) => h.trim());
+        const dataRows = rows
+          .slice(1)
+          .filter((r) => r.some((c) => (c ?? '').trim() !== ''))
+          .map((r) => {
+            const row: Record<string, unknown> = {};
+            header.forEach((k, i) => {
+              if (k) row[k] = r[i] ?? '';
+            });
+            return row;
+          });
         this.parsedFile.set({ name: f.name, dataRows });
         this.preview.set(null);
         this.step.set(2);

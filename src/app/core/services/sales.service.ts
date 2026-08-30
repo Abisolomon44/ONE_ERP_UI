@@ -176,6 +176,15 @@ export interface StockTransactionDto {
   remarks?: string | null;
 }
 
+export interface ProductStockDto {
+  unitId: number;
+  unitName?: string | null;
+  quantity: number;
+  availableQuantity: number;
+  branchId: number;
+  warehouseId: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SalesService {
   constructor(private readonly http: HttpClient) {}
@@ -208,6 +217,10 @@ export class SalesService {
 
   getStock(id: number): Promise<StockTransactionDto[]> {
     return firstValueFrom(this.http.get<StockTransactionDto[]>(`/api/sales/${id}/stock`));
+  }
+
+  getProductStock(productId: number): Promise<ProductStockDto[]> {
+    return firstValueFrom(this.http.get<ProductStockDto[]>(`/api/sales/products/${productId}/stock`));
   }
 
   create(request: CreateSalesRequest): Promise<SalesInvoiceDto> {
