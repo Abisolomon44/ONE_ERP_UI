@@ -81,7 +81,7 @@
         <p class="hint">First row must be the header (column keys). Data rows follow.</p>
         <input type="file" accept=".csv,text/csv" (change)="onFileChange($event)" />
         @if (parsedFile()) {
-          <div class="ok-line"><i-lucide name="check-circle"></i-lucide>
+          <div class="ok-line"><i-lucide name="check"></i-lucide>
             {{ parsedFile()!.name }} — {{ parsedFile()!.dataRows.length }} data row(s) loaded.</div>
         }
         <div class="actions">
@@ -132,7 +132,7 @@
           <button class="btn ghost" (click)="step.set(2)">Back</button>
           @if (canManage()) {
             <button class="btn primary" [disabled]="confirming() || validRows().length === 0" (click)="doConfirm()">
-              <i-lucide name="upload-cloud"></i-lucide>
+              <i-lucide name="upload"></i-lucide>
               {{ confirming() ? 'Importing…' : 'Confirm Import (' + validRows().length + ')' }}
             </button>
           } @else {
@@ -145,7 +145,7 @@
     <!-- Step 5: done -->
     @if (step() === 4 && result()) {
       <section class="card done-card">
-        <i-lucide name="party-popper" class="big-ok"></i-lucide>
+        <i-lucide name="check" class="big-ok"></i-lucide>
         <h2>Import complete</h2>
         <div class="summary">
           <span class="badge">Total: {{ result()!.totalRows }}</span>

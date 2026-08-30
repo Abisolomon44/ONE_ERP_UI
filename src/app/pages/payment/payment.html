@@ -1,0 +1,25 @@
+<div class="ws">
+  <header class="ws-head">
+    <div>
+      <h1>Payment</h1>
+      <p class="muted">Common payment system for purchases, sales, expenses and refunds.</p>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    @for (t of tabs; track t.id) {
+      <button class="tab" [class.active]="tab() === t.id" (click)="setTab(t.id)">
+        <lucide-icon [name]="t.icon"></lucide-icon> {{ t.label }}
+      </button>
+    }
+  </nav>
+
+  <div class="tab-body">
+    @if (tab() === 'entry') {
+      <app-payment-entry></app-payment-entry>
+    }
+    @if (tab() === 'list') {
+      <app-payment-list></app-payment-list>
+    }
+  </div>
+</div>

@@ -1,0 +1,40 @@
+<div class="card">
+  <h2>Payment Ledger</h2>
+  @if (loading()) {
+    <div class="empty">Loading…</div>
+  } @else if (!rows().length) {
+    <div class="empty">No payments recorded yet.</div>
+  } @else {
+    <table class="list">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Method</th>
+          <th>Reference</th>
+          <th class="num">Amount</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of rows(); track p.paymentId) {
+          <tr>
+            <td>{{ p.paymentNo }}</td>
+            <td>{{ p.paymentDate ? (p.paymentDate | slice: 0 : 10) : '' }}</td>
+            <td>{{ p.paymentTypeID }}</td>
+            <td>{{ p.paymentMethodID }}</td>
+            <td>{{ p.referenceType }} #{{ p.referenceId }}</td>
+            <td class="num">{{ p.amount | number: '1.2-2' }}</td>
+            <td><span class="badge">{{ p.statusID }}</span></td>
+            <td class="row-actions">
+              <button class="icon" (click)="edit(p)" [disabled]="!canManage()"><lucide-icon name="pencil"></lucide-icon></button>
+              <button class="icon danger" (click)="remove(p)" [disabled]="!canManage()"><lucide-icon name="trash-2"></lucide-icon></button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

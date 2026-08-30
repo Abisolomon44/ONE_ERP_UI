@@ -1,0 +1,105 @@
+<div class="page">
+  <header class="page-head">
+    <div>
+      <h1>Purchase Returns</h1>
+      <p class="muted">Return goods to suppliers and reverse stock.</p>
+    </div>
+    @if (canManage()) {
+      <button class="btn primary" (click)="openForm()"><lucide-icon name="plus"></lucide-icon> New Return</button>
+    }
+  </header>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view returns.</div>
+  } @else if (showForm()) {
+    <section class="card">
+      <h2>New Purchase Return</h2>
+      <div class="grid">
+        <label>
+          <span>Purchase ID *</span>
+          <input [(ngModel)]="sourceId" placeholder="e.g. 1" (keyup.enter)="loadSource()" />
+        </label>
+        <label>
+          <span>Return Date</span>
+          <input type="date" [(ngModel)]="returnDate" />
+        </label>
+        <label>
+          <span>Reason</span>
+          <input [(ngModel)]="reason" />
+        </label>
+        <label>
+          <span>Remarks</span>
+          <input [(ngModel)]="remarks" />
+        </label>
+      </div>
+      <button class="btn ghost" (click)="loadSource()">Load Purchase</button>
+
+      @if (source) {
+        <div class="table-scroll">
+          <table class="items">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Unit</th>
+                <th class="num">Billed Qty</th>
+                <th class="num">Return Qty</th>
+                <th class="num">Rate</th>
+                <th class="num">GST %</th>
+                <th class="num">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (it of draft(); track it.purchaseItemId) {
+                <tr>
+                  <td>{{ it.productName }}</td>
+                  <td>{{ it.unitId }}</td>
+                  <td class="num">{{ it.originalQty | number: '1.3-3' }}</td>
+                  <td class="num"><input type="number" min="0" step="0.01" [(ngModel)]="it.returnQuantity" (input)="onQtyChange()" /></td>
+                  <td class="num">{{ it.purchaseRate | number: '1.2-2' }}</td>
+                  <td class="num">{{ it.gstRate | number: '1.2-2' }}</td>
+                  <td class="num">{{ it.lineTotal | number: '1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="totals">
+          <div class="grand"><span>Return Total</span><strong>{{ grandTotal | number: '1.2-2' }}</strong></div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" (click)="submit()"><lucide-icon name="save"></lucide-icon> Save Return</button>
+          <button class="btn ghost" (click)="cancel()">Cancel</button>
+        </div>
+      }
+    </section>
+  } @else {
+    @if (loading()) {
+      <div class="empty">Loading…</div>
+    } @else if (!returns().length) {
+      <div class="empty">No purchase returns yet.</div>
+    } @else {
+      <table class="list">
+        <thead>
+          <tr>
+            <th>Return No</th>
+            <th>Date</th>
+            <th>Purchase</th>
+            <th>Supplier</th>
+            <th class="num">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of returns(); track r.purchaseReturnId) {
+            <tr>
+              <td>{{ r.returnNumber }}</td>
+              <td>{{ r.returnDate ? (r.returnDate | slice: 0 : 10) : '' }}</td>
+              <td>{{ r.purchaseId }}</td>
+              <td>{{ r.supplierNameSnapshot || r.supplierId }}</td>
+              <td class="num">{{ r.grandTotal | number: '1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+</div>

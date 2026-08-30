@@ -1,0 +1,7 @@
+.ws { display: flex; flex-direction: column; gap: 1rem; }
+.ws-head h1 { margin: 0; font-size: 1.4rem; }
+.muted { color: var(--muted, #64748b); margin: 0.15rem 0 0; font-size: 0.85rem; }
+
+.tabs { display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border, #e2e8f0); }
+.tab { display: inline-flex; align-items: center; gap: 0.4rem; border: none; background: transparent; padding: 0.6rem 0.9rem; font-size: 0.9rem; cursor: pointer; color: var(--muted, #64748b); border-bottom: 2px solid transparent; }
+.tab.active { color: var(--primary, #2563eb); border-bottom-color: var(--primary, #2563eb); }

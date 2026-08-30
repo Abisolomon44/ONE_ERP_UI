@@ -526,3 +526,665 @@ export class ImportLogService {
     return firstValueFrom(this.http.get<ImportLogDto[]>('/api/import-logs'));
   }
 }
+
+// ============================================================
+// Tenant Configuration — Purchase/Sale/Billing screen settings
+// ============================================================
+
+export interface TenantConfigurationDto {
+  id: number;
+  tenantId: number;
+  applicationType: string;
+  transactionType?: string | null;
+  flowType?: string | null;
+  pageCode?: string | null;
+  fieldCode?: string | null;
+  sequenceNo?: number | null;
+  isPageEnabled: boolean;
+  isVisible: boolean;
+  isRequired: boolean;
+  isReadonly: boolean;
+  displayOrder?: number | null;
+  defaultValue?: string | null;
+  isActive: boolean;
+}
+
+export type CreateTenantConfigurationRequest = Partial<TenantConfigurationDto> & {
+  applicationType: string;
+  isPageEnabled?: boolean;
+  isVisible?: boolean;
+  isRequired?: boolean;
+  isReadonly?: boolean;
+  isActive?: boolean;
+};
+
+export type UpdateTenantConfigurationRequest = {
+  applicationType: string;
+  transactionType?: string | null;
+  flowType?: string | null;
+  pageCode?: string | null;
+  fieldCode?: string | null;
+  sequenceNo?: number | null;
+  isPageEnabled: boolean;
+  isVisible: boolean;
+  isRequired: boolean;
+  isReadonly: boolean;
+  displayOrder?: number | null;
+  defaultValue?: string | null;
+  isActive: boolean;
+};
+
+@Injectable({ providedIn: 'root' })
+export class TenantConfigurationService {
+  constructor(private readonly http: HttpClient) {}
+
+  getAll(): Promise<TenantConfigurationDto[]> {
+    return firstValueFrom(this.http.get<TenantConfigurationDto[]>('/api/tenant-configuration'));
+  }
+
+  getGrouped(): Promise<any[]> {
+    return firstValueFrom(this.http.get<any[]>('/api/tenant-configuration/grouped'));
+  }
+
+  getById(id: number): Promise<TenantConfigurationDto> {
+    return firstValueFrom(this.http.get<TenantConfigurationDto>(`/api/tenant-configuration/${id}`));
+  }
+
+  create(request: CreateTenantConfigurationRequest): Promise<TenantConfigurationDto> {
+    return firstValueFrom(this.http.post<TenantConfigurationDto>('/api/tenant-configuration', request));
+  }
+
+  update(id: number, request: UpdateTenantConfigurationRequest): Promise<TenantConfigurationDto> {
+    return firstValueFrom(this.http.put<TenantConfigurationDto>(`/api/tenant-configuration/${id}`, request));
+  }
+
+  delete(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/tenant-configuration/${id}`)).then(() => undefined);
+  }
+}
+
+// ============================================================
+// Purchase Entry — transaction with header + item lines.
+// ============================================================
+
+export interface LookupItem {
+  id: number;
+  code?: string | null;
+  name?: string | null;
+}
+
+export interface PurchaseLookupsDto {
+  suppliers: LookupItem[];
+  products: LookupItem[];
+  units: LookupItem[];
+  paymentTypes: LookupItem[];
+  paymentMethods: LookupItem[];
+  branches: LookupItem[];
+  warehouses: LookupItem[];
+  companies: LookupItem[];
+  currentCompanyId: number;
+}
+
+export interface PurchaseItemDto {
+  purchaseItemId: number;
+  purchaseId: number;
+  productId: number;
+  productCodeSnapshot?: string | null;
+  productNameSnapshot?: string | null;
+  brandID?: number | null;
+  categoryID?: number | null;
+  subCategoryID?: number | null;
+  unitID: number;
+  unitNameSnapshot?: string | null;
+  hsnID?: number | null;
+  hsnCodeSnapshot?: string | null;
+  quantity: number;
+  freeQuantity: number;
+  purchaseRate: number;
+  mrp?: number | null;
+  retailPrice?: number | null;
+  wholesalePrice?: number | null;
+  saleRate?: number | null;
+  discountPercentage: number;
+  discountAmount: number;
+  isGSTInclusive: boolean;
+  taxableValue: number;
+  gstRate: number;
+  gstAmount: number;
+  cgstRate: number;
+  cgstAmount: number;
+  sgstRate: number;
+  sgstAmount: number;
+  igstRate: number;
+  igstAmount: number;
+  cessRate: number;
+  cessAmount: number;
+  lineTotal: number;
+  manufacturingDate?: string | null;
+  expiryDate?: string | null;
+  remarks?: string | null;
+}
+
+export interface PurchaseDto {
+  purchaseId: number;
+  companyId: number;
+  companyNameSnapshot?: string | null;
+  branchId: number;
+  warehouseId: number;
+  supplierId: number;
+  supplierNameSnapshot?: string | null;
+  purchaseNumber: string;
+  purchaseDate: string;
+  supplierInvoiceNumber?: string | null;
+  supplierInvoiceDate?: string | null;
+  totalGrossAmount: number;
+  totalDiscountAmount: number;
+  totalTaxableAmount: number;
+  totalTaxAmount: number;
+  totalCessAmount: number;
+  totalRoundOff: number;
+  grandTotal: number;
+  paidAmount: number;
+  balanceAmount: number;
+  paymentTypeID?: number | null;
+  paymentMethodID?: number | null;
+  statusID: number;
+  remarks?: string | null;
+  isActive: boolean;
+  createdByUserID: number;
+  createdAt: string;
+  items: PurchaseItemDto[];
+}
+
+export interface CreatePurchaseItemInput {
+  productId: number;
+  unitID: number;
+  quantity: number;
+  freeQuantity?: number;
+  purchaseRate: number;
+  mrp?: number | null;
+  retailPrice?: number | null;
+  wholesalePrice?: number | null;
+  saleRate?: number | null;
+  discountPercentage?: number;
+  isGSTInclusive?: boolean;
+  gstRate?: number;
+  cgstRate?: number;
+  sgstRate?: number;
+  igstRate?: number;
+  cessRate?: number;
+  brandID?: number | null;
+  categoryID?: number | null;
+  subCategoryID?: number | null;
+  hsnID?: number | null;
+  hsnCode?: string | null;
+  manufacturingDate?: string | null;
+  expiryDate?: string | null;
+  remarks?: string | null;
+}
+
+export interface CreatePurchasePaymentInput {
+  amount: number;
+  paymentTypeID?: number | null;
+  paymentMethodID?: number | null;
+  referenceNo?: string | null;
+  remarks?: string | null;
+}
+
+export interface CreatePurchaseRequest {
+  branchId: number;
+  warehouseId: number;
+  supplierId: number;
+  purchaseNumber: string;
+  purchaseDate: string;
+  supplierInvoiceNumber?: string | null;
+  supplierInvoiceDate?: string | null;
+  paymentTypeID?: number | null;
+  paymentMethodID?: number | null;
+  remarks?: string | null;
+  items: CreatePurchaseItemInput[];
+  payment?: CreatePurchasePaymentInput | null;
+  companyId: number;
+}
+
+export interface UpdatePurchaseRequest {
+  branchId: number;
+  warehouseId: number;
+  supplierId: number;
+  purchaseNumber: string;
+  purchaseDate: string;
+  supplierInvoiceNumber?: string | null;
+  supplierInvoiceDate?: string | null;
+  paymentTypeID?: number | null;
+  paymentMethodID?: number | null;
+  remarks?: string | null;
+  items: CreatePurchaseItemInput[];
+  companyId: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class PurchaseService {
+  constructor(private readonly http: HttpClient) {}
+
+  getPaged(page: number = 1, size: number = 10, search: string = ''): Promise<PaginatedResult<PurchaseDto>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (search) params = params.set('search', search);
+    return firstValueFrom(this.http.get<PaginatedResult<PurchaseDto>>('/api/purchases', { params }));
+  }
+
+  getLookups(): Promise<PurchaseLookupsDto> {
+    return firstValueFrom(this.http.get<PurchaseLookupsDto>('/api/purchases/lookups'));
+  }
+
+  getNextNumber(): Promise<string> {
+    return firstValueFrom(this.http.get<string>('/api/purchases/next-number'));
+  }
+
+  getById(id: number): Promise<PurchaseDto> {
+    return firstValueFrom(this.http.get<PurchaseDto>(`/api/purchases/${id}`));
+  }
+
+  getItems(id: number): Promise<PurchaseItemDto[]> {
+    return firstValueFrom(this.http.get<PurchaseItemDto[]>(`/api/purchases/${id}/items`));
+  }
+
+  getPayments(id: number): Promise<PaymentAllocationDto[]> {
+    return firstValueFrom(this.http.get<PaymentAllocationDto[]>(`/api/purchases/${id}/payments`));
+  }
+
+  getStock(id: number): Promise<StockTransactionDto[]> {
+    return firstValueFrom(this.http.get<StockTransactionDto[]>(`/api/purchases/${id}/stock`));
+  }
+
+  create(request: CreatePurchaseRequest): Promise<PurchaseDto> {
+    return firstValueFrom(this.http.post<PurchaseDto>('/api/purchases', request));
+  }
+
+  update(id: number, request: UpdatePurchaseRequest): Promise<PurchaseDto> {
+    return firstValueFrom(this.http.put<PurchaseDto>(`/api/purchases/${id}`, request));
+  }
+
+  delete(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/purchases/${id}`)).then(() => undefined);
+  }
+}
+
+// ============================================================
+// Stock + Stock Transactions
+// ============================================================
+
+export interface StockDto {
+  stockId: number;
+  companyId: number;
+  branchId: number;
+  warehouseId: number;
+  productId: number;
+  unitId: number;
+  quantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  averageCost: number;
+  lastPurchaseRate: number;
+  updatedAt: string;
+}
+
+export interface StockTransactionDto {
+  stockTransactionId: number;
+  companyId: number;
+  branchId: number;
+  warehouseId: number;
+  productId: number;
+  unitId: number;
+  transactionType: string;
+  referenceType: string;
+  referenceId: number;
+  quantityIn: number;
+  quantityOut: number;
+  rate: number;
+  balanceQuantity: number;
+  transactionDate: string;
+  remarks?: string | null;
+}
+
+@Injectable({ providedIn: 'root' })
+export class StockService {
+  constructor(private readonly http: HttpClient) {}
+
+  getPaged(page = 1, size = 10, search = '', warehouseId?: number | null, productId?: number | null): Promise<PaginatedResult<StockDto>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (search) params = params.set('search', search);
+    if (warehouseId != null) params = params.set('warehouseId', warehouseId);
+    if (productId != null) params = params.set('productId', productId);
+    return firstValueFrom(this.http.get<PaginatedResult<StockDto>>('/api/stock', { params }));
+  }
+
+  getTransactions(page = 1, size = 20, productId?: number | null, warehouseId?: number | null): Promise<PaginatedResult<StockTransactionDto>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (productId != null) params = params.set('productId', productId);
+    if (warehouseId != null) params = params.set('warehouseId', warehouseId);
+    return firstValueFrom(this.http.get<PaginatedResult<StockTransactionDto>>('/api/stock/transactions', { params }));
+  }
+}
+
+// ============================================================
+// Purchase Return
+// ============================================================
+
+export interface PurchaseReturnItemDto {
+  purchaseReturnItemId: number;
+  purchaseReturnId: number;
+  purchaseItemId: number;
+  productId: number;
+  productCodeSnapshot?: string | null;
+  productNameSnapshot?: string | null;
+  unitId: number;
+  unitNameSnapshot?: string | null;
+  returnQuantity: number;
+  purchaseRate: number;
+  discountAmount: number;
+  taxableValue: number;
+  gstRate: number;
+  gstAmount: number;
+  cgstRate: number;
+  cgstAmount: number;
+  sgstRate: number;
+  sgstAmount: number;
+  igstRate: number;
+  igstAmount: number;
+  cessRate: number;
+  cessAmount: number;
+  lineTotal: number;
+}
+
+export interface PurchaseReturnDto {
+  purchaseReturnId: number;
+  purchaseId: number;
+  companyId: number;
+  branchId: number;
+  warehouseId: number;
+  supplierId: number;
+  supplierNameSnapshot?: string | null;
+  returnNumber: string;
+  returnDate: string;
+  totalGrossAmount: number;
+  totalDiscountAmount: number;
+  totalTaxableAmount: number;
+  totalTaxAmount: number;
+  totalCessAmount: number;
+  totalRoundOff: number;
+  grandTotal: number;
+  statusID: number;
+  reason?: string | null;
+  remarks?: string | null;
+  items: PurchaseReturnItemDto[];
+}
+
+export interface CreatePurchaseReturnItemInput {
+  purchaseItemId: number;
+  productId: number;
+  unitId: number;
+  returnQuantity: number;
+  purchaseRate: number;
+  discountAmount?: number;
+  taxableValue: number;
+  gstRate?: number;
+  gstAmount?: number;
+  cgstRate?: number;
+  cgstAmount?: number;
+  sgstRate?: number;
+  sgstAmount?: number;
+  igstRate?: number;
+  igstAmount?: number;
+  cessRate?: number;
+  cessAmount?: number;
+}
+
+export interface CreatePurchaseReturnRequest {
+  purchaseId: number;
+  returnDate: string;
+  reason?: string | null;
+  remarks?: string | null;
+  items: CreatePurchaseReturnItemInput[];
+}
+
+@Injectable({ providedIn: 'root' })
+export class PurchaseReturnService {
+  constructor(private readonly http: HttpClient) {}
+
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<PurchaseReturnDto>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (search) params = params.set('search', search);
+    return firstValueFrom(this.http.get<PaginatedResult<PurchaseReturnDto>>('/api/purchase-returns', { params }));
+  }
+
+  getNextNumber(): Promise<string> {
+    return firstValueFrom(this.http.get<string>('/api/purchase-returns/next-number'));
+  }
+
+  getById(id: number): Promise<PurchaseReturnDto> {
+    return firstValueFrom(this.http.get<PurchaseReturnDto>(`/api/purchase-returns/${id}`));
+  }
+
+  create(request: CreatePurchaseReturnRequest): Promise<PurchaseReturnDto> {
+    return firstValueFrom(this.http.post<PurchaseReturnDto>('/api/purchase-returns', request));
+  }
+}
+
+export interface PaymentAllocationDto {
+  paymentAllocationId: number;
+  paymentId: number;
+  referenceType: string;
+  referenceId: number;
+  allocatedAmount: number;
+  createdAt: string;
+}
+
+// ============================================================
+// Payment Types (global master)
+// ============================================================
+
+export interface PaymentTypeDto {
+  paymentTypeId: number;
+  code: string;
+  name: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface CreatePaymentTypeRequest {
+  code: string;
+  name: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdatePaymentTypeRequest {
+  code: string;
+  name: string;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+@Injectable({ providedIn: 'root' })
+export class PaymentTypeService {
+  constructor(private readonly http: HttpClient) {}
+
+  getAll(includeInactive: boolean = false): Promise<PaymentTypeDto[]> {
+    let params = new HttpParams();
+    if (includeInactive) params = params.set('includeInactive', 'true');
+    return firstValueFrom(this.http.get<PaymentTypeDto[]>('/api/payment-types', { params }));
+  }
+
+  getById(id: number): Promise<PaymentTypeDto> {
+    return firstValueFrom(this.http.get<PaymentTypeDto>(`/api/payment-types/${id}`));
+  }
+
+  create(request: CreatePaymentTypeRequest): Promise<PaymentTypeDto> {
+    return firstValueFrom(this.http.post<PaymentTypeDto>('/api/payment-types', request));
+  }
+
+  update(id: number, request: UpdatePaymentTypeRequest): Promise<PaymentTypeDto> {
+    return firstValueFrom(this.http.put<PaymentTypeDto>(`/api/payment-types/${id}`, request));
+  }
+
+  delete(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/payment-types/${id}`)).then(() => undefined);
+  }
+}
+
+// ============================================================
+// Payment Methods (global master)
+// ============================================================
+
+export interface PaymentMethodDto {
+  paymentMethodId: number;
+  code: string;
+  name: string;
+  paymentCategory: string;
+  isCash: boolean;
+  isCredit: boolean;
+  requiresReferenceNo: boolean;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface CreatePaymentMethodRequest {
+  code: string;
+  name: string;
+  paymentCategory: string;
+  isCash: boolean;
+  isCredit: boolean;
+  requiresReferenceNo: boolean;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdatePaymentMethodRequest {
+  code: string;
+  name: string;
+  paymentCategory: string;
+  isCash: boolean;
+  isCredit: boolean;
+  requiresReferenceNo: boolean;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+@Injectable({ providedIn: 'root' })
+export class PaymentMethodService {
+  constructor(private readonly http: HttpClient) {}
+
+  getAll(includeInactive: boolean = false): Promise<PaymentMethodDto[]> {
+    let params = new HttpParams();
+    if (includeInactive) params = params.set('includeInactive', 'true');
+    return firstValueFrom(this.http.get<PaymentMethodDto[]>('/api/payment-methods', { params }));
+  }
+
+  getById(id: number): Promise<PaymentMethodDto> {
+    return firstValueFrom(this.http.get<PaymentMethodDto>(`/api/payment-methods/${id}`));
+  }
+
+  create(request: CreatePaymentMethodRequest): Promise<PaymentMethodDto> {
+    return firstValueFrom(this.http.post<PaymentMethodDto>('/api/payment-methods', request));
+  }
+
+  update(id: number, request: UpdatePaymentMethodRequest): Promise<PaymentMethodDto> {
+    return firstValueFrom(this.http.put<PaymentMethodDto>(`/api/payment-methods/${id}`, request));
+  }
+
+  delete(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/payment-methods/${id}`)).then(() => undefined);
+  }
+}
+
+// ============================================================
+// Payments (common transaction)
+// ============================================================
+
+export interface PaymentLookupsDto {
+  paymentTypes: LookupItem[];
+  paymentMethods: LookupItem[];
+  businessPartners: LookupItem[];
+}
+
+export interface PaymentDto {
+  paymentId: number;
+  companyId: number;
+  paymentNo: string;
+  paymentDate: string;
+  paymentTypeID: number;
+  paymentMethodID: number;
+  referenceType: string;
+  referenceId: number;
+  businessPartnerId?: number | null;
+  amount: number;
+  referenceNo?: string | null;
+  remarks?: string | null;
+  statusID: number;
+  createdByUserID: number;
+  createdAt: string;
+  updatedByUserID?: number | null;
+  updatedAt?: string | null;
+}
+
+export interface CreatePaymentRequest {
+  businessPartnerId?: number | null;
+  paymentTypeID: number;
+  paymentMethodID: number;
+  referenceType: string;
+  referenceId: number;
+  amount: number;
+  paymentDate: string;
+  paymentNo: string;
+  referenceNo?: string | null;
+  remarks?: string | null;
+}
+
+export interface UpdatePaymentRequest {
+  businessPartnerId?: number | null;
+  paymentTypeID: number;
+  paymentMethodID: number;
+  referenceType: string;
+  referenceId: number;
+  amount: number;
+  paymentDate: string;
+  paymentNo: string;
+  referenceNo?: string | null;
+  remarks?: string | null;
+  statusID: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class PaymentService {
+  constructor(private readonly http: HttpClient) {}
+
+  getPaged(page: number = 1, size: number = 10, search: string = ''): Promise<PaginatedResult<PaymentDto>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (search) params = params.set('search', search);
+    return firstValueFrom(this.http.get<PaginatedResult<PaymentDto>>('/api/payments', { params }));
+  }
+
+  getLookups(): Promise<PaymentLookupsDto> {
+    return firstValueFrom(this.http.get<PaymentLookupsDto>('/api/payments/lookups'));
+  }
+
+  getNextNumber(): Promise<string> {
+    return firstValueFrom(this.http.get<string>('/api/payments/next-number'));
+  }
+
+  getById(id: number): Promise<PaymentDto> {
+    return firstValueFrom(this.http.get<PaymentDto>(`/api/payments/${id}`));
+  }
+
+  create(request: CreatePaymentRequest): Promise<PaymentDto> {
+    return firstValueFrom(this.http.post<PaymentDto>('/api/payments', request));
+  }
+
+  update(id: number, request: UpdatePaymentRequest): Promise<PaymentDto> {
+    return firstValueFrom(this.http.put<PaymentDto>(`/api/payments/${id}`, request));
+  }
+
+  delete(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/payments/${id}`)).then(() => undefined);
+  }
+}

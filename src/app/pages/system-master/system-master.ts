@@ -15,8 +15,10 @@ import { DocumentTypesPage } from '../document-types/document-types';
 import { OrganizationTypesPage } from '../organization-types/organization-types';
 import { CurrenciesPage } from '../currencies/currencies';
 import { BusinessPartnerRolesPage } from '../business-partner-roles/business-partner-roles';
+import { PaymentTypePage } from '../payment-type/payment-type';
+import { PaymentMethodPage } from '../payment-method/payment-method';
 
-type MasterTab = 'business-types' | 'industry-types' | 'company-groups' | 'locations' | 'languages' | 'time-zones' | 'gst-registration-types' | 'address-types' | 'contact-types' | 'document-types' | 'organization-types' | 'currencies' | 'business-partner-roles';
+type MasterTab = 'business-types' | 'industry-types' | 'company-groups' | 'locations' | 'languages' | 'time-zones' | 'gst-registration-types' | 'address-types' | 'contact-types' | 'document-types' | 'organization-types' | 'currencies' | 'business-partner-roles' | 'payment-types' | 'payment-methods';
 
 const TABS: { id: MasterTab; label: string; icon: string }[] = [
   { id: 'business-types', label: 'Business Types', icon: 'store' },
@@ -32,12 +34,14 @@ const TABS: { id: MasterTab; label: string; icon: string }[] = [
   { id: 'organization-types', label: 'Organization Types', icon: 'layers' },
   { id: 'currencies', label: 'Currencies', icon: 'coins' },
   { id: 'business-partner-roles', label: 'Business Partner Roles', icon: 'users-round' },
+  { id: 'payment-types', label: 'Payment Types', icon: 'tags' },
+  { id: 'payment-methods', label: 'Payment Methods', icon: 'credit-card' },
 ];
 
 @Component({
   selector: 'app-system-master',
   standalone: true,
-  imports: [LucideAngularModule, BusinessTypesPage, IndustryTypesPage, CompanyGroupsPage, LocationsPage, LanguagesPage, TimeZonesPage, GstRegistrationTypesPage, AddressTypesPage, ContactTypesPage, DocumentTypesPage, OrganizationTypesPage, CurrenciesPage, BusinessPartnerRolesPage],
+  imports: [LucideAngularModule, BusinessTypesPage, IndustryTypesPage, CompanyGroupsPage, LocationsPage, LanguagesPage, TimeZonesPage, GstRegistrationTypesPage, AddressTypesPage, ContactTypesPage, DocumentTypesPage, OrganizationTypesPage, CurrenciesPage, BusinessPartnerRolesPage, PaymentTypePage, PaymentMethodPage],
   templateUrl: './system-master.html',
   styleUrl: './system-master.css',
 })

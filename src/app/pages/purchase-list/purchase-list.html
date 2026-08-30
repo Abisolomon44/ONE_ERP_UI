@@ -1,0 +1,43 @@
+<div class="card">
+  <div class="ledger-head">
+    <h2>Purchase Ledger</h2>
+    <button class="btn primary" type="button" (click)="newPurchase()" [disabled]="!canManage()">
+      <lucide-icon name="plus"></lucide-icon> New Purchase
+    </button>
+  </div>
+  @if (loading()) {
+    <div class="empty">Loading…</div>
+  } @else if (!rows().length) {
+    <div class="empty">No purchases recorded yet.</div>
+  } @else {
+    <table class="list">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Date</th>
+          <th>Company</th>
+          <th>Supplier</th>
+          <th>Status</th>
+          <th class="num">Grand Total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of $any(rows()); track p.purchaseId) {
+          <tr>
+            <td>{{ p.purchaseNumber }}</td>
+            <td>{{ p.purchaseDate ? (p.purchaseDate | slice: 0 : 10) : '' }}</td>
+            <td>{{ p.companyNameSnapshot || p.companyId }}</td>
+            <td>{{ p.supplierNameSnapshot || p.supplierId }}</td>
+            <td><span class="badge">{{ p.statusID }}</span></td>
+            <td class="num">{{ p.grandTotal | number: '1.2-2' }}</td>
+            <td class="row-actions">
+              <button class="icon" (click)="edit(p)" [disabled]="!canManage()"><lucide-icon name="pencil"></lucide-icon></button>
+              <button class="icon danger" (click)="remove(p)" [disabled]="!canManage()"><lucide-icon name="trash-2"></lucide-icon></button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

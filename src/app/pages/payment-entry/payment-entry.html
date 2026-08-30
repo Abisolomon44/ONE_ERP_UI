@@ -1,0 +1,65 @@
+<div class="page">
+  <header class="page-head">
+    <div>
+      <h1>{{ editingId ? 'Edit Payment' : 'New Payment' }} {{ paymentNo ? '#' + paymentNo : '' }}</h1>
+      <p class="muted">Record a common payment against any reference (purchase, sale, expense…).</p>
+    </div>
+    <button class="btn ghost" (click)="resetForm()">New</button>
+  </header>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view payments.</div>
+  } @else {
+    <section class="card">
+      <div class="grid">
+        <label><span>Payment Type *</span>
+          <select [(ngModel)]="paymentTypeId" [disabled]="!canManage()">
+            <option [ngValue]="null">— Select —</option>
+            @for (t of lookups()?.paymentTypes ?? []; track t.id) {
+              <option [ngValue]="t.id">{{ t.name }} ({{ t.code }})</option>
+            }
+          </select>
+        </label>
+        <label><span>Payment Method *</span>
+          <select [(ngModel)]="paymentMethodId" [disabled]="!canManage()">
+            <option [ngValue]="null">— Select —</option>
+            @for (m of lookups()?.paymentMethods ?? []; track m.id) {
+              <option [ngValue]="m.id">{{ m.name }} ({{ m.code }})</option>
+            }
+          </select>
+        </label>
+        <label><span>Business Partner</span>
+          <select [(ngModel)]="businessPartnerId" [disabled]="!canManage()">
+            <option [ngValue]="null">— None —</option>
+            @for (b of lookups()?.businessPartners ?? []; track b.id) {
+              <option [ngValue]="b.id">{{ b.name }} ({{ b.code }})</option>
+            }
+          </select>
+        </label>
+        <label><span>Reference Type *</span>
+          <input [(ngModel)]="referenceType" [disabled]="!canManage()" />
+        </label>
+        <label><span>Reference Id *</span>
+          <input type="number" [(ngModel)]="referenceId" [disabled]="!canManage()" />
+        </label>
+        <label><span>Amount *</span>
+          <input type="number" min="0" step="0.01" [(ngModel)]="amount" [disabled]="!canManage()" />
+        </label>
+        <label><span>Payment Date</span>
+          <input type="date" [(ngModel)]="paymentDate" [disabled]="!canManage()" />
+        </label>
+        <label><span>Reference No</span>
+          <input [(ngModel)]="referenceNo" [disabled]="!canManage()" />
+        </label>
+        <label class="full"><span>Remarks</span>
+          <textarea [(ngModel)]="remarks" rows="2" [disabled]="!canManage()"></textarea>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn primary" (click)="save()" [disabled]="!canManage()">
+          <lucide-icon name="save"></lucide-icon> Save
+        </button>
+      </div>
+    </section>
+  }
+</div>

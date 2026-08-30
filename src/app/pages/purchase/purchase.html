@@ -1,0 +1,45 @@
+<div class="pu">
+  <aside class="pu-side" [class.collapsed]="collapsed()">
+    <div class="pu-side-top">
+      <div class="pu-brand">
+        <span class="pu-logo"><i-lucide name="shopping-cart" [size]="20"></i-lucide></span>
+        @if (!collapsed()) {
+          <span class="pu-brand-name">Purchase</span>
+        }
+      </div>
+      <button class="pu-collapse" type="button" [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'" (click)="collapsed.set(!collapsed())">
+        <i-lucide [name]="collapsed() ? 'panel-left-open' : 'panel-left-close'" [size]="18"></i-lucide>
+      </button>
+    </div>
+
+    @if (!collapsed()) {
+      <div class="pu-section">Transactions</div>
+    }
+
+    <nav class="pu-nav">
+      @for (t of tabs; track t.id) {
+        <button class="pu-nav-item" type="button" [class.active]="tab() === t.id" (click)="setTab(t.id)">
+          <i-lucide [name]="t.icon" [size]="18"></i-lucide>
+          @if (!collapsed()) {
+            <span>{{ t.label }}</span>
+          }
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <section class="pu-content">
+    @if (tab() === 'entry') {
+      <app-purchase-entry></app-purchase-entry>
+    }
+    @if (tab() === 'list') {
+      <app-purchase-list></app-purchase-list>
+    }
+    @if (tab() === 'stock') {
+      <app-stock></app-stock>
+    }
+    @if (tab() === 'returns') {
+      <app-purchase-return></app-purchase-return>
+    }
+  </section>
+</div>

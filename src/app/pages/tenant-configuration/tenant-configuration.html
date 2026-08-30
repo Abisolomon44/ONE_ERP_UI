@@ -1,0 +1,87 @@
+<div class="tc-container">
+  <header class="page-head">
+    <div>
+      <h1>Tenant Configuration</h1>
+      <p>Control Purchase / Sale / Billing screen fields per tenant (PO → GRN → Invoice, SO → Delivery → Invoice, POS).</p>
+    </div>
+    @if (canManage()) {
+      <button class="btn primary" (click)="startAdd()"><i-lucide name="plus"></i-lucide> Add Field</button>
+    }
+  </header>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view tenant configuration.</div>
+  } @else if (loading()) {
+    <div class="empty">Loading…</div>
+  } @else {
+    @if (rows().length === 0) {
+      <div class="empty">No configuration found for this tenant. Use "Add Field" to create one.</div>
+    }
+
+    <div class="table-wrap">
+      <table class="tc-table">
+        <thead>
+          <tr>
+            <th>App</th><th>Transaction</th><th>Flow</th><th>Page</th><th>Field</th>
+            <th>Visible</th><th>Required</th><th>Readonly</th><th>Page On</th>
+            <th>Order</th><th>Default</th><th>Active</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of rows(); track r.id) {
+            <tr [class.saving]="savingId() === r.id">
+              <td><input class="cell-input" [(ngModel)]="r.applicationType" /></td>
+              <td><input class="cell-input" [(ngModel)]="r.transactionType" /></td>
+              <td><input class="cell-input" [(ngModel)]="r.flowType" /></td>
+              <td><input class="cell-input" [(ngModel)]="r.pageCode" /></td>
+              <td><input class="cell-input" [(ngModel)]="r.fieldCode" /></td>
+              <td class="ctr"><input type="checkbox" [(ngModel)]="r.isVisible" /></td>
+              <td class="ctr"><input type="checkbox" [(ngModel)]="r.isRequired" /></td>
+              <td class="ctr"><input type="checkbox" [(ngModel)]="r.isReadonly" /></td>
+              <td class="ctr"><input type="checkbox" [(ngModel)]="r.isPageEnabled" /></td>
+              <td class="ctr"><input type="number" class="cell-num" [(ngModel)]="r.displayOrder" /></td>
+              <td><input class="cell-input" [(ngModel)]="r.defaultValue" /></td>
+              <td class="ctr"><input type="checkbox" [(ngModel)]="r.isActive" /></td>
+              <td class="actions-col">
+                <button class="btn sm primary" [disabled]="savingId() !== null" (click)="save(r)">
+                  <i-lucide name="save"></i-lucide> Save
+                </button>
+                <button class="btn sm ghost" [disabled]="savingId() !== null" (click)="remove(r)">
+                  <i-lucide name="trash-2"></i-lucide>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (newRow(); as nr) {
+      <div class="add-card">
+        <h3>New Field</h3>
+        <div class="add-grid">
+          <label>App<input class="cell-input" [(ngModel)]="nr.applicationType" /></label>
+          <label>Transaction<input class="cell-input" [(ngModel)]="nr.transactionType" /></label>
+          <label>Flow<input class="cell-input" [(ngModel)]="nr.flowType" /></label>
+          <label>Page<input class="cell-input" [(ngModel)]="nr.pageCode" /></label>
+          <label>Field<input class="cell-input" [(ngModel)]="nr.fieldCode" /></label>
+          <label>Order<input type="number" class="cell-num" [(ngModel)]="nr.displayOrder" /></label>
+          <label>Default<input class="cell-input" [(ngModel)]="nr.defaultValue" /></label>
+        </div>
+        <div class="add-flags">
+          <label><input type="checkbox" [(ngModel)]="nr.isVisible" /> Visible</label>
+          <label><input type="checkbox" [(ngModel)]="nr.isRequired" /> Required</label>
+          <label><input type="checkbox" [(ngModel)]="nr.isReadonly" /> Readonly</label>
+          <label><input type="checkbox" [(ngModel)]="nr.isPageEnabled" /> Page On</label>
+          <label><input type="checkbox" [(ngModel)]="nr.isActive" /> Active</label>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" (click)="cancelAdd()">Cancel</button>
+          <button class="btn primary" [disabled]="savingId() !== null" (click)="saveNew()">
+            <i-lucide name="save"></i-lucide> Create
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

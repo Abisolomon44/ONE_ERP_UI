@@ -137,6 +137,41 @@ export const routes: Routes = [
         title: 'Import Logs',
         loadComponent: () => import('./pages/master-import/master-import').then((m) => m.MasterImportPage),
       },
+      {
+        path: 'tenant-configuration',
+        title: 'Tenant Configuration',
+        loadComponent: () => import('./pages/tenant-configuration/tenant-configuration').then((m) => m.TenantConfigurationPage),
+      },
+      {
+        path: 'purchase-entry',
+        title: 'Purchase Entry',
+        loadComponent: () => import('./pages/purchase-entry/purchase-entry').then((m) => m.PurchaseEntryPage),
+      },
+      {
+        path: 'purchase',
+        title: 'Purchase',
+        loadComponent: () => import('./pages/purchase/purchase').then((m) => m.PurchaseWorkspace),
+      },
+      {
+        path: 'payment-type',
+        title: 'Payment Types',
+        loadComponent: () => import('./pages/payment-type/payment-type').then((m) => m.PaymentTypePage),
+      },
+      {
+        path: 'payment-method',
+        title: 'Payment Methods',
+        loadComponent: () => import('./pages/payment-method/payment-method').then((m) => m.PaymentMethodPage),
+      },
+      {
+        path: 'payment-entry',
+        title: 'Payment Entry',
+        loadComponent: () => import('./pages/payment-entry/payment-entry').then((m) => m.PaymentEntryPage),
+      },
+      {
+        path: 'payment',
+        title: 'Payment',
+        loadComponent: () => import('./pages/payment/payment').then((m) => m.PaymentWorkspace),
+      },
 
       {
         path: 'department',

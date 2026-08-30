@@ -35,14 +35,17 @@ interface ModuleWithSubModules {
   open: boolean;
 }
 
-const SECTION_ORDER = ['Business Master', 'Enterprise Permissions'];
+const SECTION_ORDER = ['Business Master', 'Enterprise Permissions', 'System Master'];
 
 const ADMIN_NAV: NavItem[] = [
   { route: 'business-master', label: 'Business Master', icon: 'briefcase', section: 'Business Master', adminOnly: true },
   { route: 'master-import', label: 'Master Import', icon: 'upload', section: 'Business Master' },
   { route: 'import-logs', label: 'Import Logs', icon: 'history', section: 'Business Master' },
+  { route: 'tenant-configuration', label: 'Tenant Config', icon: 'sliders-horizontal', section: 'Business Master' },
+  { route: 'purchase', label: 'Purchase', icon: 'shopping-cart', section: 'Transactions' },
+  { route: 'payment', label: 'Payment', icon: 'wallet', section: 'Transactions' },
   { route: 'enterprise-permissions', label: 'Enterprise Permissions', icon: 'shield-check', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'system-master', label: 'System Master', icon: 'settings', section: 'Enterprise Permissions', adminOnly: true },
+  { route: 'system-master', label: 'System Master', icon: 'settings', section: 'System Master', adminOnly: true },
 ];
 
 @Component({
