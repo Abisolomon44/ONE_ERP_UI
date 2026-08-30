@@ -1,0 +1,42 @@
+<div class="sa">
+  <aside class="sa-side" [class.collapsed]="collapsed()">
+    <div class="sa-side-top">
+      <div class="sa-brand">
+        <span class="sa-logo"><i-lucide name="shopping-cart" [size]="20"></i-lucide></span>
+        @if (!collapsed()) {
+          <span class="sa-brand-name">Sales</span>
+        }
+      </div>
+      <button class="sa-collapse" type="button" [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'" (click)="collapsed.set(!collapsed())">
+        <i-lucide [name]="collapsed() ? 'panel-left-open' : 'panel-left-close'" [size]="18"></i-lucide>
+      </button>
+    </div>
+
+    @if (!collapsed()) {
+      <div class="sa-section">Transactions</div>
+    }
+
+    <nav class="sa-nav">
+      @for (t of tabs; track t.id) {
+        <button class="sa-nav-item" type="button" [class.active]="tab() === t.id" (click)="setTab(t.id)">
+          <i-lucide [name]="t.icon" [size]="18"></i-lucide>
+          @if (!collapsed()) {
+            <span>{{ t.label }}</span>
+          }
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <section class="sa-content">
+    @if (tab() === 'entry') {
+      <app-sales-entry></app-sales-entry>
+    }
+    @if (tab() === 'list') {
+      <app-sales-list></app-sales-list>
+    }
+    @if (tab() === 'pos') {
+      <app-pos></app-pos>
+    }
+  </section>
+</div>

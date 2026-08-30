@@ -1,0 +1,84 @@
+<div class="report">
+  <h2>Stock Ledger</h2>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view this report.</div>
+  } @else {
+    <div class="filters">
+      <label>
+        <span>Product</span>
+        <select [(ngModel)]="productId" (ngModelChange)="reload()">
+          <option [ngValue]="null">All Products</option>
+          @for (p of lookups()?.products ?? []; track p.id) {
+            <option [ngValue]="p.id">{{ p.name }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Warehouse</span>
+        <select [(ngModel)]="warehouseId" (ngModelChange)="reload()">
+          <option [ngValue]="null">All Warehouses</option>
+          @for (w of lookups()?.warehouses ?? []; track w.id) {
+            <option [ngValue]="w.id">{{ w.name }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>From</span>
+        <input type="date" [(ngModel)]="dateFrom" />
+      </label>
+      <label>
+        <span>To</span>
+        <input type="date" [(ngModel)]="dateTo" />
+      </label>
+    </div>
+
+    @if (loading()) {
+      <div class="empty">Loading…</div>
+    } @else if (!filtered().length) {
+      <div class="empty">No stock transactions found for the selected filters.</div>
+    } @else {
+      <div class="table-scroll">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Product</th>
+              <th>Warehouse</th>
+              <th>Type</th>
+              <th>Reference</th>
+              <th class="num">In</th>
+              <th class="num">Out</th>
+              <th class="num">Rate</th>
+              <th class="num">Balance Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of filtered(); track r.stockTransactionId) {
+              <tr>
+                <td>{{ r.transactionDate | slice: 0 : 10 }}</td>
+                <td>{{ productName(r.productId) }}</td>
+                <td>{{ warehouseName(r.warehouseId) }}</td>
+                <td>{{ r.transactionType }}</td>
+                <td>{{ r.referenceType }} #{{ r.referenceId }}</td>
+                <td class="num">{{ r.quantityIn | number: '1.0-2' }}</td>
+                <td class="num">{{ r.quantityOut | number: '1.0-2' }}</td>
+                <td class="num">{{ r.rate | number: '1.2-2' }}</td>
+                <td class="num">{{ r.balanceQuantity | number: '1.0-2' }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5">Total ({{ filtered().length }})</td>
+              <td class="num">{{ totalIn | number: '1.0-2' }}</td>
+              <td class="num">{{ totalOut | number: '1.0-2' }}</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  }
+</div>

@@ -1,44 +1,44 @@
 <div class="page">
   <header class="page-head">
     <div>
-      <h1>Purchase Entry</h1>
-      <p class="muted">Record goods receipts and supplier invoices.</p>
+      <h1>Sales Invoice</h1>
+      <p class="muted">Record sales and customer invoices.</p>
     </div>
     <div class="head-actions">
       <button class="btn ghost icon-only" type="button" aria-label="Keyboard shortcuts" (click)="showHelp.set(!showHelp())">
         <lucide-icon name="keyboard"></lucide-icon>
       </button>
       <button class="btn primary" type="button" (click)="newDoc()" [disabled]="!canManage()">
-        <lucide-icon name="plus"></lucide-icon> New Purchase
+        <lucide-icon name="plus"></lucide-icon> New Invoice
       </button>
     </div>
   </header>
 
   @if (!canView()) {
-    <div class="empty">You do not have permission to view purchases.</div>
+    <div class="empty">You do not have permission to view sales.</div>
   } @else {
     @if (editingId !== null || items().length) {
       <section class="card">
         <div class="card-title-row">
-          <h2>{{ editingId ? 'Edit Purchase' : 'New Purchase' }}</h2>
-          @if (purchaseNo) {
-            <span class="doc-no">Purchase #{{ purchaseNo }}</span>
+          <h2>{{ editingId ? 'Edit Sales Invoice' : 'New Sales Invoice' }}</h2>
+          @if (salesNo) {
+            <span class="doc-no">Invoice #{{ salesNo }}</span>
           }
         </div>
-        <h3 class="section-label">Purchase Information</h3>
+        <h3 class="section-label">Sales Information</h3>
         <div class="grid">
           <label>
-            <span>Supplier *<i>Alt+S</i></span>
-            <select data-field="supplier" title="Alt+S" [(ngModel)]="supplierId" [disabled]="!canManage()">
+            <span>Customer *<i>Alt+C</i></span>
+            <select data-field="customer" title="Alt+C" [(ngModel)]="customerId" [disabled]="!canManage()">
               <option [ngValue]="null">— Select —</option>
-              @for (s of lookups()?.suppliers ?? []; track s.id) {
-                <option [ngValue]="s.id">{{ s.name }} ({{ s.code }})</option>
+              @for (c of lookups()?.customers ?? []; track c.id) {
+                <option [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
               }
             </select>
           </label>
           <label>
-            <span>Company *<i>Alt+C</i></span>
-            <select data-field="company" title="Alt+C" [(ngModel)]="companyId" [disabled]="!canManage()">
+            <span>Company *</span>
+            <select data-field="company" [(ngModel)]="companyId" [disabled]="!canManage()">
               <option [ngValue]="null">— Select —</option>
               @for (c of lookups()?.companies ?? []; track c.id) {
                 <option [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
@@ -64,16 +64,23 @@
             </select>
           </label>
           <label>
-            <span>Purchase Date *<i>Alt+D</i></span>
-            <input data-field="purchaseDate" title="Alt+D" type="date" [(ngModel)]="purchaseDate" [disabled]="!canManage()" />
+            <span>Invoice Date *<i>Alt+S</i></span>
+            <input data-field="invoiceDate" title="Alt+S" type="date" [(ngModel)]="invoiceDate" [disabled]="!canManage()" />
           </label>
           <label>
-            <span>Supplier Invoice No<i>Alt+I</i></span>
-            <input data-field="supplierInvoiceNo" title="Alt+I" [(ngModel)]="supplierInvoiceNo" [disabled]="!canManage()" />
+            <span>Source</span>
+            <select data-field="sourceType" [(ngModel)]="sourceType" [disabled]="!canManage()">
+              <option value="SALES">Sales</option>
+              <option value="POS">POS</option>
+            </select>
           </label>
           <label>
-            <span>Supplier Invoice Date</span>
-            <input data-field="supplierInvoiceDate" type="date" [(ngModel)]="supplierInvoiceDate" [disabled]="!canManage()" />
+            <span>Reference No</span>
+            <input data-field="referenceNo" [(ngModel)]="referenceNo" [disabled]="!canManage()" />
+          </label>
+          <label>
+            <span>Reference Date</span>
+            <input data-field="referenceDate" type="date" [(ngModel)]="referenceDate" [disabled]="!canManage()" />
           </label>
           <label>
             <span>Payment Type<i>Alt+P</i></span>
@@ -122,7 +129,9 @@
                 <th>Free</th>
                 <th>Rate</th>
                 <th>Disc %</th>
-                <th>GST %</th>
+                <th>CGST %</th>
+                <th>SGST %</th>
+                <th>IGST %</th>
                 <th>CESS %</th>
                 <th>Line Total</th>
                 <th></th>
@@ -166,10 +175,12 @@
                   </td>
                   <td><input [attr.data-row]="$index" [attr.data-col]="2" type="number" min="0" step="0.01" [(ngModel)]="it.quantity" [disabled]="!canManage()" /></td>
                   <td><input [attr.data-row]="$index" [attr.data-col]="3" type="number" min="0" step="0.01" [(ngModel)]="it.freeQuantity" [disabled]="!canManage()" /></td>
-                  <td><input [attr.data-row]="$index" [attr.data-col]="4" type="number" min="0" step="0.01" [(ngModel)]="it.purchaseRate" [disabled]="!canManage()" /></td>
+                  <td><input [attr.data-row]="$index" [attr.data-col]="4" type="number" min="0" step="0.01" [(ngModel)]="it.rate" [disabled]="!canManage()" /></td>
                   <td><input [attr.data-row]="$index" [attr.data-col]="5" type="number" min="0" step="0.01" [(ngModel)]="it.discountPercentage" [disabled]="!canManage()" /></td>
-                  <td><input [attr.data-row]="$index" [attr.data-col]="6" type="number" min="0" step="0.01" [(ngModel)]="it.gstRate" [disabled]="!canManage()" /></td>
-                  <td><input [attr.data-row]="$index" [attr.data-col]="7" type="number" min="0" step="0.01" [(ngModel)]="it.cessRate" [disabled]="!canManage()" /></td>
+                  <td><input [attr.data-row]="$index" [attr.data-col]="6" type="number" min="0" step="0.01" [(ngModel)]="it.cgstPercent" [disabled]="!canManage()" /></td>
+                  <td><input [attr.data-row]="$index" [attr.data-col]="7" type="number" min="0" step="0.01" [(ngModel)]="it.sgstPercent" [disabled]="!canManage()" /></td>
+                  <td><input [attr.data-row]="$index" [attr.data-col]="8" type="number" min="0" step="0.01" [(ngModel)]="it.igstPercent" [disabled]="!canManage()" /></td>
+                  <td><input [attr.data-row]="$index" [attr.data-col]="9" type="number" min="0" step="0.01" [(ngModel)]="it.cessPercent" [disabled]="!canManage()" /></td>
                   <td class="num">{{ lineTotal(it) | number: '1.2-2' }}</td>
                   <td>
                     <button class="icon danger" type="button" (click)="removeItem($index)" [disabled]="!canManage()">
@@ -193,13 +204,15 @@
           <div><span>Gross</span><strong>{{ totalGross | number: '1.2-2' }}</strong></div>
           <div><span>Discount</span><strong>{{ totalDiscount | number: '1.2-2' }}</strong></div>
           <div><span>Taxable</span><strong>{{ taxable | number: '1.2-2' }}</strong></div>
-          <div><span>GST</span><strong>{{ totalTax | number: '1.2-2' }}</strong></div>
+          <div><span>CGST</span><strong>{{ totalCgst | number: '1.2-2' }}</strong></div>
+          <div><span>SGST</span><strong>{{ totalSgst | number: '1.2-2' }}</strong></div>
+          <div><span>IGST</span><strong>{{ totalIgst | number: '1.2-2' }}</strong></div>
           <div><span>CESS</span><strong>{{ totalCess | number: '1.2-2' }}</strong></div>
           <div class="grand"><span>Grand Total</span><strong>{{ grandTotal | number: '1.2-2' }}</strong></div>
         </div>
 
         @if (!editingId) {
-          <h3 class="section-label">Advance Payment (Optional)</h3>
+          <h3 class="section-label">Payment (Optional)</h3>
           <div class="grid">
             <label>
               <span>Pay Amount</span>
@@ -241,14 +254,14 @@
     }
 
     <section class="card">
-      <h2>Purchase List</h2>
+      <h2>Sales Invoices</h2>
       <div class="list-toolbar">
-        <input data-field="search" class="search" type="text" placeholder="Search purchases… (Ctrl+F)" [(ngModel)]="searchText" />
+        <input data-field="search" class="search" type="text" placeholder="Search invoices… (Ctrl+F)" [(ngModel)]="searchText" />
       </div>
       @if (loading()) {
         <div class="empty">Loading…</div>
-      } @else if (!filteredPurchases().length) {
-        <div class="empty">No purchases yet.</div>
+      } @else if (!filteredSales().length) {
+        <div class="empty">No sales yet.</div>
       } @else {
         <table class="list">
           <thead>
@@ -256,7 +269,7 @@
               <th>No</th>
               <th>Date</th>
               <th>Company</th>
-              <th>Supplier</th>
+              <th>Customer</th>
               <th>Status</th>
               <th class="num">Grand Total</th>
               <th class="num">Paid</th>
@@ -265,13 +278,13 @@
             </tr>
           </thead>
           <tbody>
-            @for (p of $any(filteredPurchases()); track p.purchaseId) {
-              <tr [class.row-sel]="selectedId === p.purchaseId" (click)="selectRow(p)">
-                <td>{{ p.purchaseNumber }}</td>
-                <td>{{ p.purchaseDate ? (p.purchaseDate | slice: 0 : 10) : '' }}</td>
+            @for (p of $any(filteredSales()); track p.salesInvoiceId) {
+              <tr [class.row-sel]="selectedId === p.salesInvoiceId" (click)="selectRow(p)">
+                <td>{{ p.salesInvoiceNo }}</td>
+                <td>{{ p.invoiceDate ? (p.invoiceDate | slice: 0 : 10) : '' }}</td>
                 <td>{{ p.companyNameSnapshot || p.companyId }}</td>
-                <td>{{ p.supplierNameSnapshot || p.supplierId }}</td>
-                <td><span class="badge">{{ p.statusID }}</span></td>
+                <td>{{ p.customerNameSnapshot || p.customerId }}</td>
+                <td><span class="badge">{{ p.invoiceStatus }}</span></td>
                 <td class="num">{{ p.grandTotal | number: '1.2-2' }}</td>
                 <td class="num">{{ p.paidAmount | number: '1.2-2' }}</td>
                 <td class="num">{{ p.balanceAmount | number: '1.2-2' }}</td>

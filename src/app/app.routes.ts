@@ -148,9 +148,34 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/purchase-entry/purchase-entry').then((m) => m.PurchaseEntryPage),
       },
       {
+        path: 'sales-entry',
+        title: 'Sales Entry',
+        loadComponent: () => import('./pages/sales-entry/sales-entry').then((m) => m.SalesEntryPage),
+      },
+      {
+        path: 'sales',
+        title: 'Sales',
+        loadComponent: () => import('./pages/sales/sales').then((m) => m.SalesWorkspace),
+      },
+      {
+        path: 'pos',
+        title: 'POS',
+        loadComponent: () => import('./pages/pos/pos').then((m) => m.PosPage),
+      },
+      {
         path: 'purchase',
         title: 'Purchase',
         loadComponent: () => import('./pages/purchase/purchase').then((m) => m.PurchaseWorkspace),
+      },
+      {
+        path: 'stock',
+        title: 'Stock',
+        loadComponent: () => import('./pages/stock/stock').then((m) => m.StockPage),
+      },
+      {
+        path: 'reports',
+        title: 'Reports',
+        loadComponent: () => import('./pages/reports/reports-workspace').then((m) => m.ReportsWorkspace),
       },
       {
         path: 'payment-type',

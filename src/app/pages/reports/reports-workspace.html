@@ -1,0 +1,35 @@
+<div class="rp">
+  <header class="rp-head">
+    <div>
+      <h1>Reports</h1>
+      <p class="muted">Purchase, stock, supplier and tax analytics.</p>
+    </div>
+  </header>
+
+  <nav class="rp-tabs">
+    @for (t of tabs; track t.id) {
+      <button class="rp-tab" type="button" [class.active]="tab() === t.id" (click)="setTab(t.id)">
+        <lucide-icon [name]="t.icon" [size]="16"></lucide-icon>
+        <span>{{ t.label }}</span>
+      </button>
+    }
+  </nav>
+
+  <section class="rp-content">
+    @if (tab() === 'purchase-register') {
+      <app-purchase-register-report></app-purchase-register-report>
+    }
+    @if (tab() === 'stock-ledger') {
+      <app-stock-ledger-report></app-stock-ledger-report>
+    }
+    @if (tab() === 'supplier-ledger') {
+      <app-supplier-ledger-report></app-supplier-ledger-report>
+    }
+    @if (tab() === 'purchase-outstanding') {
+      <app-purchase-outstanding-report></app-purchase-outstanding-report>
+    }
+    @if (tab() === 'gst-purchase') {
+      <app-gst-purchase-report></app-gst-purchase-report>
+    }
+  </section>
+</div>

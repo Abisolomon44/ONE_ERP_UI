@@ -1,0 +1,62 @@
+<div class="report">
+  <h2>GST Purchase Report</h2>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view this report.</div>
+  } @else {
+    <div class="filters">
+      <label>
+        <span>From</span>
+        <input type="date" [(ngModel)]="dateFrom" (change)="reload()" />
+      </label>
+      <label>
+        <span>To</span>
+        <input type="date" [(ngModel)]="dateTo" (change)="reload()" />
+      </label>
+    </div>
+
+    @if (loading()) {
+      <div class="empty">Loading…</div>
+    } @else if (!groups().length) {
+      <div class="empty">No purchase items found for the selected period.</div>
+    } @else {
+      <div class="table-scroll">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>GST Rate %</th>
+              <th class="num">Taxable Value</th>
+              <th class="num">CGST</th>
+              <th class="num">SGST</th>
+              <th class="num">IGST</th>
+              <th class="num">CESS</th>
+              <th class="num">Total Tax</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of groups(); track g.gstRate) {
+              <tr>
+                <td>{{ g.gstRate | number: '1.0-2' }}</td>
+                <td class="num">{{ g.taxableValue | number: '1.2-2' }}</td>
+                <td class="num">{{ g.cgstAmount | number: '1.2-2' }}</td>
+                <td class="num">{{ g.sgstAmount | number: '1.2-2' }}</td>
+                <td class="num">{{ g.igstAmount | number: '1.2-2' }}</td>
+                <td class="num">{{ g.cessAmount | number: '1.2-2' }}</td>
+                <td class="num">{{ g.gstAmount | number: '1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Total</td>
+              <td class="num">{{ totalTaxable | number: '1.2-2' }}</td>
+              <td colspan="3"></td>
+              <td class="num">{{ totalCess | number: '1.2-2' }}</td>
+              <td class="num">{{ totalGst | number: '1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  }
+</div>

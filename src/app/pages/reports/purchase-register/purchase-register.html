@@ -1,0 +1,85 @@
+<div class="report">
+  <h2>Purchase Register</h2>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view this report.</div>
+  } @else {
+    <div class="filters">
+      <label>
+        <span>From</span>
+        <input type="date" [(ngModel)]="dateFrom" />
+      </label>
+      <label>
+        <span>To</span>
+        <input type="date" [(ngModel)]="dateTo" />
+      </label>
+      <label>
+        <span>Supplier</span>
+        <select [(ngModel)]="supplierId">
+          <option [ngValue]="null">All Suppliers</option>
+          @for (s of lookups()?.suppliers ?? []; track s.id) {
+            <option [ngValue]="s.id">{{ s.name }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Search</span>
+        <input type="text" placeholder="Purchase no / supplier" [(ngModel)]="search" />
+      </label>
+    </div>
+
+    @if (loading()) {
+      <div class="empty">Loading…</div>
+    } @else if (!filtered().length) {
+      <div class="empty">No purchases found for the selected filters.</div>
+    } @else {
+      <div class="table-scroll">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Purchase No</th>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th>Company</th>
+              <th>Status</th>
+              <th class="num">Gross</th>
+              <th class="num">Discount</th>
+              <th class="num">Tax</th>
+              <th class="num">Grand Total</th>
+              <th class="num">Paid</th>
+              <th class="num">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of filtered(); track p.purchaseId) {
+              <tr>
+                <td>{{ p.purchaseNumber }}</td>
+                <td>{{ p.purchaseDate | slice: 0 : 10 }}</td>
+                <td>{{ p.supplierNameSnapshot || p.supplierId }}</td>
+                <td>{{ p.companyNameSnapshot || p.companyId }}</td>
+                <td>{{ p.statusID }}</td>
+                <td class="num">{{ p.totalGrossAmount | number: '1.2-2' }}</td>
+                <td class="num">{{ p.totalDiscountAmount | number: '1.2-2' }}</td>
+                <td class="num">{{ p.totalTaxAmount | number: '1.2-2' }}</td>
+                <td class="num">{{ p.grandTotal | number: '1.2-2' }}</td>
+                <td class="num">{{ p.paidAmount | number: '1.2-2' }}</td>
+                <td class="num">{{ p.balanceAmount | number: '1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5">Total ({{ filtered().length }})</td>
+              <td class="num">{{ totalGross | number: '1.2-2' }}</td>
+              <td class="num">{{ totalDiscount | number: '1.2-2' }}</td>
+              <td class="num">{{ totalTax | number: '1.2-2' }}</td>
+              <td class="num">{{ totalGrand | number: '1.2-2' }}</td>
+              <td class="num">{{ totalPaid | number: '1.2-2' }}</td>
+              <td class="num">{{ totalBalance | number: '1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  }
+</div>

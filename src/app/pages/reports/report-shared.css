@@ -1,0 +1,85 @@
+.report {
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.report h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--muted, #64748b);
+}
+
+.filters select,
+.filters input {
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  height: 30px;
+  background: var(--input, #fff);
+  color: var(--text, #0f172a);
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.report-table th {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted, #64748b);
+  background: #f8fafc;
+  text-align: left;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.report-table td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.report-table tfoot td {
+  font-weight: 700;
+  border-top: 2px solid var(--border, #e2e8f0);
+  border-bottom: none;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  color: var(--muted, #64748b);
+  font-size: 0.82rem;
+  padding: 0.5rem 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}

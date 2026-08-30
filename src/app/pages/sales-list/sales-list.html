@@ -1,0 +1,51 @@
+<div class="page">
+  <header class="page-head">
+    <div>
+      <h1>Invoices</h1>
+      <p class="muted">Sales invoices raised to customers.</p>
+    </div>
+    <button class="btn primary" type="button" (click)="newInvoice()" [disabled]="!canManage()">
+      <lucide-icon name="plus"></lucide-icon> New Invoice
+    </button>
+  </header>
+
+  <section class="card">
+    @if (loading()) {
+      <div class="empty">Loading…</div>
+    } @else if (!rows().length) {
+      <div class="empty">No invoices yet.</div>
+    } @else {
+      <table class="list">
+        <thead>
+          <tr>
+            <th>Invoice No</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Status</th>
+            <th class="num">Grand Total</th>
+            <th class="num">Paid</th>
+            <th class="num">Balance</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of rows(); track r.salesInvoiceId) {
+            <tr>
+              <td>{{ r.salesInvoiceNo }}</td>
+              <td>{{ r.invoiceDate | slice: 0 : 10 }}</td>
+              <td>{{ r.customerNameSnapshot || r.customerId }}</td>
+              <td><span class="badge">{{ r.invoiceStatus }}</span></td>
+              <td class="num">{{ r.grandTotal | number: '1.2-2' }}</td>
+              <td class="num">{{ r.paidAmount | number: '1.2-2' }}</td>
+              <td class="num">{{ r.balanceAmount | number: '1.2-2' }}</td>
+              <td class="row-actions">
+                <button class="icon" type="button" (click)="edit(r)" [disabled]="!canManage()"><lucide-icon name="pencil"></lucide-icon></button>
+                <button class="icon danger" type="button" (click)="remove(r)" [disabled]="!canManage()"><lucide-icon name="trash-2"></lucide-icon></button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+</div>
