@@ -14,7 +14,7 @@ import { PermissionService } from '../../core/services/permission.service';
 @Component({
   selector: 'app-payment-type',
   standalone: true,
-  imports: [FormsModule, SlicePipe, LucideAngularModule],
+  imports: [FormsModule, LucideAngularModule],
   templateUrl: './payment-type.html',
   styleUrl: './payment-type.css',
 })

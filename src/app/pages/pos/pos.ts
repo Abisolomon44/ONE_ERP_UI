@@ -41,10 +41,18 @@ interface SaleSession {
   id: number;
   saleNumber: string;
   customerId: number | null;
+  customerPhone: string;
   branchId: number | null;
   warehouseId: number | null;
+  salesperson: string;
+  priceList: string;
   date: string;
+  billDiscount: number;
   paymentMethodID: number | null;
+  paymentTypeID: number | null;
+  paymentAmount: number;
+  paymentReference: string;
+  notes: string;
   items: PosItem[];
   discount: number;
   taxes: number;
@@ -94,6 +102,10 @@ export class PosPage implements OnInit {
 
   protected searchOpen = false;
   protected searchText = '';
+  protected customerSearchOpen = false;
+  protected customerSearchText = '';
+  protected addCustomerOpen = false;
+  protected customerDraft = { name: '', phone: '', email: '', type: 'Retail', gstin: '', address: '', city: '', state: '', pincode: '' };
   protected productResults: LookupItem[] = [];
   protected productHi = 0;
 
@@ -186,15 +198,37 @@ export class PosPage implements OnInit {
     this.lookups.set(await this.svc.getLookups());
   }
 
+  private async loadTouchProducts(): Promise<void> {
+    const list = await firstValueFrom(this.http.get<ProductDto[]>('/api/products'));
+    this.touchProducts.set((list ?? []).filter((p) => p.isSaleable));
+  }
+
+  private async loadStock(): Promise<void> {
+    const page = await this.stockSvc.getPaged(1, 500, '', this.warehouseId, null);
+    const map = new Map<number, number>();
+    for (const stock of page.items ?? []) {
+      map.set(stock.productId, stock.availableQuantity ?? 0);
+    }
+    this.stockByProduct.set(map);
+  }
+
   private buildSession(index = 1): SaleSession {
     return {
       id: Date.now() + Math.random(),
       saleNumber: `Sale #${index}`,
       customerId: this.customerId,
+      customerPhone: '',
       branchId: this.branchId,
       warehouseId: this.warehouseId,
+      salesperson: '',
+      priceList: 'Retail',
       date: this.invoiceDate,
+      billDiscount: 0,
       paymentMethodID: this.paymentMethodID,
+      paymentTypeID: this.paymentTypeID,
+      paymentAmount: 0,
+      paymentReference: '',
+      notes: '',
       items: [],
       discount: 0,
       taxes: 0,
@@ -283,6 +317,59 @@ export class PosPage implements OnInit {
     if (field === 'paymentMethodID') this.paymentMethodID = value as number | null;
   }
 
+  protected setActiveValue<T extends 'customerPhone' | 'salesperson' | 'priceList' | 'billDiscount' | 'paymentTypeID' | 'paymentAmount' | 'paymentReference' | 'notes'>(field: T, value: SaleSession[T]): void {
+    this.updateActiveSale((sale) => {
+      sale[field] = value;
+    });
+  }
+
+  protected setItemQuantity(index: number, quantity: number): void {
+    this.updateActiveSale((sale) => {
+      const item = sale.items[index];
+      if (item) item.quantity = Math.max(0, quantity);
+    });
+  }
+
+  protected customerName(): string {
+    const id = this.activeSale()?.customerId;
+    return this.lookups()?.customers.find((customer) => customer.id === id)?.name ?? 'Walk-in Customer';
+  }
+
+  protected selectedCustomer(): LookupItem | undefined {
+    const id = this.activeSale()?.customerId;
+    return this.lookups()?.customers.find((customer) => customer.id === id);
+  }
+
+  protected filteredCustomers(): LookupItem[] {
+    const query = this.customerSearchText.trim().toLowerCase();
+    const customers = this.lookups()?.customers ?? [];
+    if (!query) return customers.slice(0, 30);
+    return customers.filter((customer) => `${customer.name ?? ''} ${customer.code ?? ''}`.toLowerCase().includes(query)).slice(0, 30);
+  }
+
+  protected chooseCustomer(customerId: number | null): void {
+    this.setActiveField('customerId', customerId);
+    this.customerSearchOpen = false;
+  }
+
+  protected saveCustomer(): void {
+    const name = this.customerDraft.name.trim();
+    const phone = this.customerDraft.phone.trim();
+    if (!name || !phone) {
+      this.toast.error('Customer name and mobile number are required');
+      return;
+    }
+    const customers = this.lookups()?.customers ?? [];
+    const customer = { id: -Date.now(), name, code: `NEW-${customers.length + 1}` };
+    this.lookups.update((value) => value ? { ...value, customers: [...value.customers, customer] } : value);
+    this.updateActiveSale((sale) => {
+      sale.customerId = customer.id;
+      sale.customerPhone = phone;
+    });
+    this.customerDraft = { name: '', phone: '', email: '', type: 'Retail', gstin: '', address: '', city: '', state: '', pincode: '' };
+    this.addCustomerOpen = false;
+  }
+
   protected setActiveInvoiceDate(value: string): void {
     this.invoiceDate = value;
     this.updateActiveSale((sale) => {
@@ -328,6 +415,14 @@ export class PosPage implements OnInit {
 
   protected saleTabLabel(sale: SaleSession): string {
     return sale.isDirty ? `${sale.saleNumber} *` : sale.saleNumber;
+  }
+
+  protected saleCustomerName(sale: SaleSession): string {
+    return this.lookups()?.customers.find((customer) => customer.id === sale.customerId)?.name ?? 'Walk-in Customer';
+  }
+
+  protected saleTotal(sale: SaleSession): number {
+    return round2(sale.items.reduce((sum, item) => sum + this.lineTotal(item), 0) - sale.billDiscount);
   }
 
   protected saleTabState(sale: SaleSession): string {
@@ -455,6 +550,8 @@ export class PosPage implements OnInit {
       // best effort stock lookup
     }
 
+    const productPrice = this.touchProducts().find((product) => product.id === p.id)?.salesPrice ?? 0;
+
     this.updateActiveSale((sale) => {
       const existing = sale.items.find((item) => item.productId === p.id && item.unitID === unitId);
       if (existing) {
@@ -469,7 +566,7 @@ export class PosPage implements OnInit {
         productName: p.name,
         productText: `${p.name} (${p.code})`,
         quantity: 1,
-        rate: p.salesPrice ?? 0,
+        rate: productPrice,
         discountPercentage: 0,
         gstPercent: 0,
         cgstPercent: 0,
@@ -556,7 +653,7 @@ export class PosPage implements OnInit {
   }
 
   protected get grandTotal(): number {
-    return round2(this.taxable + this.totalTax);
+    return round2(Math.max(0, this.taxable + this.totalTax - (this.activeSale()?.billDiscount ?? 0)));
   }
 
   protected async checkout(): Promise<void> {
@@ -567,12 +664,12 @@ export class PosPage implements OnInit {
       this.focusBarcode();
       return;
     }
-    if (!this.branchId || !this.warehouseId) {
+    const active = this.activeSale();
+    if (!active?.branchId || !active.warehouseId) {
       this.toast.error('Branch and Warehouse are required');
       return;
     }
 
-    const active = this.activeSale();
     if (!active) return;
     this.loading.set(true);
     try {
@@ -593,8 +690,8 @@ export class PosPage implements OnInit {
 
       const payment: CreateSalesPaymentInput = {
         amount: this.grandTotal,
-        paymentTypeID: this.paymentTypeID ?? null,
-        paymentMethodID: this.paymentMethodID ?? null,
+        paymentTypeID: active.paymentTypeID ?? null,
+        paymentMethodID: active.paymentMethodID ?? null,
         referenceNo: null,
         remarks: 'POS sale',
       };
@@ -607,9 +704,9 @@ export class PosPage implements OnInit {
         invoiceNumber,
         invoiceDate: active.date || this.invoiceDate,
         sourceType: 'POS',
-        paymentTypeID: this.paymentTypeID ?? null,
+        paymentTypeID: active.paymentTypeID ?? null,
         paymentMethodID: active.paymentMethodID ?? this.paymentMethodID ?? null,
-        remarks: 'POS sale',
+        remarks: active.notes || 'POS sale',
         items,
         payment,
       };

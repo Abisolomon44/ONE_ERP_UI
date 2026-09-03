@@ -87,7 +87,7 @@
   @if (!editing()) {
     <base-dropdown label="Workspace" icon="layout-grid" placeholder="Select workspace" [options]="workspaceOptions()" [(value)]="form.workspaceId" (valueChange)="onWorkspaceChange()"></base-dropdown>
     <base-dropdown label="Domain" icon="folder" placeholder="Select domain" [options]="domainOptions()" [(value)]="form.domainId" (valueChange)="onDomainChange()"></base-dropdown>
-    <base-dropdown label="Module" icon="cube" placeholder="Select module" [options]="moduleOptions()" [(value)]="form.moduleId" (valueChange)="onModuleChange()"></base-dropdown>
+    <base-dropdown label="Module" icon="box" placeholder="Select module" [options]="moduleOptions()" [(value)]="form.moduleId" (valueChange)="onModuleChange()"></base-dropdown>
     <base-dropdown label="Screen" icon="monitor" placeholder="Select screen" [options]="screenOptions()" [(value)]="form.screenId" (valueChange)="onScreenChange()"></base-dropdown>
     <base-dropdown label="Action" icon="zap" placeholder="Select action" [options]="actionOptions()" [(value)]="form.actionId"></base-dropdown>
   }

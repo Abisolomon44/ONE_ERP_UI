@@ -194,7 +194,7 @@ export class MasterImportPage implements OnInit {
     }
   }
 
-  protected validRows(): string[][] {
+  protected validRows(): Record<string, unknown>[] {
     const file = this.parsedFile();
     const preview = this.preview();
     if (!file || !preview) return [];
@@ -205,7 +205,7 @@ export class MasterImportPage implements OnInit {
     const meta = this.selectedMaster();
     const file = this.parsedFile();
     if (!meta || !file) return;
-    const rows = this.validRows();
+    const rows: Record<string, unknown>[] = this.validRows();
     if (rows.length === 0) {
       this.toast.error('Nothing to import', 'There are no valid rows to confirm.');
       return;

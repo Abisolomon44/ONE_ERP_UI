@@ -97,7 +97,7 @@
 }
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Workflow Permission' : 'Create Workflow Permission'" (closeRequest)="dialogOpen.set(false)">
-  <base-dropdown label="Module" icon="cube" placeholder="Select module" [options]="moduleOptions()" [(value)]="form.moduleId" (valueChange)="onModuleChange()"></base-dropdown>
+  <base-dropdown label="Module" icon="box" placeholder="Select module" [options]="moduleOptions()" [(value)]="form.moduleId" (valueChange)="onModuleChange()"></base-dropdown>
   <base-dropdown label="Screen" icon="monitor" placeholder="Select screen" [options]="screenOptions()" [(value)]="form.screenId"></base-dropdown>
   <div class="field">
     <label class="field-label">Workflow Actions</label>

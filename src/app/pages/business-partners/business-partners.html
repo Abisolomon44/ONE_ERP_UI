@@ -90,7 +90,7 @@
         <input class="input" type="number" [value]="priceListId() ?? ''" (input)="priceListId.set($any($event.target).value === '' ? null : +$any($event.target).value)" />
       </div>
     </div>
-    <base-input label="Notes" icon="align-left" [(value)]="notes" class="bp-full"></base-input>
+    <base-input label="Notes" icon="text-align-start" [(value)]="notes" class="bp-full"></base-input>
   </div>
 
   <div class="field" style="margin-top:12px">

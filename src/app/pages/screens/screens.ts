@@ -26,7 +26,7 @@ interface ScreenForm {
 @Component({
   selector: 'app-screens',
   standalone: true,
-  imports: [LucideAngularModule, BaseEmpty, BasePill, BaseButton, BaseDialog, BaseInput, BaseDropdown, BaseSearch, BasePermission],
+  imports: [LucideAngularModule, BaseEmpty, BasePill, BaseButton, BaseDialog, BaseInput, BaseDropdown, BaseSearch],
   templateUrl: './screens.html',
   styleUrl: './screens.css',
 })

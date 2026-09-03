@@ -14,7 +14,7 @@ import { ToastService } from '../../core/services/toast.service';
 @Component({
   selector: 'app-user-data-scope-overrides',
   standalone: true,
-  imports: [DatePipe, LucideAngularModule, BaseEmpty, BasePill, BaseButton, BaseDialog, BaseInput, BasePermission],
+  imports: [DatePipe, LucideAngularModule, BaseEmpty, BaseButton, BaseDialog, BasePermission],
   templateUrl: './user-data-scope-overrides.html',
   styleUrl: './user-data-scope-overrides.css',
 })

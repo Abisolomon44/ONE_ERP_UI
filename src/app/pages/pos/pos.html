@@ -1,340 +1,377 @@
-<div class="pos-shell">
-  <header class="pos-topbar">
-    <div class="pos-brand-wrap">
-      <button class="pos-icon-btn" type="button" aria-label="Toggle menu">
-        <lucide-icon name="menu" [size]="17"></lucide-icon>
-      </button>
-      <div class="pos-brand">ONE ERP</div>
-    </div>
+    <div class="pos-shell">
+    
+      @if (!canView()) {
+        <div class="empty-state">You do not have permission to use POS.</div>
+      } @else {
+        <div class="pos-page-header">
+          <div>
+            <h1>Point of Sale</h1>
+            <p>Scan, search and sell quickly.</p>
+          </div>
+          <button class="new-sale-btn" type="button" (click)="addSaleTab()">
+            <lucide-icon name="plus" [size]="15"></lucide-icon>
+            New Sale
+          </button>
+        </div>
 
-    <div class="pos-topbar-actions">
-      <button class="pos-action-btn primary" type="button" (click)="openSearch()">
-        <lucide-icon name="badge-dollar-sign" [size]="16"></lucide-icon>
-        F9 Checkout
-      </button>
-      <button class="pos-icon-btn" type="button" aria-label="Theme toggle">
-        <lucide-icon name="moon" [size]="17"></lucide-icon>
-      </button>
-      <button class="pos-action-btn" type="button">
-        <lucide-icon name="log-out" [size]="16"></lucide-icon>
-        Logout
-      </button>
-    </div>
-  </header>
-
-  @if (!canView()) {
-    <div class="empty-state">You do not have permission to use POS.</div>
-  } @else {
-    <div class="pos-page-header">
-      <div>
-        <h1>Point of Sale</h1>
-        <p>Scan, search and sell quickly.</p>
-      </div>
-      <button class="new-sale-btn" type="button" (click)="addSaleTab()">
-        <lucide-icon name="plus" [size]="15"></lucide-icon>
-        New Sale
-      </button>
-    </div>
-
-    <div class="sale-tabs">
-      @for (sale of saleSessions(); track sale.id; let index = $index) {
-        <button
-          type="button"
-          class="sale-tab"
-          [class.active]="activeSale()?.id === sale.id"
-          (click)="switchSale(sale.id)">
-          <span>{{ saleTabLabel(sale) }}</span>
-          <span class="tab-close" (click)="$event.stopPropagation(); closeSale(sale.id)">×</span>
-        </button>
-      }
-      <button type="button" class="sale-tab add" (click)="addSaleTab()">
-        <lucide-icon name="plus" [size]="15"></lucide-icon>
-        New Sale
-      </button>
-    </div>
-
-    <div class="pos-layout">
-      <section class="product-panel card-surface">
-        <div class="barcode-box">
-          <lucide-icon name="scan-line" class="barcode-icon"></lucide-icon>
-          <input
-            #barcode
-            class="barcode-input"
-            type="text"
-            [value]="barcodeText"
-            (input)="barcodeText = $any($event.target).value"
-            (keydown.enter)="onBarcodeEnter()"
-            placeholder="Scan barcode / code / name and press Enter"
-          />
-          @if (barcodeText) {
-            <button class="clear-input" type="button" (click)="barcodeText = ''">×</button>
+        <div class="sale-tabs">
+          @for (sale of saleSessions(); track sale.id; let index = $index) {
+            <button
+              type="button"
+              class="sale-tab"
+              [class.active]="activeSale()?.id === sale.id"
+              (click)="switchSale(sale.id)">
+              <span class="sale-tab-copy"><strong>{{ saleTabLabel(sale) }}</strong><small>{{ saleCustomerName(sale) }}</small><b>₹{{ saleTotal(sale) | number: '1.0-0' }}</b></span>
+              <span class="tab-close" (click)="$event.stopPropagation(); closeSale(sale.id)">×</span>
+            </button>
           }
-        </div>
-
-        <div class="mode-row">
-          <button class="mode-button" [class.active]="posMode() === 'touch'" type="button" (click)="setPosMode('touch')">
-            <lucide-icon name="hand" [size]="16"></lucide-icon>
-            Touch
-          </button>
-          <button class="mode-button" [class.active]="posMode() === 'scan'" type="button" (click)="setPosMode('scan')">
-            <lucide-icon name="scan-line" [size]="16"></lucide-icon>
-            Scan
-          </button>
-          <button class="mode-button" [class.active]="posMode() === 'search'" type="button" (click)="setPosMode('search')">
-            <lucide-icon name="search" [size]="16"></lucide-icon>
-            Search
+          <button type="button" class="sale-tab add" (click)="addSaleTab()">
+            <lucide-icon name="plus" [size]="15"></lucide-icon>
+            New Sale
           </button>
         </div>
 
-        <div class="product-workbench">
-          <aside class="category-panel">
-            <div class="category-list">
-              @for (cat of categories(); track cat) {
-                <button class="category-item" type="button" [class.active]="activeCategory() === cat" (click)="setCategory(cat)">
-                  {{ cat }}
-                </button>
+        <div class="pos-layout">
+          <section class="product-panel card-surface">
+            <div class="barcode-box">
+              <lucide-icon name="scan-line" class="barcode-icon"></lucide-icon>
+              <input
+                #barcode
+                class="barcode-input"
+                type="text"
+                [value]="barcodeText"
+                (input)="barcodeText = $any($event.target).value"
+                (keydown.enter)="onBarcodeEnter()"
+                placeholder="Scan barcode / code / name and press Enter"
+              />
+              @if (barcodeText) {
+                <button class="clear-input" type="button" (click)="barcodeText = ''">×</button>
               }
             </div>
-            <button class="category-manage" type="button">
-              <lucide-icon name="settings" [size]="15"></lucide-icon>
-              Manage Categories
-            </button>
-          </aside>
 
-          <div class="product-stage">
-            <div class="product-toolbar">
-              <div class="view-toggle">
-                <button class="view-button" type="button" [class.active]="viewMode() === 'grid'" (click)="setViewMode('grid')">
-                  <lucide-icon name="grid-2x2" [size]="15"></lucide-icon>
-                  Grid View
-                </button>
-                <button class="view-button" type="button" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
-                  <lucide-icon name="list" [size]="15"></lucide-icon>
-                  List View
-                </button>
-              </div>
-              <button class="mini-search" type="button" (click)="openSearch()">
-                <lucide-icon name="search" [size]="15"></lucide-icon>
+            <div class="mode-row">
+              <button class="mode-button" [class.active]="posMode() === 'touch'" type="button" (click)="setPosMode('touch')">
+                <lucide-icon name="hand" [size]="16"></lucide-icon>
+                Touch
+              </button>
+              <button class="mode-button" [class.active]="posMode() === 'scan'" type="button" (click)="setPosMode('scan')">
+                <lucide-icon name="scan-line" [size]="16"></lucide-icon>
+                Scan
+              </button>
+              <button class="mode-button" [class.active]="posMode() === 'search'" type="button" (click)="setPosMode('search')">
+                <lucide-icon name="search" [size]="16"></lucide-icon>
                 Search
               </button>
             </div>
 
-            <div class="product-grid" [class.list]="viewMode() === 'list'">
-              @for (p of filteredTouchProducts(); track p.id) {
-                <button type="button" class="product-card" [class.disabled]="!canTapProduct(p)" [class.pressed]="justAddedId() === p.id" (click)="tapProduct(p)">
-                  <span class="product-image">
-                    <lucide-icon name="package" [size]="28"></lucide-icon>
-                    @if (justAddedId() === p.id) {
-                      <span class="added-check"><lucide-icon name="check-circle-2" [size]="15"></lucide-icon></span>
-                    }
-                  </span>
-                  <span class="product-name">{{ p.productName }}</span>
-                  <span class="product-meta">{{ p.productCode }}</span>
-                  <span class="product-price">₹{{ p.salesPrice ?? 0 | number: '1.2-2' }}</span>
-                  @if (stockLabel(p)) {
-                    <span class="product-stock" [class.low]="stockQty(p) !== null && stockQty(p)! <= 5" [class.out]="stockQty(p) === 0">
-                      {{ stockLabel(p) }}
-                    </span>
-                  }
-                </button>
-              }
-              @if (!filteredTouchProducts().length) {
-                <div class="no-products">No products available in this category.</div>
-              }
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <aside class="checkout-panel card-surface">
-        <div class="checkout-header">
-          <h3>Checkout</h3>
-        </div>
-
-        <div class="field-stack">
-          <div class="field">
-            <label>Customer</label>
-            <select [ngModel]="customerId" (ngModelChange)="setActiveField('customerId', $event)" data-field="customer">
-              <option [ngValue]="null">Walk-in Customer</option>
-              @for (c of lookups()?.customers ?? []; track c.id) {
-                <option [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
-              }
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Branch</label>
-            <select [ngModel]="branchId" (ngModelChange)="setActiveField('branchId', $event)">
-              @for (b of lookups()?.branches ?? []; track b.id) {
-                <option [ngValue]="b.id">{{ b.name }}</option>
-              }
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Warehouse</label>
-            <select [ngModel]="warehouseId" (ngModelChange)="setActiveField('warehouseId', $event); void onWarehouseChange()">
-              @for (w of lookups()?.warehouses ?? []; track w.id) {
-                <option [ngValue]="w.id">{{ w.name }}</option>
-              }
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Date</label>
-            <input type="date" [ngModel]="invoiceDate" (ngModelChange)="setActiveInvoiceDate($event)" />
-          </div>
-
-          <div class="field">
-            <label>Payment Method</label>
-            <select [ngModel]="paymentMethodID" (ngModelChange)="setActiveField('paymentMethodID', $event)">
-              <option [ngValue]="null">Cash</option>
-              @for (m of lookups()?.paymentMethods ?? []; track m.id) {
-                <option [ngValue]="m.id">{{ m.name }}</option>
-              }
-            </select>
-          </div>
-        </div>
-
-        <div class="cart-header">
-          <h3>Cart ({{ cart().length }} Items)</h3>
-          <button class="ghost-link" type="button" (click)="clearCart()">Clear Cart</button>
-        </div>
-
-        <div class="cart-table-wrap">
-          <table class="cart-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Rate</th>
-                <th>Disc %</th>
-                <th>Total</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (item of cart(); track trackByIndex($index); let index = $index) {
-                <tr>
-                  <td>{{ index + 1 }}</td>
-                  <td class="product-cell">{{ itemLabel(item) }}</td>
-                  <td>
-                    <div class="qty-box">
-                      <button class="qty-btn" type="button" (click)="item.quantity = Math.max(0, item.quantity - 1)">−</button>
-                      <span>{{ item.quantity }}</span>
-                      <button class="qty-btn" type="button" (click)="item.quantity = item.quantity + 1">+</button>
-                    </div>
-                  </td>
-                  <td>{{ item.rate | number: '1.2-2' }}</td>
-                  <td>{{ item.discountPercentage | number: '1.2-2' }}</td>
-                  <td>{{ lineTotal(item) | number: '1.2-2' }}</td>
-                  <td>
-                    <button class="trash-btn" type="button" (click)="removeItem(index)" aria-label="Delete item">
-                      <lucide-icon name="trash-2" [size]="15"></lucide-icon>
+            <div class="product-workbench">
+              <aside class="category-panel">
+                <div class="category-list">
+                  @for (cat of categories(); track cat) {
+                    <button class="category-item" type="button" [class.active]="activeCategory() === cat" (click)="setCategory(cat)">
+                      {{ cat }}
                     </button>
-                  </td>
-                </tr>
-              }
-              @if (!cart().length) {
-                <tr>
-                  <td colspan="7" class="empty-row">Cart is empty — scan, search or tap a product.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+                  }
+                </div>
+                <button class="category-manage" type="button">
+                  <lucide-icon name="settings" [size]="15"></lucide-icon>
+                  Manage Categories
+                </button>
+              </aside>
 
-        <div class="totals-box">
-          <div class="totals-row"><span>Gross Total</span><strong>₹{{ totalGross | number: '1.2-2' }}</strong></div>
-          <div class="totals-row"><span>Discount</span><strong>₹{{ totalDiscount | number: '1.2-2' }}</strong></div>
-          <div class="totals-row"><span>Taxable Amount</span><strong>₹{{ taxable | number: '1.2-2' }}</strong></div>
-          <div class="totals-row"><span>CGST</span><strong>₹{{ totalTax / 2 | number: '1.2-2' }}</strong></div>
-          <div class="totals-row"><span>SGST</span><strong>₹{{ totalTax / 2 | number: '1.2-2' }}</strong></div>
-          <div class="totals-row"><span>IGST</span><strong>₹0.00</strong></div>
-          <div class="totals-divider"></div>
-          <div class="totals-row grand"><span>GRAND TOTAL</span><strong>₹{{ grandTotal | number: '1.2-2' }}</strong></div>
-        </div>
+              <div class="product-stage">
+                <div class="product-toolbar">
+                  <div class="view-toggle">
+                    <button class="view-button" type="button" [class.active]="viewMode() === 'grid'" (click)="setViewMode('grid')">
+                      <lucide-icon name="grid-2x2" [size]="15"></lucide-icon>
+                      Grid View
+                    </button>
+                    <button class="view-button" type="button" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
+                      <lucide-icon name="list" [size]="15"></lucide-icon>
+                      List View
+                    </button>
+                  </div>
+                  <button class="mini-search" type="button" (click)="openSearch()">
+                    <lucide-icon name="search" [size]="15"></lucide-icon>
+                    Search
+                  </button>
+                </div>
 
-        <button class="checkout-btn" type="button" (click)="checkout()" [disabled]="!canManage() || loading() || !cart().length">
-          <lucide-icon name="badge-dollar-sign" [size]="17"></lucide-icon>
-          {{ loading() ? 'Processing...' : 'CHECKOUT F9' }}
-        </button>
+                <div class="product-grid" [class.list]="viewMode() === 'list'">
+                  @for (p of filteredTouchProducts(); track p.id) {
+                    <button type="button" class="product-card" [class.disabled]="!canTapProduct(p)" [class.pressed]="justAddedId() === p.id" (click)="tapProduct(p)">
+                      <span class="product-image">
+                        <lucide-icon name="package" [size]="28"></lucide-icon>
+                        @if (justAddedId() === p.id) {
+                          <span class="added-check"><lucide-icon name="check-circle-2" [size]="15"></lucide-icon></span>
+                        }
+                      </span>
+                      <span class="product-name">{{ p.productName }}</span>
+                      <span class="product-meta">{{ p.productCode }}</span>
+                      <span class="product-price">₹{{ p.salesPrice ?? 0 | number: '1.2-2' }}</span>
+                      @if (stockLabel(p)) {
+                        <span class="product-stock" [class.low]="stockQty(p) !== null && stockQty(p)! <= 5" [class.out]="stockQty(p) === 0">
+                          {{ stockLabel(p) }}
+                        </span>
+                      }
+                    </button>
+                  }
+                  @if (!filteredTouchProducts().length) {
+                    <div class="no-products">No products available in this category.</div>
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
 
-        @if (lastSaleNumber) {
-          <div class="receipt-box">
-            <div class="receipt-title">Sale complete</div>
-            <div>Invoice <strong>#{{ lastSaleNumber }}</strong></div>
-            <div>Total <strong>₹{{ lastGrandTotal | number: '1.2-2' }}</strong></div>
-            <button class="secondary-btn" type="button" (click)="windowPrint()">Print Receipt</button>
-          </div>
-        }
-      </aside>
-    </div>
+          <aside class="checkout-panel card-surface">
+            <div class="checkout-header">
+              <div>
+                <span class="eyebrow">Checkout</span>
+                <h3>{{ activeSale()?.saleNumber }}</h3>
+              </div>
+              <span class="session-state">{{ activeSale() ? saleTabState(activeSale()!) : 'Open' }}</span>
+            </div>
 
-    <div class="shortcut-bar">
-      <button type="button" class="shortcut-btn" (click)="focusField('customer')">F2 Customer</button>
-      <button type="button" class="shortcut-btn" (click)="openSearch()">F3 Search</button>
-      <button type="button" class="shortcut-btn" (click)="holdCurrentSale()">F4 Hold</button>
-      <button type="button" class="shortcut-btn" (click)="parkCurrentSale()">F5 Park</button>
-      <button type="button" class="shortcut-btn" (click)="openRecent()">F6 Recent</button>
-      <button type="button" class="shortcut-btn" (click)="toast.info('Discount editor is available in the cart.')">F7 Discount</button>
-      <button type="button" class="shortcut-btn" (click)="clearCart()">F8 Clear Cart</button>
-      <button type="button" class="shortcut-btn" (click)="checkout()">F9 Checkout</button>
-    </div>
+            <section class="customer-section">
+              <div class="section-heading"><span>Customer</span><button type="button" class="text-button" (click)="customerSearchOpen = true">Search</button></div>
+              <button type="button" class="customer-card" data-field="customer" (click)="customerSearchOpen = true">
+                <span class="customer-avatar"><lucide-icon name="user-round" [size]="18"></lucide-icon></span>
+                <span class="customer-card-copy"><strong>{{ customerName() }}</strong><small>{{ activeSale()?.customerPhone || selectedCustomer()?.code || 'Walk-in billing profile' }}</small></span>
+                <lucide-icon name="chevron-down" [size]="16"></lucide-icon>
+              </button>
+              <div class="customer-actions">
+                <button type="button" class="outline-action" (click)="addCustomerOpen = true"><lucide-icon name="user-plus" [size]="15"></lucide-icon>Add Customer</button>
+                <button type="button" class="outline-action" (click)="customerSearchOpen = true"><lucide-icon name="search" [size]="15"></lucide-icon>Search Customer</button>
+              </div>
+            </section>
 
-    <div class="pos-footer">
-      <span>Cashier: Admin</span>
-      <span>Terminal: T01</span>
-      <span>Internet: Online</span>
-    </div>
+            <div class="checkout-scroll">
+            <div class="section-heading sale-info-title"><span>Sale Information</span></div>
+            <div class="field-stack">
+              <div class="field">
+                <label>Branch</label>
+                <select [ngModel]="activeSale()?.branchId" (ngModelChange)="setActiveField('branchId', $event)">
+                  @for (b of lookups()?.branches ?? []; track b.id) {
+                    <option [ngValue]="b.id">{{ b.name }}</option>
+                  }
+                </select>
+              </div>
 
-    @if (searchOpen) {
-      <div class="kb-overlay" (click)="searchOpen = false">
-        <div class="pos-search" (click)="$event.stopPropagation()">
-          <div class="pos-search-head">
-            <input data-pos-search type="text" placeholder="Type to search products…" [value]="searchText" (input)="onSearchType($any($event.target).value)" (keydown.enter)="productResults.length && pickProduct(productResults[productHi])" (keydown.arrowdown)="$event.preventDefault(); moveHi(1)" (keydown.arrowup)="$event.preventDefault(); moveHi(-1)" />
-            <button class="icon" type="button" (click)="searchOpen = false" aria-label="Close">
-              <lucide-icon name="x"></lucide-icon>
+              <div class="field">
+                <label>Warehouse</label>
+                <select [ngModel]="activeSale()?.warehouseId" (ngModelChange)="setActiveField('warehouseId', $event); void onWarehouseChange()">
+                  @for (w of lookups()?.warehouses ?? []; track w.id) {
+                    <option [ngValue]="w.id">{{ w.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Salesperson</label>
+                <input type="text" placeholder="Select salesperson" [ngModel]="activeSale()?.salesperson" (ngModelChange)="setActiveValue('salesperson', $event)" />
+              </div>
+
+              <div class="field">
+                <label>Price List</label>
+                <select [ngModel]="activeSale()?.priceList" (ngModelChange)="setActiveValue('priceList', $event)"><option>Retail</option><option>Wholesale</option></select>
+              </div>
+
+              <div class="field">
+                <label>Invoice Date</label>
+                <input type="date" [ngModel]="activeSale()?.date" (ngModelChange)="setActiveInvoiceDate($event)" />
+              </div>
+            </div>
+
+            <div class="cart-header">
+              <h3>Cart ({{ cart().length }} Items)</h3>
+              <button class="ghost-link" type="button" (click)="clearCart()">Clear Cart</button>
+            </div>
+
+            <div class="cart-table-wrap">
+              <table class="cart-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Disc %</th>
+                    <th>Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of cart(); track trackByIndex($index); let index = $index) {
+                    <tr>
+                      <td>{{ index + 1 }}</td>
+                      <td class="product-cell">{{ itemLabel(item) }}</td>
+                      <td>
+                        <div class="qty-box">
+                          <button class="qty-btn" type="button" (click)="setItemQuantity(index, item.quantity - 1)">-</button>
+                          <span>{{ item.quantity }}</span>
+                          <button class="qty-btn" type="button" (click)="setItemQuantity(index, item.quantity + 1)">+</button>
+                        </div>
+                      </td>
+                      <td>{{ item.rate | number: '1.2-2' }}</td>
+                      <td>{{ item.discountPercentage | number: '1.2-2' }}</td>
+                      <td>{{ lineTotal(item) | number: '1.2-2' }}</td>
+                      <td>
+                        <button class="trash-btn" type="button" (click)="removeItem(index)" aria-label="Delete item">
+                          <lucide-icon name="trash-2" [size]="15"></lucide-icon>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                  @if (!cart().length) {
+                    <tr>
+                      <td colspan="7" class="empty-row">Cart is empty — scan, search or tap a product.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="totals-box">
+              <div class="totals-row"><span>Gross Total</span><strong>₹{{ totalGross | number: '1.2-2' }}</strong></div>
+              <div class="totals-row"><span>Discount</span><strong>₹{{ totalDiscount | number: '1.2-2' }}</strong></div>
+              <div class="totals-row bill-discount"><span>Bill Discount</span><input type="number" min="0" [ngModel]="activeSale()?.billDiscount" (ngModelChange)="setActiveValue('billDiscount', +$event || 0)" /></div>
+              <div class="totals-row"><span>Taxable Amount</span><strong>₹{{ taxable | number: '1.2-2' }}</strong></div>
+              <div class="totals-row"><span>CGST</span><strong>₹{{ totalTax / 2 | number: '1.2-2' }}</strong></div>
+              <div class="totals-row"><span>SGST</span><strong>₹{{ totalTax / 2 | number: '1.2-2' }}</strong></div>
+              <div class="totals-row"><span>IGST</span><strong>₹0.00</strong></div>
+              <div class="totals-divider"></div>
+              <div class="totals-row grand"><span>GRAND TOTAL</span><strong>₹{{ grandTotal | number: '1.2-2' }}</strong></div>
+            </div>
+
+            <div class="payment-section">
+              <div class="section-heading"><span>Payment Method</span></div>
+              <div class="payment-methods">
+                @for (m of lookups()?.paymentMethods ?? []; track m.id) {
+                  <button type="button" [class.active]="activeSale()?.paymentMethodID === m.id" (click)="setActiveField('paymentMethodID', m.id)">{{ m.name }}</button>
+                }
+              </div>
+              <div class="field payment-input"><label>Amount Received</label><input type="number" min="0" [ngModel]="activeSale()?.paymentAmount" (ngModelChange)="setActiveValue('paymentAmount', +$event || 0)" /></div>
+              <div class="change-row"><span>Balance / Change</span><strong>₹{{ Math.max(0, (activeSale()?.paymentAmount ?? 0) - grandTotal) | number: '1.2-2' }}</strong></div>
+            </div>
+            </div>
+
+            <div class="checkout-footer">
+            <button class="checkout-btn" type="button" (click)="checkout()" [disabled]="!canManage() || loading() || !cart().length">
+              <lucide-icon name="badge-dollar-sign" [size]="17"></lucide-icon>
+              {{ loading() ? 'Processing...' : 'F9  COMPLETE SALE  ₹' + (grandTotal | number: '1.2-2') }}
             </button>
-          </div>
-          <div class="pos-results">
-            @for (p of productResults; track p.id; let i = $index) {
-              <div class="pos-result" [class.hi]="productHi === i" (mousedown)="$event.preventDefault(); pickProduct(p)" (mouseenter)="productHi = i">
-                <span>{{ p.name }}</span>
-                <span class="muted-code">{{ p.code }}</span>
+            <div class="secondary-actions"><button type="button" (click)="holdCurrentSale()">Hold Sale</button><button type="button" (click)="parkCurrentSale()">Save Draft</button><button type="button" (click)="windowPrint()">Print Preview</button></div>
+
+            @if (lastSaleNumber) {
+              <div class="receipt-box">
+                <div class="receipt-title">Sale complete</div>
+                <div>Invoice <strong>#{{ lastSaleNumber }}</strong></div>
+                <div>Total <strong>₹{{ lastGrandTotal | number: '1.2-2' }}</strong></div>
+                <button class="secondary-btn" type="button" (click)="windowPrint()">Print Receipt</button>
               </div>
             }
-            @if (!productResults.length) {
-              <div class="empty-result">No products found</div>
-            }
-          </div>
+            </div>
+          </aside>
         </div>
-      </div>
-    }
 
-    @if (recentOpen()) {
-      <div class="kb-overlay" (click)="recentOpen.set(false)">
-        <div class="pos-search recent-panel" (click)="$event.stopPropagation()">
-          <div class="pos-search-head">
-            <strong>Recent / Parked Sales</strong>
-            <button class="icon" type="button" (click)="recentOpen.set(false)" aria-label="Close">
-              <lucide-icon name="x"></lucide-icon>
-            </button>
-          </div>
-          <div class="pos-results">
-            @for (sale of holdList(); track sale.id) {
-              <button type="button" class="recent-item" (click)="restoreRecentSale(sale.id)">
-                <span>{{ sale.saleNumber }}</span>
-                <small>{{ sale.status === 'held' ? 'Held' : 'Parked' }}</small>
-              </button>
-            }
-            @if (!holdList().length) {
-              <div class="empty-result">No recent or parked sales.</div>
-            }
-          </div>
+        <div class="shortcut-bar">
+          <button type="button" class="shortcut-btn" (click)="focusField('customer')">F2 Customer</button>
+          <button type="button" class="shortcut-btn" (click)="openSearch()">F3 Search</button>
+          <button type="button" class="shortcut-btn" (click)="holdCurrentSale()">F4 Hold</button>
+          <button type="button" class="shortcut-btn" (click)="parkCurrentSale()">F5 Park</button>
+          <button type="button" class="shortcut-btn" (click)="openRecent()">F6 Recent</button>
+          <button type="button" class="shortcut-btn" (click)="toast.info('Discount editor is available in the cart.')">F7 Discount</button>
+          <button type="button" class="shortcut-btn" (click)="clearCart()">F8 Clear Cart</button>
+          <button type="button" class="shortcut-btn" (click)="checkout()">F9 Checkout</button>
         </div>
-      </div>
-    }
-  }
-</div>
+
+        <div class="pos-footer">
+          <span>Cashier: Admin</span>
+          <span>Terminal: T01</span>
+          <span>Internet: Online</span>
+        </div>
+
+        @if (searchOpen) {
+          <div class="kb-overlay" (click)="searchOpen = false">
+            <div class="pos-search" (click)="$event.stopPropagation()">
+              <div class="pos-search-head">
+                <input data-pos-search type="text" placeholder="Type to search products…" [value]="searchText" (input)="onSearchType($any($event.target).value)" (keydown.enter)="productResults.length && pickProduct(productResults[productHi])" (keydown.arrowdown)="$event.preventDefault(); moveHi(1)" (keydown.arrowup)="$event.preventDefault(); moveHi(-1)" />
+                <button class="icon" type="button" (click)="searchOpen = false" aria-label="Close">
+                  <lucide-icon name="x"></lucide-icon>
+                </button>
+              </div>
+              <div class="pos-results">
+                @for (p of productResults; track p.id; let i = $index) {
+                  <div class="pos-result" [class.hi]="productHi === i" (mousedown)="$event.preventDefault(); pickProduct(p)" (mouseenter)="productHi = i">
+                    <span>{{ p.name }}</span>
+                    <span class="muted-code">{{ p.code }}</span>
+                  </div>
+                }
+                @if (!productResults.length) {
+                  <div class="empty-result">No products found</div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (recentOpen()) {
+          <div class="kb-overlay" (click)="recentOpen.set(false)">
+            <div class="pos-search recent-panel" (click)="$event.stopPropagation()">
+              <div class="pos-search-head">
+                <strong>Recent / Parked Sales</strong>
+                <button class="icon" type="button" (click)="recentOpen.set(false)" aria-label="Close">
+                  <lucide-icon name="x"></lucide-icon>
+                </button>
+              </div>
+              <div class="pos-results">
+                @for (sale of holdList(); track sale.id) {
+                  <button type="button" class="recent-item" (click)="restoreRecentSale(sale.id)">
+                    <span>{{ sale.saleNumber }}</span>
+                    <small>{{ sale.status === 'held' ? 'Held' : 'Parked' }}</small>
+                  </button>
+                }
+                @if (!holdList().length) {
+                  <div class="empty-result">No recent or parked sales.</div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (customerSearchOpen) {
+          <div class="kb-overlay" (click)="customerSearchOpen = false">
+            <div class="pos-search customer-dialog" (click)="$event.stopPropagation()">
+              <div class="pos-search-head"><input type="search" placeholder="Name, mobile or customer code" [value]="customerSearchText" (input)="customerSearchText = $any($event.target).value" autofocus /><button class="icon" type="button" (click)="customerSearchOpen = false" aria-label="Close"><lucide-icon name="x"></lucide-icon></button></div>
+              <div class="pos-results">
+                <button type="button" class="customer-result" (click)="chooseCustomer(null)"><strong>Walk-in Customer</strong><small>Default cash sale customer</small></button>
+                @for (customer of filteredCustomers(); track customer.id) {
+                  <button type="button" class="customer-result" (click)="chooseCustomer(customer.id)"><strong>{{ customer.name }}</strong><small>{{ customer.code || 'Customer' }}</small></button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (addCustomerOpen) {
+          <div class="kb-overlay" (click)="addCustomerOpen = false">
+            <form class="customer-form" (submit)="$event.preventDefault(); saveCustomer()" (click)="$event.stopPropagation()">
+              <div class="pos-search-head"><strong>Add Customer</strong><button class="icon" type="button" (click)="addCustomerOpen = false" aria-label="Close"><lucide-icon name="x"></lucide-icon></button></div>
+              <div class="customer-form-grid">
+                <label>Name *<input name="customerName" [(ngModel)]="customerDraft.name" required /></label>
+                <label>Mobile Number *<input name="customerPhone" [(ngModel)]="customerDraft.phone" required /></label>
+                <label>Email<input name="customerEmail" [(ngModel)]="customerDraft.email" type="email" /></label>
+                <label>Customer Type<select name="customerType" [(ngModel)]="customerDraft.type"><option>Retail</option><option>Business</option></select></label>
+                <label>GSTIN<input name="customerGstin" [(ngModel)]="customerDraft.gstin" /></label>
+                <label>City<input name="customerCity" [(ngModel)]="customerDraft.city" /></label>
+                <label class="wide">Address<input name="customerAddress" [(ngModel)]="customerDraft.address" /></label>
+                <label>State<input name="customerState" [(ngModel)]="customerDraft.state" /></label>
+                <label>Pincode<input name="customerPincode" [(ngModel)]="customerDraft.pincode" /></label>
+              </div>
+              <div class="form-actions"><button type="button" class="secondary-btn" (click)="addCustomerOpen = false">Cancel</button><button type="submit" class="checkout-btn">Save Customer</button></div>
+            </form>
+          </div>
+        }
+      }
+    </div>
