@@ -1,0 +1,53 @@
+<div class="auth-page">
+  <div class="auth-side">
+    <div class="auth-logo">
+      <span class="auth-logo-badge"><i-lucide name="layers" [size]="24"></i-lucide></span>
+      <div>
+        <div class="auth-name">ONE ERP</div>
+        <div style="opacity:.85; font-size:12.5px; letter-spacing:1px; font-weight:600">ACCESS RESTRICTED</div>
+      </div>
+    </div>
+    <div>
+      <div class="auth-quote">You're signed in,<br />but your access is limited.</div>
+      <div class="auth-quote-sub">
+        Your account has no workspace screens assigned yet. An administrator must grant you screen and action
+        permissions before you can use the application.
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px">
+      <div class="auth-feature"><i-lucide name="shield-check" [size]="18"></i-lucide> Screen-level & action-level access control</div>
+      <div class="auth-feature"><i-lucide name="mail" [size]="18"></i-lucide> Request access from your administrator</div>
+    </div>
+  </div>
+
+  <div class="auth-main">
+    <div class="auth-box">
+      <div class="auth-logo">
+        <span class="auth-logo-badge"><i-lucide name="shield-check" [size]="24"></i-lucide></span>
+        <div>
+          <div class="auth-name">ONE ERP</div>
+          <div style="color: var(--text-3); font-size:12px; font-weight:600; letter-spacing:1px">NO ACCESS</div>
+        </div>
+      </div>
+      <h1 class="auth-title">Contact your administrator</h1>
+      <div class="auth-sub">
+        Hey {{ firstName() }}, you don't have access to any workspace screens yet. Please reach out to your
+        administrator to request the screen and action permissions you need.
+      </div>
+
+      <div class="ca-user">
+        <span class="ca-user-avatar">{{ initials() }}</span>
+        <div>
+          <div class="ca-user-name">{{ user()?.fullName || user()?.username }}</div>
+          <div class="ca-user-role">{{ roleLabel() }}</div>
+        </div>
+      </div>
+
+      <base-button variant="primary" icon="log-out" [block]="true" (click)="logout()">Logout</base-button>
+
+      <div class="auth-footer">
+        © 2026 ONE ERP. Enterprise Multi-Tenant Platform.
+      </div>
+    </div>
+  </div>
+</div>

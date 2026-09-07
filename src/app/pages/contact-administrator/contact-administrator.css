@@ -1,0 +1,35 @@
+.ca-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.ca-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent-contrast);
+  background: linear-gradient(135deg, var(--accent), var(--accent-active));
+}
+
+.ca-user-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-1);
+}
+
+.ca-user-role {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}

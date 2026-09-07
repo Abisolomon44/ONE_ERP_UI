@@ -10,6 +10,17 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login').then((m) => m.LoginPage),
   },
 
+  // Shown when the signed-in user has no workspace screens assigned
+  {
+    path: 'contact-administrator',
+    canActivate: [authGuard],
+    title: 'Contact Administrator',
+    loadComponent: () =>
+      import('./pages/contact-administrator/contact-administrator').then(
+        (m) => m.ContactAdministratorPage
+      ),
+  },
+
   // Main Layout
   {
     path: '',

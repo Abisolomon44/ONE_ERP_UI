@@ -9,14 +9,6 @@ import { Workspace, Domain, Module, SubModule } from '../core/models';
 import { BaseButton } from '../shared/base-button';
 import { BaseToast } from '../shared/base-feedback';
 
-interface NavItem {
-  route: string;
-  label: string;
-  icon: string;
-  section?: string;
-  adminOnly?: boolean;
-}
-
 interface WorkspaceNode {
   workspace: Workspace;
   domains: DomainNode[];
@@ -34,19 +26,6 @@ interface ModuleWithSubModules {
   subModules: SubModule[];
   open: boolean;
 }
-
-const SECTION_ORDER = ['Business Master', 'Enterprise Permissions', 'System Master'];
-
-const ADMIN_NAV: NavItem[] = [
-  { route: 'business-master', label: 'Business Master', icon: 'briefcase', section: 'Business Master', adminOnly: true },
-  { route: 'master-import', label: 'Master Import', icon: 'upload', section: 'Business Master' },
-  { route: 'import-logs', label: 'Import Logs', icon: 'history', section: 'Business Master' },
-  { route: 'tenant-configuration', label: 'Tenant Config', icon: 'sliders-horizontal', section: 'Business Master' },
-  { route: 'purchase', label: 'Purchase', icon: 'shopping-cart', section: 'Transactions' },
-  { route: 'payment', label: 'Payment', icon: 'wallet', section: 'Transactions' },
-  { route: 'enterprise-permissions', label: 'Enterprise Permissions', icon: 'shield-check', section: 'Enterprise Permissions', adminOnly: true },
-  { route: 'system-master', label: 'System Master', icon: 'settings', section: 'System Master', adminOnly: true },
-];
 
 @Component({
   selector: 'app-shell',
@@ -82,24 +61,6 @@ export class AppShell {
 
     void this.loadWorkspaces();
   }
-
-  protected readonly adminNavItems = computed(() => {
-    const isSuperAdmin = this.auth.user()?.isSuperAdmin ?? false;
-    return ADMIN_NAV.filter((item) => !item.adminOnly || isSuperAdmin);
-  });
-
-  protected readonly adminSections = computed(() => {
-    const groups = new Map<string, NavItem[]>();
-    for (const item of this.adminNavItems()) {
-      const key = item.section ?? 'Admin';
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(item);
-    }
-    return SECTION_ORDER.filter((name) => groups.has(name)).map((name) => ({
-      name,
-      items: groups.get(name)!,
-    }));
-  });
 
   protected toggleWorkspace(ws: WorkspaceNode): void {
     ws.open = !ws.open;
@@ -180,7 +141,15 @@ export class AppShell {
 
   protected async loadWorkspaces(): Promise<void> {
     try {
-      const nav = await firstValueFrom(this.http.get<{ workspaces: WorkspaceNode[]; permissionVersion: number }>('/api/navigation'));
+      const nav = await firstValueFrom(this.http.get<{ workspaces: WorkspaceNode[]; permissionVersion: number; hasAccess: boolean }>('/api/navigation'));
+
+      // The logged-in user has no screen-level permissions in any workspace;
+      // send them to the Contact Administrator page instead of the app shell.
+      if (nav.hasAccess === false) {
+        await this.router.navigate(['/contact-administrator']);
+        return;
+      }
+
       const nodes: WorkspaceNode[] = (nav.workspaces ?? []).map((ws: any) => ({
         workspace: { id: ws.id, workspaceCode: ws.code, workspaceName: ws.name, icon: ws.icon, isActive: true, createdDate: '', sortOrder: 0 } as Workspace,
         open: false,
