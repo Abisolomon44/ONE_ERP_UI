@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { LoginResponse } from '../models';
 import { PermissionService, UserPermission } from './permission.service';
+import { NavigationStoreService } from './navigation-store.service';
 
 export const TOKEN_KEY = 'oneerp-erp-token';
 export const REFRESH_KEY = 'oneerp-erp-refresh';
@@ -26,7 +27,8 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private perms: PermissionService
+    private perms: PermissionService,
+    private navigation: NavigationStoreService
   ) {
     const permissions = localStorage.getItem(PERMS_KEY);
 
@@ -107,6 +109,7 @@ export class AuthService {
     this.user.set(null);
     this.perms.permissions.set([]);
     this.perms.userPermissions.set([]);
+    this.navigation.clear();
 
     this.router.navigate(['/login']);
   }
@@ -129,6 +132,9 @@ export class AuthService {
   localStorage.setItem('userId', data.user.userId.toString());
 
   console.log('CompanyId Saved:', localStorage.getItem('companyId'));
+
+  console.log('User Roles:', data.roles);
+  console.log('User Permissions:', effectivePermissions);
 
   this.token.set(data.accessToken);
   this.user.set(data.user);

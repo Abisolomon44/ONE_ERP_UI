@@ -1,0 +1,14 @@
+<app-master-page
+  [config]="config"
+  [data]="counters()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createCounter()"
+  (editClick)="editCounter($event)"
+  (deleteClick)="deleteCounter($event)"
+  (saveClick)="saveCounter()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>

@@ -1,11 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, distinctUntilChanged, finalize, forkJoin, map, of, switchMap, tap, Observable } from 'rxjs';
+import { distinctUntilChanged, map, of, switchMap, catchError } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { WorkspaceTemplate } from '../workspace-template/workspace-template';
-import { PermissionService } from '../../core/services/permission.service';
+import { NavigationStoreService, NavWorkspace } from '../../core/services/navigation-store.service';
 import {
   WorkspaceModel,
   WorkspaceDomainModel,
@@ -21,8 +20,7 @@ import {
 })
 export class WorkspacePage {
   private readonly route = inject(ActivatedRoute);
-  private readonly http = inject(HttpClient);
-  private readonly perm = inject(PermissionService);
+  private readonly nav = inject(NavigationStoreService);
 
   protected readonly loading = signal(true);
   protected readonly notFound = signal(false);
@@ -43,8 +41,7 @@ export class WorkspacePage {
       .subscribe();
   }
 
-  private loadWorkspace(id: number): Observable<WorkspaceModel | null> {
-    // Requirement #5: clear previous workspace data immediately.
+  private loadWorkspace(id: number) {
     if (!Number.isFinite(id) || id <= 0) {
       this.currentId.set(null);
       this.model.set(null);
@@ -58,89 +55,64 @@ export class WorkspacePage {
     this.notFound.set(false);
     this.model.set(null);
 
-    return forkJoin({
-      workspaces: this.http.get<any[]>('/api/workspaces'),
-      domains: this.http.get<any[]>('/api/domains'),
-      modules: this.http.get<any[]>('/api/modules'),
-      subModules: this.http.get<any[]>('/api/submodules'),
-      screens: this.http.get<any[]>('/api/screens'),
-    }).pipe(
-      map(({ workspaces, domains, modules, subModules, screens }) =>
-        this.buildModel(workspaces ?? [], domains ?? [], modules ?? [], subModules ?? [], screens ?? [], id)
-      ),
-      tap((built) => {
-        // Only apply if this workspace is still the selected one.
-        if (this.currentId() !== id) return;
+    // The tree is already filtered to CanView screens by the backend, so no
+    // client-side permission masks or master /api/screens calls happen here.
+    return of(id).pipe(
+      switchMap(async (wid) => {
+        const nav = await this.nav.ensureLoaded();
+        return this.buildModel(nav.workspaces ?? [], wid);
+      }),
+      map((built) => {
+        if (this.currentId() !== id) return null;
+        this.loading.set(false);
         if (built) {
           this.model.set(built);
           this.notFound.set(false);
         } else {
           this.notFound.set(true);
         }
+        return built;
       }),
       catchError(() => {
         if (this.currentId() === id) {
+          this.loading.set(false);
           this.notFound.set(true);
         }
         return of(null);
-      }),
-      finalize(() => {
-        if (this.currentId() === id) {
-          this.loading.set(false);
-        }
       })
     );
   }
 
-  private buildModel(
-    workspaces: any[],
-    domains: any[],
-    modules: any[],
-    subModules: any[],
-    screens: any[],
-    id: number
-  ): WorkspaceModel | null {
+  private buildModel(workspaces: NavWorkspace[], id: number): WorkspaceModel | null {
     const ws = workspaces.find((w) => w.id === id);
     if (!ws) {
       return null;
     }
 
-    const myDomains = domains.filter((d) => d.workspaceId === id);
-    const domainIds = new Set(myDomains.map((d) => d.id));
-    const myModules = modules.filter((m) => domainIds.has(m.domainId));
-    const moduleIds = new Set(myModules.map((m) => m.id));
-    const mySubs = subModules.filter((sm) => moduleIds.has(sm.moduleId));
-    const subIds = new Set(mySubs.map((sm) => sm.id));
-    const myScreens = (screens as any[])
-      .filter((s) => subIds.has(s.subModuleId))
-      .filter((s) => this.canAccessScreen(s.permissionCode));
-
-    const domainsModel: WorkspaceDomainModel[] = myDomains
+    const domainsModel: WorkspaceDomainModel[] = (ws.domains ?? [])
       .map((d) => {
-        const dModules = myModules
-          .filter((m) => m.domainId === d.id)
+        const modulesModel: WorkspaceModuleModel[] = (d.modules ?? [])
           .map((m) => {
-            const mSubs: WorkspaceSubModuleModel[] = mySubs
-              .filter((sm) => sm.moduleId === m.id)
+            const subsModel: WorkspaceSubModuleModel[] = (m.subModules ?? [])
               .map((sm) => ({
                 id: sm.id,
-                title: sm.subModuleName,
-                icon: sm.icon,
-                screens: myScreens
-                  .filter((s) => s.subModuleId === sm.id && s.routeUrl)
-                  .map((s) => ({ id: s.id, title: s.screenName, route: s.routeUrl })),
+                title: sm.name,
+                icon: sm.icon ?? undefined,
+                screens: (sm.screens ?? [])
+                  .filter((s) => s.routeUrl)
+                  .map((s) => ({ id: s.id, title: s.name, route: s.routeUrl! })),
               }))
               .filter((sub) => sub.screens.length > 0);
-            return { id: m.id, title: m.moduleName, icon: m.icon, subModules: mSubs } as WorkspaceModuleModel;
+            return { id: m.id, title: m.name, icon: m.icon ?? undefined, subModules: subsModel } as WorkspaceModuleModel;
           })
           .filter((mod) => mod.subModules.length > 0);
-        return { id: d.id, title: d.domainName, icon: d.icon, modules: dModules } as WorkspaceDomainModel;
+        return { id: d.id, title: d.name, icon: d.icon ?? undefined, modules: modulesModel } as WorkspaceDomainModel;
       })
       .filter((dom) => dom.modules.length > 0);
 
     return {
       id: ws.id,
-      title: ws.workspaceName,
+      title: ws.name,
       icon: ws.icon || 'layout-grid',
       description: '',
       quickActions: [],
@@ -149,17 +121,5 @@ export class WorkspacePage {
       favorites: [],
       domains: domainsModel,
     };
-  }
-
-  /**
-   * A screen is shown when the current user holds at least one permission
-   * under its PermissionCode (e.g. `branches.view`), or the bare screen code, or
-   * the super-admin wildcard. Screens without a PermissionCode are not
-   * permission-managed, so they are visible to all signed-in users.
-   */
-  private canAccessScreen(permissionCode: string | null | undefined): boolean {
-    if (!permissionCode) return true;
-    const code = permissionCode.trim().toLowerCase();
-    return this.perm.has(`${code}.view`) || this.perm.has(code);
   }
 }

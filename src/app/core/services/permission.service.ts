@@ -99,14 +99,6 @@ export class PermissionService {
     return owned.some(p => p === `${screenCode}.${actionCode}`);
   }
 
-  canAccessHierarchical(workspaceCode: string, domainCode: string, moduleCode: string, screenCode: string, actionCode: string): boolean {
-    const owned = this.permissions();
-    if (owned.includes('*')) return true;
-    const fullCode = `${workspaceCode}.${domainCode}.${moduleCode}.${screenCode}.${actionCode}`;
-    const shortCode = `${moduleCode}.${actionCode}`;
-    return owned.includes(fullCode) || owned.includes(shortCode);
-  }
-
   getFieldPermission(screenId: number, fieldId: number): { canView: boolean; canEdit: boolean; isHidden: boolean; isReadOnly: boolean; isMandatory: boolean } | null {
     const userId = this.getCurrentUserId();
     if (!userId) return null;
@@ -141,6 +133,45 @@ export class PermissionService {
     }
 
     return null;
+  }
+
+  /** Get field permission using screenCode and fieldCode (looks up IDs from the fields list) */
+  getFieldPermissionByCode(screenCode: string, fieldCode: string): { canView: boolean; canEdit: boolean; isHidden: boolean; isReadOnly: boolean; isMandatory: boolean } | null {
+    const screen = this.screens().find(s => s.screenCode === screenCode);
+    if (!screen) return null;
+    const field = this.fields().find(f => f.screenId === screen.id && f.fieldCode === fieldCode);
+    if (!field) return null;
+    return this.getFieldPermission(screen.id, field.id) ?? null;
+  }
+
+  /** Check if user can view a field (by screenCode/fieldCode) */
+  canViewField(screenCode: string, fieldCode: string): boolean {
+    const perm = this.getFieldPermissionByCode(screenCode, fieldCode);
+    return perm?.canView === true;
+  }
+
+  /** Check if user can edit a field (by screenCode/fieldCode) */
+  canEditField(screenCode: string, fieldCode: string): boolean {
+    const perm = this.getFieldPermissionByCode(screenCode, fieldCode);
+    return perm?.canEdit === true;
+  }
+
+  /** Check if a field is hidden (by screenCode/fieldCode) */
+  isFieldHidden(screenCode: string, fieldCode: string): boolean {
+    const perm = this.getFieldPermissionByCode(screenCode, fieldCode);
+    return perm?.isHidden === true;
+  }
+
+  /** Check if a field is read-only (by screenCode/fieldCode) */
+  isFieldReadonly(screenCode: string, fieldCode: string): boolean {
+    const perm = this.getFieldPermissionByCode(screenCode, fieldCode);
+    return perm?.isReadOnly === true;
+  }
+
+  /** Check if a field is mandatory (by screenCode/fieldCode) */
+  isFieldMandatory(screenCode: string, fieldCode: string): boolean {
+    const perm = this.getFieldPermissionByCode(screenCode, fieldCode);
+    return perm?.isMandatory === true;
   }
 
   getDataScope(): DataScope | null {

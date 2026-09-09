@@ -1,30 +1,14 @@
 ﻿import { Component, computed, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
-import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../core/services/auth.service';
 import { ThemeService } from '../core/services/theme.service';
-import { Workspace, Domain, Module, SubModule } from '../core/models';
+import { NavigationStoreService } from '../core/services/navigation-store.service';
 import { BaseButton } from '../shared/base-button';
 import { BaseToast } from '../shared/base-feedback';
 
 interface WorkspaceNode {
-  workspace: Workspace;
-  domains: DomainNode[];
-  open: boolean;
-}
-
-interface DomainNode {
-  domain: Domain;
-  modules: ModuleWithSubModules[];
-  open: boolean;
-}
-
-interface ModuleWithSubModules {
-  module: Module;
-  subModules: SubModule[];
-  open: boolean;
+  workspace: { id: number; code: string; name: string; icon?: string | null };
 }
 
 @Component({
@@ -37,8 +21,8 @@ interface ModuleWithSubModules {
 export class AppShell {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
-  private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly nav = inject(NavigationStoreService);
 
   protected readonly collapsed = signal(false);
   protected readonly mobileOpen = signal(false);
@@ -62,21 +46,6 @@ export class AppShell {
     void this.loadWorkspaces();
   }
 
-  protected toggleWorkspace(ws: WorkspaceNode): void {
-    ws.open = !ws.open;
-    this.workspaces.update((list) => [...list]);
-  }
-
-  protected toggleDomain(dn: DomainNode): void {
-    dn.open = !dn.open;
-    this.workspaces.update((list) => [...list]);
-  }
-
-  protected toggleModule(mw: ModuleWithSubModules): void {
-    mw.open = !mw.open;
-    this.workspaces.update((list) => [...list]);
-  }
-
   private initIsMobile(): boolean {
     return (
       typeof window !== 'undefined' &&
@@ -92,15 +61,6 @@ export class AppShell {
 
   protected closeMobile(): void {
     if (this.isMobile()) this.mobileOpen.set(false);
-  }
-
-  protected onWorkspaceClick(ws: WorkspaceNode): void {
-    console.log('[sidebar] workspace clicked:', {
-      id: ws.workspace.id,
-      name: ws.workspace.workspaceName,
-      route: `/workspace/${ws.workspace.id}`,
-    });
-    this.closeMobile();
   }
 
   protected readonly tenantLabel = computed(() => {
@@ -141,29 +101,10 @@ export class AppShell {
 
   protected async loadWorkspaces(): Promise<void> {
     try {
-      const nav = await firstValueFrom(this.http.get<{ workspaces: WorkspaceNode[]; permissionVersion: number; hasAccess: boolean }>('/api/navigation'));
+      const nav = await this.nav.ensureLoaded();
 
-      // The logged-in user has no screen-level permissions in any workspace;
-      // send them to the Contact Administrator page instead of the app shell.
-      if (nav.hasAccess === false) {
-        await this.router.navigate(['/contact-administrator']);
-        return;
-      }
-
-      const nodes: WorkspaceNode[] = (nav.workspaces ?? []).map((ws: any) => ({
-        workspace: { id: ws.id, workspaceCode: ws.code, workspaceName: ws.name, icon: ws.icon, isActive: true, createdDate: '', sortOrder: 0 } as Workspace,
-        open: false,
-        domains: (ws.domains ?? []).map((dom: any) => ({
-          domain: { id: dom.id, domainCode: dom.code, domainName: dom.name, icon: dom.icon, workspaceId: ws.id, isActive: true, createdDate: '', sortOrder: 0 } as Domain,
-          open: false,
-          modules: (dom.modules ?? []).map((mod: any) => ({
-            module: { id: mod.id, moduleCode: mod.code, moduleName: mod.name, icon: mod.icon, domainId: dom.id, isActive: true, createdDate: '', sortOrder: 0 } as Module,
-            open: false,
-            subModules: (mod.subModules ?? []).map((sm: any) => ({
-              id: sm.id, subModuleCode: sm.code, subModuleName: sm.name, icon: sm.icon, moduleId: mod.id, isActive: true, createdDate: '', sortOrder: 0,
-            } as SubModule)),
-          })),
-        })),
+      const nodes: WorkspaceNode[] = (nav.workspaces ?? []).map((ws) => ({
+        workspace: { id: ws.id, code: ws.code, name: ws.name, icon: ws.icon },
       }));
 
       this.workspaces.set(nodes);

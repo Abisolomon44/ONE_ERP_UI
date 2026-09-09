@@ -1,6 +1,7 @@
 ﻿import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
+import { NavigationStoreService } from '../core/services/navigation-store.service';
 import { PermissionService } from '../core/services/permission.service';
 import { ThemeService } from '../core/services/theme.service';
 import { AppShell } from './app-shell';
@@ -11,18 +12,21 @@ describe('AppShell', () => {
   let theme: { mode: ReturnType<typeof vi.fn>; toggleMode: ReturnType<typeof vi.fn> };
   let perms: { has: ReturnType<typeof vi.fn> };
   let router: { url: string; navigate: ReturnType<typeof vi.fn> };
+  let navigation: { ensureLoaded: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     auth = { user: vi.fn(() => ({ fullName: 'Admin User', username: 'admin' })), logout: vi.fn(() => Promise.resolve()) };
     theme = { mode: vi.fn(() => 'light'), toggleMode: vi.fn() };
     perms = { has: vi.fn(() => true) };
     router = { url: '/users', navigate: vi.fn(() => Promise.resolve(true)) };
+    navigation = { ensureLoaded: vi.fn(() => Promise.resolve({ workspaces: [], permissionVersion: 1, hasAccess: true })) };
     localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthService, useValue: auth },
         { provide: ThemeService, useValue: theme },
         { provide: PermissionService, useValue: perms },
+        { provide: NavigationStoreService, useValue: navigation },
         { provide: Router, useValue: router },
       ],
     });

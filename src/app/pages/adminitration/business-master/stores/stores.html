@@ -1,0 +1,14 @@
+<app-master-page
+  [config]="config"
+  [data]="stores()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createStore()"
+  (editClick)="editStore($event)"
+  (deleteClick)="deleteStore($event)"
+  (saveClick)="saveStore()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>

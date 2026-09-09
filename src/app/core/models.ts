@@ -480,6 +480,7 @@ export interface Screen {
   subModuleName?: string;
   screenCode: string;
   screenName: string;
+  permissionCode?: string | null;
   screenType?: string;
   routeUrl?: string;
   componentName?: string;

@@ -47,6 +47,7 @@ export interface MasterField {
   minLength?: number;
   maxLength?: number;
   options?: DropdownOption[];
+  screenCode?: string;
 }
 
 export interface MasterTab {
@@ -110,7 +111,7 @@ export interface MasterConfig {
 })
 export class MasterPage implements OnInit, OnChanges {
 
-  private readonly perm = inject(PermissionService);
+  public readonly perm = inject(PermissionService);
 
   //===========================
   // Inputs
@@ -371,17 +372,53 @@ ngOnChanges(changes: SimpleChanges): void {
     );
   }
 
-  get currentTabFields() {
+  /** Fields for the current tab AFTER applying field permissions */
+  get visibleCurrentTabFields() {
     if (!this.config.tabs || this.config.tabs.length === 0) {
-      return this.config.fields;
+      return this.effectiveFields;
     }
 
     if (!this.currentTab) {
       return [];
     }
 
+    // Start with fields assigned to this tab
+    const tabFieldNames = this.currentTab.fields;
+    const tabFields = this.config.fields.filter(field =>
+      tabFieldNames.includes(field.name)
+    );
+
+    // Apply field permission filter
+    return tabFields.filter(field =>
+      this.canViewField(field.name) && !this.isFieldHidden(field.name)
+    );
+  }
+
+  /** All effective fields after permission filtering (used when no tabs) */
+  get effectiveFields() {
     return this.config.fields.filter(field =>
-      this.currentTab!.fields.includes(field.name)
+      this.canViewField(field.name) && !this.isFieldHidden(field.name)
+    );
+  }
+
+  get currentTabFields() {
+    if (!this.config.tabs || this.config.tabs.length === 0) {
+      return this.effectiveFields;
+    }
+
+    if (!this.currentTab) {
+      return [];
+    }
+
+    // Start with fields assigned to this tab
+    const tabFieldNames = this.currentTab.fields;
+    const tabFields = this.config.fields.filter(field =>
+      tabFieldNames.includes(field.name)
+    );
+
+    // Apply field permission filter
+    return tabFields.filter(field =>
+      this.canViewField(field.name) && !this.isFieldHidden(field.name)
     );
   }
 

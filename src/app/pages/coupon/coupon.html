@@ -1,0 +1,14 @@
+<app-master-page
+  [config]="config"
+  [data]="rows()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createRow()"
+  (editClick)="editRow($event)"
+  (deleteClick)="deleteRow($event)"
+  (saveClick)="save()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>

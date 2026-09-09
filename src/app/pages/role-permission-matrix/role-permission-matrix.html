@@ -9,7 +9,7 @@
       <base-button variant="secondary" icon="chevrons-down" size="sm" (click)="collapseAll()">Collapse All</base-button>
       <base-button variant="secondary" icon="square-check" size="sm" (click)="selectAll()">Select All</base-button>
       <base-button variant="secondary" icon="square-x" size="sm" (click)="clearAll()">Clear All</base-button>
-      <base-button *basePermission="'role-permissions.manage'" icon="save" [loading]="saving()" (click)="save()">Save Permissions</base-button>
+      <base-button *basePermission="'role-permission-matrix.manage'" icon="save" [loading]="saving()" (click)="save()">Save Permissions</base-button>
     }
   </div>
 </div>

@@ -1,0 +1,87 @@
+<app-master-page
+  [config]="config"
+  [data]="rows()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createRow()"
+  (editClick)="editRow($event)"
+  (deleteClick)="deleteRow($event)"
+  (saveClick)="save()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>
+
+@if (showEntry() && editing()) {
+  <div class="card detail-card">
+    <div class="card-header">
+      <h4>Price List Details</h4>
+      <div>
+        <button class="btn btn-secondary btn-sm" type="button" (click)="loadDetails(editing()!.priceListId)">Reset</button>
+        <button class="btn btn-primary btn-sm" type="button" (click)="addDetailRow()">
+          <i-lucide name="Plus" [size]="15"></i-lucide>
+          Add Row
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="btable">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Unit</th>
+            <th>Price</th>
+            <th>Min Qty</th>
+            <th>Max Qty</th>
+            <th style="width:70px" class="cell-actions">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of detailRows(); track row.key) {
+            <tr>
+              <td>
+                <select class="input" [(ngModel)]="row.productId">
+                  <option [ngValue]="null" disabled>Select</option>
+                  @for (opt of productOptions; track opt.value) {
+                    <option [ngValue]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <select class="input" [(ngModel)]="row.unitId">
+                  <option [ngValue]="null" disabled>Select</option>
+                  @for (opt of unitOptions; track opt.value) {
+                    <option [ngValue]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              </td>
+              <td><input class="input" type="number" [(ngModel)]="row.price"></td>
+              <td><input class="input" type="number" [(ngModel)]="row.minimumQuantity"></td>
+              <td><input class="input" type="number" [(ngModel)]="row.maximumQuantity"></td>
+              <td class="cell-actions">
+                <button class="btn btn-sm btn-danger-soft" type="button" (click)="removeDetailRow(row)">
+                  <i-lucide name="Trash2" [size]="13"></i-lucide>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="list-empty empty-state">
+                <span>No detail lines — add rows with product prices below.</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="dialog-inner-footer">
+      <button class="btn btn-primary" type="button" [disabled]="detailSaving()" (click)="saveDetails()">
+        <i-lucide name="Check" [size]="15"></i-lucide>
+        {{ detailSaving() ? 'Saving…' : 'Save Details' }}
+      </button>
+    </div>
+  </div>
+}

@@ -390,6 +390,491 @@ class TaxService {
 }
 
 // ============================================================
+// Billing Masters — Price Types (system master), Unit Conversions,
+// Barcodes, HSN/SAC, Service Categories, Services, Price Lists.
+// ============================================================
+
+export interface PriceTypeDto {
+  priceTypeId: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreatePriceTypeRequest = {
+  code: string;
+  name: string;
+  description?: string | null;
+  displayOrder?: number | null;
+};
+export type UpdatePriceTypeRequest = CreatePriceTypeRequest & { displayOrder: number; isActive: boolean };
+
+export interface UnitConversionDto {
+  unitConversionId: number;
+  companyId: number;
+  productId?: number | null;
+  productName?: string | null;
+  fromUnitId: number;
+  fromUnitName?: string | null;
+  toUnitId: number;
+  toUnitName?: string | null;
+  conversionFactor: number;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreateUnitConversionRequest = {
+  productId?: number | null;
+  fromUnitId: number;
+  toUnitId: number;
+  conversionFactor: number;
+  isDefault?: boolean;
+};
+export type UpdateUnitConversionRequest = CreateUnitConversionRequest & { isDefault: boolean; isActive: boolean };
+
+export interface BarcodeDto {
+  barcodeId: number;
+  companyId: number;
+  barcode: string;
+  productId: number;
+  productName?: string | null;
+  unitId?: number | null;
+  unitName?: string | null;
+  barcodeType?: string | null;
+  isPrimary: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreateBarcodeRequest = {
+  barcode: string;
+  productId: number;
+  unitId?: number | null;
+  barcodeType?: string | null;
+  isPrimary?: boolean;
+};
+export type UpdateBarcodeRequest = CreateBarcodeRequest & { unitId?: number | null; isPrimary: boolean; isActive: boolean };
+
+export interface HsnSacDto {
+  hsnSacId: number;
+  companyId: number;
+  code: string;
+  name: string;
+  hsnSacType: string;
+  description?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreateHsnSacRequest = {
+  code: string;
+  name: string;
+  hsnSacType: 'HSN' | 'SAC';
+  description?: string | null;
+};
+export type UpdateHsnSacRequest = CreateHsnSacRequest & { description?: string | null; isActive: boolean };
+
+export interface ServiceCategoryDto {
+  serviceCategoryId: number;
+  companyId: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreateServiceCategoryRequest = {
+  code: string;
+  name: string;
+  description?: string | null;
+  displayOrder?: number | null;
+};
+export type UpdateServiceCategoryRequest = CreateServiceCategoryRequest & { description?: string | null; displayOrder: number; isActive: boolean };
+
+export interface ServiceDto {
+  serviceId: number;
+  companyId: number;
+  code: string;
+  name: string;
+  serviceCategoryId?: number | null;
+  serviceCategoryName?: string | null;
+  unitId?: number | null;
+  unitName?: string | null;
+  hsnSacId?: number | null;
+  hsnSacCode?: string | null;
+  defaultTaxId?: number | null;
+  defaultTaxName?: string | null;
+  standardRate: number;
+  isTaxInclusive: boolean;
+  description?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreateServiceRequest = {
+  code: string;
+  name: string;
+  serviceCategoryId?: number | null;
+  unitId?: number | null;
+  hsnSacId?: number | null;
+  defaultTaxId?: number | null;
+  standardRate?: number;
+  isTaxInclusive?: boolean;
+  description?: string | null;
+};
+export type UpdateServiceRequest = CreateServiceRequest & { standardRate: number; isTaxInclusive: boolean; description?: string | null; isActive: boolean };
+
+export interface PriceListDto {
+  priceListId: number;
+  companyId: number;
+  priceTypeId: number;
+  priceTypeName?: string | null;
+  currencyId: number;
+  currencyName?: string | null;
+  code: string;
+  name: string;
+  description?: string | null;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreatePriceListRequest = {
+  code: string;
+  name: string;
+  priceTypeId: number;
+  currencyId: number;
+  description?: string | null;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  isDefault?: boolean;
+};
+export type UpdatePriceListRequest = CreatePriceListRequest & { effectiveFrom?: string | null; effectiveTo?: string | null; isDefault: boolean; isActive: boolean };
+
+export interface PriceListDetailDto {
+  priceListDetailId: number;
+  priceListId: number;
+  productId: number;
+  productName?: string | null;
+  unitId?: number | null;
+  unitName?: string | null;
+  price: number;
+  minimumQuantity: number;
+  maximumQuantity?: number | null;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreatePriceListDetailRequest = {
+  priceListId: number;
+  productId: number;
+  unitId?: number | null;
+  price: number;
+  minimumQuantity?: number;
+  maximumQuantity?: number | null;
+};
+export type UpdatePriceListDetailRequest = CreatePriceListDetailRequest & { price: number; minimumQuantity: number; maximumQuantity?: number | null; isActive: boolean };
+
+export interface DiscountRuleDto {
+  discountRuleId: number;
+  companyId: number;
+  code: string;
+  name: string;
+  productId?: number | null;
+  productName?: string | null;
+  serviceId?: number | null;
+  serviceName?: string | null;
+  productCategoryId?: number | null;
+  productCategoryName?: string | null;
+  priceListId?: number | null;
+  priceListName?: string | null;
+  discountType: string;
+  discountValue: number;
+  minimumQuantity?: number | null;
+  minimumAmount?: number | null;
+  maximumDiscount?: number | null;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreateDiscountRuleRequest = {
+  code: string;
+  name: string;
+  productId?: number | null;
+  serviceId?: number | null;
+  productCategoryId?: number | null;
+  priceListId?: number | null;
+  discountType?: string;
+  discountValue?: number;
+  minimumQuantity?: number | null;
+  minimumAmount?: number | null;
+  maximumDiscount?: number | null;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+};
+export type UpdateDiscountRuleRequest = CreateDiscountRuleRequest & { effectiveFrom?: string | null; effectiveTo?: string | null; isActive: boolean };
+
+export interface OfferDto {
+  offerId: number;
+  companyId: number;
+  code: string;
+  name: string;
+  offerType: string;
+  discountType?: string | null;
+  discountValue?: number | null;
+  minimumQuantity?: number | null;
+  minimumAmount?: number | null;
+  maximumDiscount?: number | null;
+  startDate: string;
+  endDate?: string | null;
+  isActive: boolean;
+  description?: string | null;
+  createdAt: string;
+}
+export type CreateOfferRequest = {
+  code: string;
+  name: string;
+  offerType: string;
+  startDate: string;
+  discountType?: string | null;
+  discountValue?: number | null;
+  minimumQuantity?: number | null;
+  minimumAmount?: number | null;
+  maximumDiscount?: number | null;
+  endDate?: string | null;
+  description?: string | null;
+};
+export type UpdateOfferRequest = CreateOfferRequest & { endDate?: string | null; description?: string | null; isActive: boolean };
+
+export interface OfferDetailDto {
+  offerDetailId: number;
+  offerId: number;
+  productId?: number | null;
+  productName?: string | null;
+  serviceId?: number | null;
+  serviceName?: string | null;
+  productCategoryId?: number | null;
+  productCategoryName?: string | null;
+  minimumQuantity?: number | null;
+  freeQuantity?: number | null;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreateOfferDetailRequest = {
+  offerId: number;
+  productId?: number | null;
+  serviceId?: number | null;
+  productCategoryId?: number | null;
+  minimumQuantity?: number | null;
+  freeQuantity?: number | null;
+};
+export type UpdateOfferDetailRequest = CreateOfferDetailRequest & { isActive: boolean };
+export type OfferDetailsReplaceRequest = { items: CreateOfferDetailRequest[] };
+
+export interface CouponDto {
+  couponId: number;
+  companyId: number;
+  offerId: number;
+  offerName?: string | null;
+  code: string;
+  name?: string | null;
+  usageLimit?: number | null;
+  usagePerCustomer?: number | null;
+  usedCount: number;
+  startDate: string;
+  endDate?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+export type CreateCouponRequest = {
+  code: string;
+  offerId: number;
+  startDate: string;
+  name?: string | null;
+  usageLimit?: number | null;
+  usagePerCustomer?: number | null;
+  endDate?: string | null;
+};
+export type UpdateCouponRequest = CreateCouponRequest & { endDate?: string | null; isActive: boolean };
+
+class PriceTypeService {
+  constructor(private readonly http: HttpClient) {}
+  getAll(includeInactive = true): Promise<PriceTypeDto[]> {
+    const params = new HttpParams().set('includeInactive', includeInactive);
+    return firstValueFrom(this.http.get<PriceTypeDto[]>('/api/price-types', { params }));
+  }
+  getNextCode(prefix = 'PRICETYPE'): Promise<string> {
+    const params = new HttpParams().set('prefix', prefix);
+    return firstValueFrom(this.http.get<string>('/api/price-types/next-code', { params }));
+  }
+  getById(id: number): Promise<PriceTypeDto> { return firstValueFrom(this.http.get<PriceTypeDto>(`/api/price-types/${id}`)); }
+  create(req: CreatePriceTypeRequest): Promise<PriceTypeDto> { return firstValueFrom(this.http.post<PriceTypeDto>('/api/price-types', req)); }
+  update(id: number, req: UpdatePriceTypeRequest): Promise<PriceTypeDto> { return firstValueFrom(this.http.put<PriceTypeDto>(`/api/price-types/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/price-types/${id}`)).then(() => undefined); }
+}
+
+class UnitConversionService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<UnitConversionDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<UnitConversionDto>>('/api/unit-conversions', { params }));
+  }
+  getById(id: number): Promise<UnitConversionDto> { return firstValueFrom(this.http.get<UnitConversionDto>(`/api/unit-conversions/${id}`)); }
+  create(req: CreateUnitConversionRequest): Promise<UnitConversionDto> { return firstValueFrom(this.http.post<UnitConversionDto>('/api/unit-conversions', req)); }
+  update(id: number, req: UpdateUnitConversionRequest): Promise<UnitConversionDto> { return firstValueFrom(this.http.put<UnitConversionDto>(`/api/unit-conversions/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/unit-conversions/${id}`)).then(() => undefined); }
+}
+
+class BarcodeService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<BarcodeDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<BarcodeDto>>('/api/barcodes', { params }));
+  }
+  getById(id: number): Promise<BarcodeDto> { return firstValueFrom(this.http.get<BarcodeDto>(`/api/barcodes/${id}`)); }
+  create(req: CreateBarcodeRequest): Promise<BarcodeDto> { return firstValueFrom(this.http.post<BarcodeDto>('/api/barcodes', req)); }
+  update(id: number, req: UpdateBarcodeRequest): Promise<BarcodeDto> { return firstValueFrom(this.http.put<BarcodeDto>(`/api/barcodes/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/barcodes/${id}`)).then(() => undefined); }
+}
+
+class HsnSacService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<HsnSacDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<HsnSacDto>>('/api/hsn-sacs', { params }));
+  }
+  getNextCode(prefix = 'HSN'): Promise<string> {
+    const params = new HttpParams().set('prefix', prefix);
+    return firstValueFrom(this.http.get<string>('/api/hsn-sacs/next-code', { params }));
+  }
+  getById(id: number): Promise<HsnSacDto> { return firstValueFrom(this.http.get<HsnSacDto>(`/api/hsn-sacs/${id}`)); }
+  create(req: CreateHsnSacRequest): Promise<HsnSacDto> { return firstValueFrom(this.http.post<HsnSacDto>('/api/hsn-sacs', req)); }
+  update(id: number, req: UpdateHsnSacRequest): Promise<HsnSacDto> { return firstValueFrom(this.http.put<HsnSacDto>(`/api/hsn-sacs/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/hsn-sacs/${id}`)).then(() => undefined); }
+}
+
+class ServiceCategoryService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<ServiceCategoryDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<ServiceCategoryDto>>('/api/service-categories', { params }));
+  }
+  getNextCode(prefix = 'SVCAT'): Promise<string> {
+    const params = new HttpParams().set('prefix', prefix);
+    return firstValueFrom(this.http.get<string>('/api/service-categories/next-code', { params }));
+  }
+  getById(id: number): Promise<ServiceCategoryDto> { return firstValueFrom(this.http.get<ServiceCategoryDto>(`/api/service-categories/${id}`)); }
+  create(req: CreateServiceCategoryRequest): Promise<ServiceCategoryDto> { return firstValueFrom(this.http.post<ServiceCategoryDto>('/api/service-categories', req)); }
+  update(id: number, req: UpdateServiceCategoryRequest): Promise<ServiceCategoryDto> { return firstValueFrom(this.http.put<ServiceCategoryDto>(`/api/service-categories/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/service-categories/${id}`)).then(() => undefined); }
+}
+
+class ServiceService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<ServiceDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<ServiceDto>>('/api/services', { params }));
+  }
+  getNextCode(prefix = 'SRV'): Promise<string> {
+    const params = new HttpParams().set('prefix', prefix);
+    return firstValueFrom(this.http.get<string>('/api/services/next-code', { params }));
+  }
+  getById(id: number): Promise<ServiceDto> { return firstValueFrom(this.http.get<ServiceDto>(`/api/services/${id}`)); }
+  create(req: CreateServiceRequest): Promise<ServiceDto> { return firstValueFrom(this.http.post<ServiceDto>('/api/services', req)); }
+  update(id: number, req: UpdateServiceRequest): Promise<ServiceDto> { return firstValueFrom(this.http.put<ServiceDto>(`/api/services/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/services/${id}`)).then(() => undefined); }
+}
+
+class PriceListService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<PriceListDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<PriceListDto>>('/api/price-lists', { params }));
+  }
+  getNextCode(prefix = 'PL'): Promise<string> {
+    const params = new HttpParams().set('prefix', prefix);
+    return firstValueFrom(this.http.get<string>('/api/price-lists/next-code', { params }));
+  }
+  getById(id: number): Promise<PriceListDto> { return firstValueFrom(this.http.get<PriceListDto>(`/api/price-lists/${id}`)); }
+  getDetails(id: number): Promise<PriceListDetailDto[]> { return firstValueFrom(this.http.get<PriceListDetailDto[]>(`/api/price-lists/${id}/details`)); }
+  replaceDetails(id: number, items: CreatePriceListDetailRequest[]): Promise<number> {
+    return firstValueFrom(this.http.post<number>(`/api/price-lists/${id}/details/replace`, { items }));
+  }
+  create(req: CreatePriceListRequest): Promise<PriceListDto> { return firstValueFrom(this.http.post<PriceListDto>('/api/price-lists', req)); }
+  update(id: number, req: UpdatePriceListRequest): Promise<PriceListDto> { return firstValueFrom(this.http.put<PriceListDto>(`/api/price-lists/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/price-lists/${id}`)).then(() => undefined); }
+}
+
+class PriceListDetailService {
+  constructor(private readonly http: HttpClient) {}
+  getById(id: number): Promise<PriceListDetailDto> { return firstValueFrom(this.http.get<PriceListDetailDto>(`/api/price-list-details/${id}`)); }
+  create(req: CreatePriceListDetailRequest): Promise<PriceListDetailDto> { return firstValueFrom(this.http.post<PriceListDetailDto>('/api/price-list-details', req)); }
+  update(id: number, req: UpdatePriceListDetailRequest): Promise<PriceListDetailDto> { return firstValueFrom(this.http.put<PriceListDetailDto>(`/api/price-list-details/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/price-list-details/${id}`)).then(() => undefined); }
+}
+
+class DiscountRuleService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<DiscountRuleDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<DiscountRuleDto>>('/api/discount-rules', { params }));
+  }
+  getNextCode(prefix = 'DR'): Promise<string> {
+    const params = new HttpParams().set('prefix', prefix);
+    return firstValueFrom(this.http.get<string>('/api/discount-rules/next-code', { params }));
+  }
+  getById(id: number): Promise<DiscountRuleDto> { return firstValueFrom(this.http.get<DiscountRuleDto>(`/api/discount-rules/${id}`)); }
+  create(req: CreateDiscountRuleRequest): Promise<DiscountRuleDto> { return firstValueFrom(this.http.post<DiscountRuleDto>('/api/discount-rules', req)); }
+  update(id: number, req: UpdateDiscountRuleRequest): Promise<DiscountRuleDto> { return firstValueFrom(this.http.put<DiscountRuleDto>(`/api/discount-rules/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/discount-rules/${id}`)).then(() => undefined); }
+}
+
+class OfferService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<OfferDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<OfferDto>>('/api/offers', { params }));
+  }
+  getNextCode(prefix = 'OFFER'): Promise<string> {
+    const params = new HttpParams().set('prefix', prefix);
+    return firstValueFrom(this.http.get<string>('/api/offers/next-code', { params }));
+  }
+  getById(id: number): Promise<OfferDto> { return firstValueFrom(this.http.get<OfferDto>(`/api/offers/${id}`)); }
+  getDetails(id: number): Promise<OfferDetailDto[]> { return firstValueFrom(this.http.get<OfferDetailDto[]>(`/api/offers/${id}/details`)); }
+  replaceDetails(id: number, items: CreateOfferDetailRequest[]): Promise<number> {
+    return firstValueFrom(this.http.post<number>(`/api/offers/${id}/details/replace`, { items }));
+  }
+  create(req: CreateOfferRequest): Promise<OfferDto> { return firstValueFrom(this.http.post<OfferDto>('/api/offers', req)); }
+  update(id: number, req: UpdateOfferRequest): Promise<OfferDto> { return firstValueFrom(this.http.put<OfferDto>(`/api/offers/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/offers/${id}`)).then(() => undefined); }
+}
+
+class OfferDetailService {
+  constructor(private readonly http: HttpClient) {}
+  getById(id: number): Promise<OfferDetailDto> { return firstValueFrom(this.http.get<OfferDetailDto>(`/api/offer-details/${id}`)); }
+  create(req: CreateOfferDetailRequest): Promise<OfferDetailDto> { return firstValueFrom(this.http.post<OfferDetailDto>('/api/offer-details', req)); }
+  update(id: number, req: UpdateOfferDetailRequest): Promise<OfferDetailDto> { return firstValueFrom(this.http.put<OfferDetailDto>(`/api/offer-details/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/offer-details/${id}`)).then(() => undefined); }
+}
+
+class CouponService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<CouponDto>> {
+    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+    return firstValueFrom(this.http.get<PaginatedResult<CouponDto>>('/api/coupons', { params }));
+  }
+  getNextCode(prefix = 'COUPON'): Promise<string> {
+    const params = new HttpParams().set('prefix', prefix);
+    return firstValueFrom(this.http.get<string>('/api/coupons/next-code', { params }));
+  }
+  getById(id: number): Promise<CouponDto> { return firstValueFrom(this.http.get<CouponDto>(`/api/coupons/${id}`)); }
+  create(req: CreateCouponRequest): Promise<CouponDto> { return firstValueFrom(this.http.post<CouponDto>('/api/coupons', req)); }
+  update(id: number, req: UpdateCouponRequest): Promise<CouponDto> { return firstValueFrom(this.http.put<CouponDto>(`/api/coupons/${id}`, req)); }
+  delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/coupons/${id}`)).then(() => undefined); }
+}
+
+// ============================================================
 // Master service — single injection point for every
 // Administration sub-resource.
 // ============================================================
@@ -424,6 +909,42 @@ export class AdministrationService {
     this.products = new ProductService(http);
     this.taxTypeSystems = new TaxTypeSystemService(http);
     this.taxes = new TaxService(http);
+  }
+}
+
+// ============================================================
+// Billing Masters service — single injection point for the
+// Billing master-data sub-resources.
+// ============================================================
+
+@Injectable({ providedIn: 'root' })
+export class BillingMasterService {
+  readonly priceTypes: PriceTypeService;
+  readonly unitConversions: UnitConversionService;
+  readonly barcodes: BarcodeService;
+  readonly hsnSacs: HsnSacService;
+  readonly serviceCategories: ServiceCategoryService;
+  readonly services: ServiceService;
+  readonly priceLists: PriceListService;
+  readonly priceListDetails: PriceListDetailService;
+  readonly discountRules: DiscountRuleService;
+  readonly offers: OfferService;
+  readonly offerDetails: OfferDetailService;
+  readonly coupons: CouponService;
+
+  constructor(http: HttpClient) {
+    this.priceTypes = new PriceTypeService(http);
+    this.unitConversions = new UnitConversionService(http);
+    this.barcodes = new BarcodeService(http);
+    this.hsnSacs = new HsnSacService(http);
+    this.serviceCategories = new ServiceCategoryService(http);
+    this.services = new ServiceService(http);
+    this.priceLists = new PriceListService(http);
+    this.priceListDetails = new PriceListDetailService(http);
+    this.discountRules = new DiscountRuleService(http);
+    this.offers = new OfferService(http);
+    this.offerDetails = new OfferDetailService(http);
+    this.coupons = new CouponService(http);
   }
 }
 

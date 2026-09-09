@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth.guard';
+import { navigationChildGuard } from './core/navigation.guard';
 
 export const routes: Routes = [
   // Authentication
@@ -21,10 +22,19 @@ export const routes: Routes = [
       ),
   },
 
+  // Shown when a guard blocks direct navigation to an unauthorized screen
+  {
+    path: 'access-denied',
+    canActivate: [authGuard],
+    title: 'Access Denied',
+    loadComponent: () => import('./pages/access-denied/access-denied').then((m) => m.AccessDeniedPage),
+  },
+
   // Main Layout
   {
     path: '',
     canActivate: [authGuard],
+    canActivateChild: [navigationChildGuard],
     loadComponent: () => import('./layout/app-shell').then((m) => m.AppShell),
 
     children: [
@@ -138,6 +148,62 @@ export const routes: Routes = [
         title: 'Taxes',
         loadComponent: () => import('./pages/tax/tax').then((m) => m.TaxPage),
       },
+
+      // ===========================
+      // Billing Masters
+      // ===========================
+
+      {
+        path: 'price-types',
+        title: 'Price Types',
+        loadComponent: () => import('./pages/price-type/price-type').then((m) => m.PriceTypePage),
+      },
+      {
+        path: 'unit-conversions',
+        title: 'Unit Conversions',
+        loadComponent: () => import('./pages/unit-conversion/unit-conversion').then((m) => m.UnitConversionPage),
+      },
+      {
+        path: 'barcodes',
+        title: 'Barcodes',
+        loadComponent: () => import('./pages/barcode/barcode').then((m) => m.BarcodePage),
+      },
+      {
+        path: 'hsn-sacs',
+        title: 'HSN / SAC',
+        loadComponent: () => import('./pages/hsn-sac/hsn-sac').then((m) => m.HsnSacPage),
+      },
+      {
+        path: 'service-categories',
+        title: 'Service Categories',
+        loadComponent: () => import('./pages/service-category/service-category').then((m) => m.ServiceCategoryPage),
+      },
+      {
+        path: 'services',
+        title: 'Services',
+        loadComponent: () => import('./pages/service/service').then((m) => m.ServicePage),
+      },
+      {
+        path: 'price-lists',
+        title: 'Price Lists',
+        loadComponent: () => import('./pages/price-list/price-list').then((m) => m.PriceListPage),
+      },
+      {
+        path: 'discount-rules',
+        title: 'Discount Rules',
+        loadComponent: () => import('./pages/discount-rule/discount-rule').then((m) => m.DiscountRulePage),
+      },
+      {
+        path: 'offers',
+        title: 'Offers',
+        loadComponent: () => import('./pages/offer/offer').then((m) => m.OfferPage),
+      },
+      {
+        path: 'coupons',
+        title: 'Coupons',
+        loadComponent: () => import('./pages/coupon/coupon').then((m) => m.CouponPage),
+      },
+
       {
         path: 'master-import',
         title: 'Master Import',
@@ -229,6 +295,33 @@ export const routes: Routes = [
       },
 
       {
+        path: 'stores',
+        title: 'Stores',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/stores/stores').then(
+            (m) => m.StoresPage,
+          ),
+      },
+
+      {
+        path: 'counters',
+        title: 'Counters',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/counters/counters').then(
+            (m) => m.CountersPage,
+          ),
+      },
+
+      {
+        path: 'pos-sessions',
+        title: 'POS Sessions',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/pos-sessions/pos-sessions').then(
+            (m) => m.PosSessionsPage,
+          ),
+      },
+
+      {
         path: 'designation',
         title: 'Designation',
         loadComponent: () =>
@@ -268,30 +361,6 @@ export const routes: Routes = [
       // Permission System
       // ===========================
 
-      {
-        path: 'permission-modules',
-        title: 'Permission Modules',
-        loadComponent: () =>
-          import('./pages/permission-modules/permission-modules').then(
-            (m) => m.PermissionModulesPage
-          ),
-      },
-      {
-        path: 'permission-actions',
-        title: 'Permission Actions',
-        loadComponent: () =>
-          import('./pages/permission-actions/permission-actions').then(
-            (m) => m.PermissionActionsPage
-          ),
-      },
-      {
-        path: 'role-permissions',
-        title: 'Role Permissions',
-        loadComponent: () =>
-          import('./pages/role-permissions/role-permissions').then(
-            (m) => m.RolePermissionsPage
-          ),
-      },
       {
         path: 'role-permission-matrix',
         title: 'Role Permission Matrix',

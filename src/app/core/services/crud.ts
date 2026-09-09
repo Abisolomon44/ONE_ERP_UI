@@ -60,6 +60,8 @@ export class LookupService<TDto, TCreate = Partial<TDto>, TUpdate = Partial<TDto
 export interface PagedFilter {
   companyId?: number | null;
   branchId?: number | null;
+  storeId?: number | null;
+  status?: number | null;
   page?: number;
   size?: number;
   search?: string;
@@ -79,6 +81,8 @@ export class PagedCrudService<TDto, TCreate = Partial<TDto>, TUpdate = Partial<T
 
     if (filter.companyId != null) params = params.set('companyId', filter.companyId);
     if (filter.branchId != null) params = params.set('branchId', filter.branchId);
+    if (filter.storeId != null) params = params.set('storeId', filter.storeId);
+    if (filter.status != null) params = params.set('status', filter.status);
 
     return firstValueFrom(this.http.get<PaginatedResult<TDto>>(this.baseUrl, { params }));
   }

@@ -1,0 +1,14 @@
+<app-master-page
+  [config]="config"
+  [data]="sessions()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createSession()"
+  (editClick)="editSession($event)"
+  (deleteClick)="deleteSession($event)"
+  (saveClick)="saveSession()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>

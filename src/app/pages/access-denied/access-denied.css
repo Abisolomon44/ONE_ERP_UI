@@ -1,0 +1,40 @@
+.access-denied {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 24px;
+}
+
+.card {
+  max-width: 420px;
+  text-align: center;
+  padding: 40px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.shield {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin-bottom: 16px;
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.card h1 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.card .hint {
+  margin: 0 0 24px;
+  color: var(--text-2);
+  line-height: 1.5;
+}

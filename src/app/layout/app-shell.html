@@ -19,10 +19,10 @@
       </a>
 
       @for (ws of workspaces(); track ws.workspace.id) {
-        <a class="nav-item" [routerLink]="['/workspace', ws.workspace.id]" routerLinkActive="active" (click)="onWorkspaceClick(ws)">
+        <a class="nav-item" [routerLink]="['/workspace', ws.workspace.id]" routerLinkActive="active" (click)="closeMobile()">
           <i-lucide [name]="ws.workspace.icon || 'layout-grid'" [size]="18"></i-lucide>
           @if (!collapsed()) {
-            <span>{{ ws.workspace.workspaceName }}</span>
+            <span>{{ ws.workspace.name }}</span>
           }
         </a>
       }

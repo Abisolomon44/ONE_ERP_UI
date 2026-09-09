@@ -212,7 +212,7 @@
 
       <div class="card-body">
         <div class="entry-grid">
-          @for (field of currentTabFields; track field.name) {
+          @for (field of visibleCurrentTabFields; track field.name) {
 
             <!-- Checkbox: own layout, not a floating-label field -->
             @if (field.type == 'checkbox') {
@@ -253,7 +253,11 @@
                       [type]="field.type"
                       [(ngModel)]="userModel[field.name]"
                       [placeholder]="field.placeholder || ' '"
-                      [readonly]="field.readonly ?? false"
+                      [readonly]="
+    field.readonly ||
+    !this.perm.canEditField(field.screenCode ?? '', field.name) ||
+    this.perm.isFieldReadonly(field.screenCode ?? '', field.name)
+"
                       [disabled]="field.disabled ?? false"
                       [minlength]="field.minLength ?? null"
                       [maxlength]="field.maxLength ?? null">
@@ -266,7 +270,11 @@
                       rows="3"
                       [(ngModel)]="userModel[field.name]"
                       [placeholder]="field.placeholder || ' '"
-                      [readonly]="field.readonly ?? false"
+                      [readonly]="
+    field.readonly ||
+    !this.perm.canEditField(field.screenCode ?? '', field.name) ||
+    this.perm.isFieldReadonly(field.screenCode ?? '', field.name)
+"
                       [disabled]="field.disabled ?? false">
                     </textarea>
                   }
