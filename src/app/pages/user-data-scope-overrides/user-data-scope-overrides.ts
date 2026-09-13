@@ -3,52 +3,76 @@ import { HttpClient } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
-import { BaseEmpty, BasePill } from '../../shared/base-data';
+import { BaseEmpty } from '../../shared/base-data';
 import { BaseButton } from '../../shared/base-button';
-import { BaseDialog } from '../../shared/base-feedback';
-import { BaseInput, DropdownOption } from '../../shared/base-controls';
 import { BasePermission } from '../../shared/base-permission';
-import { UserDataScopeOverride, User, Module, Screen } from '../../core/models';
+import { User, Paginated } from '../../core/models';
+import { OrganizationService } from '../../core/services/organization_service';
+import { AdministrationService } from '../../core/services/master_service';
+import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+
+interface ScopeOption {
+  id: number;
+  label: string;
+}
+
+interface OverrideSelection {
+  hasScope: boolean;
+  companyIds: number[];
+  allCompanies: boolean;
+  branchIds: number[];
+  allBranches: boolean;
+  warehouseIds: number[];
+  allWarehouses: boolean;
+  permissionType: string;
+  allow: boolean;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
+  remarks: string | null;
+  isActive: boolean;
+}
+
+type ScopeLevel = 'company' | 'branch' | 'warehouse';
 
 @Component({
   selector: 'app-user-data-scope-overrides',
   standalone: true,
-  imports: [DatePipe, LucideAngularModule, BaseEmpty, BaseButton, BaseDialog, BasePermission],
+  imports: [DatePipe, LucideAngularModule, BaseEmpty, BaseButton, BasePermission],
   templateUrl: './user-data-scope-overrides.html',
   styleUrl: './user-data-scope-overrides.css',
 })
 export class UserDataScopeOverridesPage {
   private readonly http = inject(HttpClient);
+  private readonly org = inject(OrganizationService);
+  private readonly admin = inject(AdministrationService);
+  private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
-  protected readonly rows = signal<UserDataScopeOverride[]>([]);
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly dialogOpen = signal(false);
-  protected readonly editing = signal<UserDataScopeOverride | null>(null);
 
   protected readonly selectedUserId = signal<string>('');
 
-  protected readonly userOptions = signal<DropdownOption[]>([]);
-  protected readonly moduleOptions = signal<DropdownOption[]>([]);
-  protected readonly screenOptions = signal<DropdownOption[]>([]);
+  protected readonly userOptions = signal<{ value: number; label: string }[]>([]);
 
-  protected readonly scopeTypes = ['Company', 'Branch', 'Department', 'Warehouse', 'BusinessUnit', 'CostCenter', 'ProfitCenter'];
-  protected readonly permissionTypes = ['Grant', 'Deny'];
+  protected readonly companyOptions = signal<ScopeOption[]>([]);
+  protected readonly branchOptions = signal<ScopeOption[]>([]);
+  protected readonly warehouseOptions = signal<ScopeOption[]>([]);
 
-  protected readonly form = {
-    moduleId: signal<string>(''),
-    screenId: signal<string>(''),
-    scopeType: signal('Branch'),
-    scopeValue: signal(''),
-    permissionType: signal('Deny'),
-    allow: signal(false),
-    effectiveFrom: signal(''),
-    effectiveTo: signal(''),
-    remarks: signal(''),
-    isActive: signal(true),
-  };
+  protected readonly companyIds = signal<number[]>([]);
+  protected readonly allCompanies = signal(false);
+  protected readonly branchIds = signal<number[]>([]);
+  protected readonly allBranches = signal(false);
+  protected readonly warehouseIds = signal<number[]>([]);
+  protected readonly allWarehouses = signal(false);
+
+  protected readonly permissionType = signal('Grant');
+  protected readonly allow = signal(true);
+  protected readonly effectiveFrom = signal('');
+  protected readonly effectiveTo = signal('');
+  protected readonly remarks = signal('');
+  protected readonly isActive = signal(true);
 
   constructor() {
     void this.loadUsers();
@@ -56,45 +80,17 @@ export class UserDataScopeOverridesPage {
 
   protected async onUserChange(): Promise<void> {
     const userId = this.selectedUserId();
-    if (!userId) {
-      this.rows.set([]);
-      return;
+    if (!userId) return;
+    this.loading.set(true);
+    try {
+      await Promise.all([this.loadSelection(+userId), this.loadOptions()]);
+    } finally {
+      this.loading.set(false);
     }
-    await this.loadRows(userId);
   }
 
-  protected openCreate(): void {
-    this.editing.set(null);
-    this.form.moduleId.set('');
-    this.form.screenId.set('');
-    this.form.scopeType.set('Branch');
-    this.form.scopeValue.set('');
-    this.form.permissionType.set('Deny');
-    this.form.allow.set(false);
-    this.form.effectiveFrom.set(new Date().toISOString().slice(0, 16));
-    this.form.effectiveTo.set('');
-    this.form.remarks.set('');
-    this.form.isActive.set(true);
-    this.dialogOpen.set(true);
-  }
-
-  protected openEdit(item: UserDataScopeOverride): void {
-    this.editing.set(item);
-    this.form.moduleId.set(item.moduleId?.toString() ?? '');
-    this.form.screenId.set(item.screenId?.toString() ?? '');
-    this.form.scopeType.set(item.scopeType);
-    this.form.scopeValue.set(item.scopeValue);
-    this.form.permissionType.set(item.permissionType);
-    this.form.allow.set(item.allow);
-    this.form.effectiveFrom.set(item.effectiveFrom?.slice(0, 16) ?? '');
-    this.form.effectiveTo.set(item.effectiveTo?.slice(0, 16) ?? '');
-    this.form.remarks.set(item.remarks ?? '');
-    this.form.isActive.set(item.isActive);
-    this.dialogOpen.set(true);
-  }
-
-  protected closeDialog(): void {
-    this.dialogOpen.set(false);
+  protected onPermissionTypeChange(): void {
+    this.allow.set(this.permissionType() === 'Grant');
   }
 
   protected async save(): Promise<void> {
@@ -104,79 +100,169 @@ export class UserDataScopeOverridesPage {
     this.saving.set(true);
     try {
       const payload = {
-        userId,
-        moduleId: this.form.moduleId() ? parseInt(this.form.moduleId(), 10) : null,
-        screenId: this.form.screenId() ? parseInt(this.form.screenId(), 10) : null,
-        scopeType: this.form.scopeType(),
-        scopeValue: this.form.scopeValue(),
-        permissionType: this.form.permissionType(),
-        allow: this.form.allow(),
-        effectiveFrom: this.form.effectiveFrom() || null,
-        effectiveTo: this.form.effectiveTo() || null,
-        remarks: this.form.remarks() || null,
-        isActive: this.form.isActive(),
+        companyIds: this.companyIds(),
+        allCompanies: this.allCompanies(),
+        branchIds: this.branchIds(),
+        allBranches: this.allBranches(),
+        warehouseIds: this.warehouseIds(),
+        allWarehouses: this.allWarehouses(),
+        permissionType: this.permissionType(),
+        allow: this.allow(),
+        effectiveFrom: this.effectiveFrom() || null,
+        effectiveTo: this.effectiveTo() || null,
+        remarks: this.remarks() || null,
+        isActive: this.isActive(),
       };
+      await firstValueFrom(
+        this.http.post(`/api/user-data-scope-overrides/user/${userId}/replace`, payload),
+      );
+      this.toast.success('Override saved');
+      await this.loadSelection(userId);
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      this.saving.set(false);
+    }
+  }
 
-      const editingId = this.editing()?.id;
-      if (editingId) {
-        await firstValueFrom(this.http.put(`/api/user-data-scope-overrides/${editingId}`, payload));
-        this.toast.success('Override updated');
-      } else {
-        await firstValueFrom(this.http.post('/api/user-data-scope-overrides', payload));
-        this.toast.success('Override created');
+  //===========================
+  // Checkbox list helpers (mirror Data Scopes)
+  //===========================
+
+  protected isAll(level: ScopeLevel): boolean {
+    return level === 'company' ? this.allCompanies() : level === 'branch' ? this.allBranches() : this.allWarehouses();
+  }
+
+  protected ids(level: ScopeLevel): number[] {
+    return level === 'company' ? this.companyIds() : level === 'branch' ? this.branchIds() : this.warehouseIds();
+  }
+
+  protected options(level: ScopeLevel): ScopeOption[] {
+    return level === 'company' ? this.companyOptions() : level === 'branch' ? this.branchOptions() : this.warehouseOptions();
+  }
+
+  protected isChecked(level: ScopeLevel, id: number): boolean {
+    return this.ids(level).includes(id);
+  }
+
+  protected selectedCompanyNames(): string {
+    const names = this.companyIds().map((id) => this.companyOptions().find((o) => o.id === id)?.label).filter((n): n is string => !!n);
+    return names.join(', ');
+  }
+
+  protected toggleAll(level: ScopeLevel, checked: boolean): void {
+    const all = level === 'company' ? this.allCompanies : level === 'branch' ? this.allBranches : this.allWarehouses;
+    const ids = level === 'company' ? this.companyIds : level === 'branch' ? this.branchIds : this.warehouseIds;
+    all.set(checked);
+    if (checked) ids.set([]);
+
+    if (level === 'company') {
+      this.branchOptions.set([]);
+      this.warehouseOptions.set([]);
+    }
+  }
+
+  protected toggleItem(level: ScopeLevel, id: number, checked: boolean): void {
+    const all = level === 'company' ? this.allCompanies : level === 'branch' ? this.allBranches : this.allWarehouses;
+    const ids = level === 'company' ? this.companyIds : level === 'branch' ? this.branchIds : this.warehouseIds;
+
+    if (checked) {
+      if (all()) {
+        all.set(false);
+        ids.set([id]);
+      } else if (!ids().includes(id)) {
+        ids.set([...ids(), id]);
       }
-      this.dialogOpen.set(false);
-      await this.loadRows(this.selectedUserId());
-    } catch {
-      /* handled by interceptor */
-    } finally {
-      this.saving.set(false);
+    } else {
+      ids.set(ids().filter((x) => x !== id));
+    }
+
+    if (level === 'company') {
+      if (this.allCompanies() || this.companyIds().length === 0) {
+        this.branchOptions.set([]);
+        this.warehouseOptions.set([]);
+      } else {
+        void this.loadChildOptions(this.companyIds());
+      }
     }
   }
 
-  protected async remove(id: number): Promise<void> {
-    if (!confirm('Delete this override?')) return;
-
-    this.saving.set(true);
-    try {
-      await firstValueFrom(this.http.delete(`/api/user-data-scope-overrides/${id}`));
-      this.toast.success('Override deleted');
-      await this.loadRows(this.selectedUserId());
-    } catch {
-      /* handled by interceptor */
-    } finally {
-      this.saving.set(false);
-    }
-  }
+  //===========================
+  // Loading
+  //===========================
 
   private async loadUsers(): Promise<void> {
     try {
-      const res = await firstValueFrom(this.http.get<User[]>('/api/users'));
-      this.userOptions.set(res.map((u) => ({ value: u.userId, label: `${u.fullName} (${u.username})` })));
+      const res = await firstValueFrom(this.http.get<Paginated<User>>('/api/users?page=1&size=1000&search='));
+      this.userOptions.set(res.items.map((u) => ({ value: u.userId, label: `${u.fullName} (${u.username})` })));
     } catch {
       /* handled by interceptor */
     }
   }
 
-  private async loadRows(userId: string): Promise<void> {
-    this.loading.set(true);
+  private async loadSelection(userId: number): Promise<void> {
     try {
-      const res = await firstValueFrom(this.http.get<UserDataScopeOverride[]>(`/api/user-data-scope-overrides/user/${userId}`));
-      this.rows.set(res ?? []);
-      await this.loadDropdowns();
+      const res = await firstValueFrom(this.http.get<OverrideSelection>(`/api/user-data-scope-overrides/user/${userId}/selection`));
+      this.companyIds.set(res.companyIds ?? []);
+      this.allCompanies.set(res.allCompanies ?? !res.hasScope);
+      this.branchIds.set(res.branchIds ?? []);
+      this.allBranches.set(res.allBranches ?? !res.hasScope);
+      this.warehouseIds.set(res.warehouseIds ?? []);
+      this.allWarehouses.set(res.allWarehouses ?? !res.hasScope);
+      this.permissionType.set(res.permissionType ?? 'Grant');
+      this.allow.set(res.allow ?? true);
+      this.effectiveFrom.set(res.effectiveFrom?.toString().slice(0, 16) ?? '');
+      this.effectiveTo.set(res.effectiveTo?.toString().slice(0, 16) ?? '');
+      this.remarks.set(res.remarks ?? '');
+      this.isActive.set(res.isActive ?? true);
     } catch {
-      this.rows.set([]);
-    } finally {
-      this.loading.set(false);
+      /* handled by interceptor */
     }
   }
 
-  private async loadDropdowns(): Promise<void> {
-    const [modules, screens] = await Promise.all([
-      firstValueFrom(this.http.get<Module[]>('/api/modules')).catch(() => [] as Module[]),
-      firstValueFrom(this.http.get<Screen[]>('/api/screens')).catch(() => [] as Screen[]),
-    ]);
-    this.moduleOptions.set(modules.map((m) => ({ value: m.id, label: m.moduleName })));
-    this.screenOptions.set(screens.map((s: any) => ({ value: s.id, label: s.screenName })));
+  private async loadOptions(): Promise<void> {
+    try {
+      const companies = await this.admin.company.getPaged(1, 1000);
+      this.companyOptions.set(companies.items.map((c) => ({ id: c.id, label: c.companyName })));
+    } catch {
+      const myCompany = this.auth.company();
+      this.companyOptions.set(myCompany ? [{ id: myCompany.id, label: myCompany.companyName }] : []);
+    }
+
+    // Branch/Warehouse lists follow the selected companies (union).
+    if (this.allCompanies()) {
+      this.branchOptions.set([]);
+      this.warehouseOptions.set([]);
+      return;
+    }
+    const targetIds = this.companyIds().length > 0
+      ? this.companyIds()
+      : [this.companyOptions()[0]?.id].filter((x): x is number => x != null);
+    await this.loadChildOptions(targetIds);
+  }
+
+  private async loadChildOptions(companyIds: number[]): Promise<void> {
+    const branchMap = new Map<number, string>();
+    const warehouseMap = new Map<number, string>();
+
+    await Promise.all(
+      companyIds.map(async (companyId) => {
+        try {
+          const branches = await this.org.branches.getPaged({ companyId, page: 1, size: 1000 });
+          for (const b of branches.items ?? []) branchMap.set(b.id, b.branchName);
+        } catch {
+          /* skipped */
+        }
+        try {
+          const warehouses = await this.org.warehouses.getPaged({ companyId, page: 1, size: 1000 });
+          for (const w of warehouses.items ?? []) warehouseMap.set(w.id, w.warehouseName);
+        } catch {
+          /* skipped */
+        }
+      }),
+    );
+
+    this.branchOptions.set([...branchMap].map(([id, label]) => ({ id, label })));
+    this.warehouseOptions.set([...warehouseMap].map(([id, label]) => ({ id, label })));
   }
 }

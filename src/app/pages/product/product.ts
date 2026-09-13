@@ -11,8 +11,10 @@ import {
   UpdateProductRequest,
 } from '../../core/services/master_service';
 import { ToastService } from '../../core/services/toast.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Action } from '../../core/models';
 import { PermissionService } from '../../core/services/permission.service';
+import { buildScopeLabel } from '../shared/scope-label';
 
 @Component({
   selector: 'app-product',
@@ -26,6 +28,8 @@ export class ProductPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
+  private readonly auth = inject(AuthService);
+  private defaultCompanyId = 0;
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -92,8 +96,7 @@ export class ProductPage implements OnInit {
       this.loading.set(false);
       return;
     }
-    void this.loadDropdowns();
-    void this.load();
+    void this.loadDropdowns().then(() => this.load());
     void this.loadToolbarActions();
   }
 
@@ -163,7 +166,11 @@ export class ProductPage implements OnInit {
         this.rows.set([]);
         return;
       }
-      const res = await this.admin.products.getPaged(1, 100, '');
+      if (!this.defaultCompanyId) {
+        this.rows.set([]);
+        return;
+      }
+      const res = await this.admin.products.getPaged(1, 100, '', this.defaultCompanyId);
       this.rows.set(res.items ?? []);
     } catch {
     } finally {
@@ -186,11 +193,19 @@ export class ProductPage implements OnInit {
     } catch {
     }
     try {
-      const companyRes: any = await firstValueFrom(
-        this.http.get('/api/companies?page=1&size=1000'),
-      );
-      const companies: any[] = companyRes?.items ?? [];
-      this.setOptions('companyId', companies.map((c: any) => ({ value: c.id, label: c.companyName })));
+      // Company options come from the current user's role-based Data Scope.
+      const roleNames = this.auth.user()?.roles ?? [];
+      const { companies, branches } = await this.perm.loadMyDataScopeOptions(roleNames);
+
+      const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
+      if (companies.length > 0) {
+        this.defaultCompanyId = companies[0].id;
+      }
+
+      const { scopeLabel, noAccess } = buildScopeLabel({ companies, branches });
+      this.config = { ...this.config, scopeLabel, noAccess };
+
+      this.setOptions('companyId', companyOptions);
     } catch {
     }
     try {
@@ -233,13 +248,7 @@ export class ProductPage implements OnInit {
     } catch {
       /* code will be generated server-side on save */
     }
-    let companyId: any = null;
-    try {
-      const cur: any = await firstValueFrom(this.http.get('/api/companies/current'));
-      companyId = cur?.id ?? cur?.companyId ?? null;
-    } catch {
-      companyId = null;
-    }
+    let companyId: any = this.defaultCompanyId || null;
     this.userModel = {
       productCode: nextCode,
       productName: '',
@@ -259,16 +268,56 @@ export class ProductPage implements OnInit {
       isPurchaseable: true,
       description: '',
       isActive: true,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
     };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
     void this.loadBranches(companyId);
   }
 
-  protected editRow(row: Record<string, any>): void {
+  protected async editRow(row: Record<string, any>): Promise<void> {
     this.editing.set(row as ProductDto);
-    this.userModel = { ...row };
+    this.userModel = {
+      ...row,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
+    };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
     void this.loadBranches(row['companyId']);
+
+    const entityId = row['entityId'] ?? row['EntityId'];
+    if (entityId == null) return;
+    try {
+      const entity = await this.loadEntity(entityId);
+      if (entity) {
+        this.userModel['addresses'] = entity.addresses ?? [];
+        this.userModel['contacts'] = entity.contacts ?? [];
+        this.userModel['files'] = entity.files ?? [];
+        this.userModel['notes'] = entity.notes ?? [];
+        this.userModel['tags'] = entity.tags ?? [];
+      }
+    } catch {
+      /* entity fetch is optional; tab stays empty */
+    }
+  }
+
+  private async loadEntity(entityId: number): Promise<any | null> {
+    const res: any = await firstValueFrom(this.http.get(`/api/entities/${entityId}`));
+    return res ?? null;
+  }
+
+  private withEntityTab() {
+    const tabs = this.config.tabs;
+    if (tabs.some(t => t.entity)) return tabs;
+    return [...tabs, { name: 'Address & Contacts', fields: [] as string[], entity: true as const }];
   }
 
   protected async save(): Promise<void> {
@@ -276,10 +325,36 @@ export class ProductPage implements OnInit {
     this.saving.set(true);
     try {
       const editing = this.editing();
+
+      const hasEntityData =
+        (this.userModel['addresses']?.length > 0) ||
+        (this.userModel['contacts']?.length > 0) ||
+        (this.userModel['files']?.length > 0) ||
+        (this.userModel['notes']?.length > 0) ||
+        (this.userModel['tags']?.length > 0);
+
+      let entityId: number | null = this.userModel['entityId'] ?? this.userModel['EntityId'] ?? null;
+      if (entityId == null && hasEntityData) {
+        const entityPayload: any = {
+          entityType: 'PRODUCT',
+          entityCode: this.userModel['productCode']?.trim().toUpperCase(),
+          entityName: this.userModel['productName']?.trim(),
+          isActive: true,
+          addresses: this.userModel['addresses'] ?? [],
+          contacts: this.userModel['contacts'] ?? [],
+          files: this.userModel['files'] ?? [],
+          notes: this.userModel['notes'] ?? [],
+          tags: this.userModel['tags'] ?? [],
+        };
+        const entity: any = await firstValueFrom(this.http.post('/api/entities', entityPayload));
+        entityId = entity?.entityId ?? entity?.EntityId ?? null;
+      }
+
       const payload: CreateProductRequest = {
         productCode: this.userModel['productCode']?.trim().toUpperCase(),
         productName: this.userModel['productName']?.trim(),
         companyId: this.userModel['companyId'] || 0,
+        entityId,
         categoryId: this.userModel['categoryId'] || null,
         subCategoryId: this.userModel['subCategoryId'] || null,
         brandId: this.userModel['brandId'] || null,

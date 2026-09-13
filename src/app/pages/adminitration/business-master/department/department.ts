@@ -3,7 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig } from '../../../shared/master-page/master-page';
 import { OrganizationService, DepartmentDto, CreateDepartmentRequest, UpdateDepartmentRequest } from '../../../../core/services/organization_service';
-import { AdministrationService } from '../../../../core/services/master_service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { buildScopeLabel } from '../../../shared/scope-label';
 
 @Component({
   selector: 'app-department',
@@ -14,7 +16,9 @@ import { AdministrationService } from '../../../../core/services/master_service'
 })
 export class Department implements OnInit {
   private readonly org = inject(OrganizationService);
-  private readonly admin = inject(AdministrationService);
+  private readonly auth = inject(AuthService);
+  private readonly perms = inject(PermissionService);
+  private defaultCompanyId = 0;
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -64,14 +68,17 @@ export class Department implements OnInit {
   };
 
   ngOnInit(): void {
-    void this.loadDropdowns();
-    void this.load();
+    void this.loadDropdowns().then(() => this.load());
   }
 
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const companyId = this.userModel['companyId'] ?? +(localStorage.getItem('companyId') ?? '1');
+      const companyId = this.userModel['companyId'] ?? this.defaultCompanyId;
+      if (!companyId) {
+        this.departments.set([]);
+        return;
+      }
       const branchId = this.userModel['branchId'] ?? null;
       const res = await this.org.departments.getPaged({ companyId, branchId, page: 1, size: 100, search: '' });
       this.departments.set(res.items ?? []);
@@ -84,57 +91,52 @@ export class Department implements OnInit {
 
   private async loadDropdowns(): Promise<void> {
     try {
-      const companyId =
-        this.userModel['companyId'] ??
-        +(localStorage.getItem('companyId') ?? '1');
+      const roleNames = this.auth.user()?.roles ?? [];
+      const { companies, branches } = await this.perms.loadMyDataScopeOptions(roleNames);
 
-      const [companiesRes, branchesRes] = await Promise.all([
-        this.admin.company.getPaged(1, 200, ''),
-        this.org.branches.getPaged({ companyId, page: 1, size: 200, search: '' }),
-      ]);
+      const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
+      if (companies.length > 0) {
+        this.defaultCompanyId = companies[0].id;
+      }
 
-      const companyOptions = (companiesRes.items ?? []).map((c: any) => ({
-        value: c.id,
-        label: c.companyName,
-      }));
-
-      const branchOptions = (branchesRes.items ?? []).map((b: any) => ({
-        value: b.id,
-        label: b.branchName,
-      }));
+      const { scopeLabel, noAccess } = buildScopeLabel({ companies, branches });
+      this.config = { ...this.config, scopeLabel, noAccess };
 
       this.setOptions('companyId', companyOptions);
-      this.setOptions('branchId', branchOptions);
+      this.setOptions('branchId', branches.map((b) => ({ value: b.id, label: b.name })));
 
-      const departmentsRes = await this.org.departments.getPaged({
-        companyId,
-        branchId: null,
-        page: 1,
-        size: 200,
-        search: '',
-      });
+      const companyId = this.userModel['companyId'] ?? this.defaultCompanyId;
+      try {
+        const departmentsRes = await this.org.departments.getPaged({
+          companyId,
+          branchId: null,
+          page: 1,
+          size: 200,
+          search: '',
+        });
+        this.setOptions(
+          'parentDepartmentId',
+          (departmentsRes.items ?? []).map((d: any) => ({ value: d.id, label: d.departmentName })),
+        );
+      } catch {
+        this.setOptions('parentDepartmentId', []);
+      }
 
-      const parentDeptOptions = (departmentsRes.items ?? []).map((d: any) => ({
-        value: d.id,
-        label: d.departmentName,
-      }));
-
-      this.setOptions('parentDepartmentId', parentDeptOptions);
-
-      const employeesRes = await this.org.employees.getPaged({
-        companyId,
-        branchId: null,
-        page: 1,
-        size: 200,
-        search: '',
-      });
-
-      const employeeOptions = (employeesRes.items ?? []).map((e: any) => ({
-        value: e.id,
-        label: `${e.firstName} ${e.lastName ?? ''}`.trim(),
-      }));
-
-      this.setOptions('headEmployeeId', employeeOptions);
+      try {
+        const employeesRes = await this.org.employees.getPaged({
+          companyId,
+          branchId: null,
+          page: 1,
+          size: 200,
+          search: '',
+        });
+        this.setOptions(
+          'headEmployeeId',
+          (employeesRes.items ?? []).map((e: any) => ({ value: e.id, label: `${e.firstName} ${e.lastName ?? ''}`.trim() })),
+        );
+      } catch {
+        this.setOptions('headEmployeeId', []);
+      }
     } catch (err) {
       console.error('loadDropdowns error:', err);
     }
@@ -152,7 +154,7 @@ export class Department implements OnInit {
   protected createDepartment(): void {
     this.editing.set(null);
     this.userModel = {
-      companyId: null,
+      companyId: this.defaultCompanyId || null,
       branchId: null,
       departmentCode: '',
       departmentName: '',

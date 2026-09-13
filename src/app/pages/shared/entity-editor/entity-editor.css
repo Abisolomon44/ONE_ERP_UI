@@ -1,0 +1,123 @@
+.entity-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ee-tabs {
+  border-bottom: 1px solid var(--border);
+}
+
+.ee-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ee-body {
+  min-height: 120px;
+}
+
+.ee-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ee-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ee-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ee-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--text-3);
+  justify-content: center;
+}
+
+.ee-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ee-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ee-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.ee-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+
+.ee-span-2 {
+  grid-column: 1 / -1;
+}
+
+.ee-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ee-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.ee-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.ee-check input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+
+.ee-textarea {
+  resize: vertical;
+}
+
+@media (max-width: 720px) {
+  .ee-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ee-span-2 {
+    grid-column: 1 / -1;
+  }
+}

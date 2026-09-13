@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { MasterRow } from '../master.model';
 import { LucideAngularModule } from "lucide-angular";
 import { PermissionService } from '../../../core/services/permission.service';
+import { EntityEditorComponent } from '../entity-editor/entity-editor';
 
 export interface DropdownOption {
   value: any;
@@ -53,6 +54,9 @@ export interface MasterField {
 export interface MasterTab {
   name: string;
   fields: string[];
+  /** When true, this tab renders the universal entity editor (address/contact/file/note/tag)
+   *  bound to `userModel['addresses' | 'contacts' | 'files' | 'notes' | 'tags']`. */
+  entity?: boolean;
 }
 
 export interface MasterToolbarAction {
@@ -96,6 +100,10 @@ export interface MasterConfig {
   /** Toolbar actions (e.g. export/import/print) loaded from the Actions master.
    *  Each is shown only when the user holds `${permissionName}.${code}`. */
   toolbarActions?: MasterToolbarAction[];
+  /** Optional data-scope label shown in the page header (e.g. "Data Scope: ONEERP"). */
+  scopeLabel?: string;
+  /** When true, the current role has no data scope, so records can't load — shows a No Access empty state. */
+  noAccess?: boolean;
 }
 
 @Component({
@@ -104,7 +112,8 @@ export interface MasterConfig {
   imports: [
     CommonModule,
     FormsModule,
-    LucideAngularModule
+    LucideAngularModule,
+    EntityEditorComponent
   ],
   templateUrl: './master-page.html',
   styleUrl: './master-page.css'
@@ -161,6 +170,18 @@ export class MasterPage implements OnInit, OnChanges {
     const base = this.config.permissionName;
     if (!base) return null;
     return `${base.trim().toLowerCase()}.${action}`;
+  }
+
+  /** Check if user can view a field (by field name, using config permissionName as screenCode) */
+  canViewField(fieldName: string): boolean {
+    const screenCode = this.config.permissionName ?? '';
+    return this.perm.canViewField(screenCode, fieldName);
+  }
+
+  /** Check if user can view a field (by field name, using config permissionName as screenCode) */
+  isFieldHidden(fieldName: string): boolean {
+    const screenCode = this.config.permissionName ?? '';
+    return this.perm.isFieldHidden(screenCode, fieldName);
   }
 
   /** Toolbar actions the current user is permitted to perform. */
@@ -263,6 +284,43 @@ ngOnChanges(changes: SimpleChanges): void {
   }
 }
   //===========================
+  // Data-scope tagging
+  //===========================
+
+  private fieldFor(name: string): MasterField | undefined {
+    return this.config?.fields?.find((f) => f.name === name);
+  }
+
+  private isOutOfScopeValue(name: string, value: any): boolean {
+    if (!['companyId', 'branchId', 'warehouseId'].includes(name)) return false;
+    if (value == null || value === '') return false;
+    const field = this.fieldFor(name);
+    if (!field || field.type !== 'dropdown' || !field.options?.length) return false;
+    return !field.options.some((o) => o.value === value);
+  }
+
+  /** True when a table cell references a company/branch/warehouse outside the current data scope. */
+  protected isNoAccessCell(col: MasterColumn, row: Record<string, any>): boolean {
+    return this.isOutOfScopeValue(col.field, row?.[col.field]);
+  }
+
+  /** True when a form dropdown currently holds an out-of-scope company/branch/warehouse value. */
+  protected isNoAccessField(field: MasterField): boolean {
+    return this.isOutOfScopeValue(field.name, this.userModel?.[field.name]);
+  }
+
+  /** Display text for a table cell: resolves dropdown ids to labels, else plain value. */
+  protected cellText(col: MasterColumn, row: Record<string, any>): string {
+    const value = row?.[col.field];
+    if (value == null || value === '') return '—';
+    const field = this.fieldFor(col.field);
+    if (field && field.type === 'dropdown' && field.options?.length) {
+      return field.options.find((o) => o.value === value)?.label ?? String(value);
+    }
+    return String(value);
+  }
+
+  //===========================
   // Search
   //===========================
 
@@ -358,6 +416,10 @@ ngOnChanges(changes: SimpleChanges): void {
     this.fieldChange.emit({ name, value });
   }
 
+  onEntityCreated(entityId: number): void {
+    this.userModel['entityId'] = entityId;
+  }
+
   //===========================
   // Tabs
   //===========================
@@ -372,10 +434,10 @@ ngOnChanges(changes: SimpleChanges): void {
     );
   }
 
-  /** Fields for the current tab AFTER applying field permissions */
+  /** Fields for the current tab (all fields shown, no permission filtering) */
   get visibleCurrentTabFields() {
     if (!this.config.tabs || this.config.tabs.length === 0) {
-      return this.effectiveFields;
+      return this.config.fields;
     }
 
     if (!this.currentTab) {
@@ -384,26 +446,19 @@ ngOnChanges(changes: SimpleChanges): void {
 
     // Start with fields assigned to this tab
     const tabFieldNames = this.currentTab.fields;
-    const tabFields = this.config.fields.filter(field =>
+    return this.config.fields.filter(field =>
       tabFieldNames.includes(field.name)
-    );
-
-    // Apply field permission filter
-    return tabFields.filter(field =>
-      this.canViewField(field.name) && !this.isFieldHidden(field.name)
     );
   }
 
-  /** All effective fields after permission filtering (used when no tabs) */
+  /** All effective fields (all fields shown, no permission filtering) */
   get effectiveFields() {
-    return this.config.fields.filter(field =>
-      this.canViewField(field.name) && !this.isFieldHidden(field.name)
-    );
+    return this.config.fields;
   }
 
   get currentTabFields() {
     if (!this.config.tabs || this.config.tabs.length === 0) {
-      return this.effectiveFields;
+      return this.config.fields;
     }
 
     if (!this.currentTab) {
@@ -412,13 +467,8 @@ ngOnChanges(changes: SimpleChanges): void {
 
     // Start with fields assigned to this tab
     const tabFieldNames = this.currentTab.fields;
-    const tabFields = this.config.fields.filter(field =>
+    return this.config.fields.filter(field =>
       tabFieldNames.includes(field.name)
-    );
-
-    // Apply field permission filter
-    return tabFields.filter(field =>
-      this.canViewField(field.name) && !this.isFieldHidden(field.name)
     );
   }
 

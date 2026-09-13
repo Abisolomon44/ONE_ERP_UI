@@ -308,14 +308,54 @@ export class CompanyPage implements OnInit {
       timeZoneId: null,
       isActive: true,
       isBlocked: false,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
     };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
   }
 
-  protected editCompany(row: Record<string, any>): void {
+  protected async editCompany(row: Record<string, any>): Promise<void> {
     this.editing.set(row as CompanyDto);
-    this.userModel = { ...row };
+    this.userModel = {
+      ...row,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
+    };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
+
+    const entityId = row['entityId'] ?? row['EntityId'];
+    if (entityId == null) return;
+    try {
+      const entity = await this.loadEntity(entityId);
+      if (entity) {
+        this.userModel['addresses'] = entity.addresses ?? [];
+        this.userModel['contacts'] = entity.contacts ?? [];
+        this.userModel['files'] = entity.files ?? [];
+        this.userModel['notes'] = entity.notes ?? [];
+        this.userModel['tags'] = entity.tags ?? [];
+      }
+    } catch {
+      /* entity fetch is optional; tab stays empty */
+    }
+  }
+
+  private async loadEntity(entityId: number): Promise<any | null> {
+    const res: any = await firstValueFrom(this.http.get(`/api/entities/${entityId}`));
+    return res ?? null;
+  }
+
+  private withEntityTab() {
+    const tabs = this.config.tabs;
+    if (tabs.some(t => t.entity)) return tabs;
+    return [...tabs, { name: 'Address & Contacts', fields: [] as string[], entity: true as const }];
   }
 
   protected async saveCompany(): Promise<void> {
@@ -344,6 +384,30 @@ export class CompanyPage implements OnInit {
         };
         await this.admin.company.update(editing.id, payload);
       } else {
+        const hasEntityData =
+          (this.userModel['addresses']?.length > 0) ||
+          (this.userModel['contacts']?.length > 0) ||
+          (this.userModel['files']?.length > 0) ||
+          (this.userModel['notes']?.length > 0) ||
+          (this.userModel['tags']?.length > 0);
+
+        let entityId: number | null = this.userModel['entityId'] as number | null ?? null;
+        if (entityId == null && hasEntityData) {
+          const entityPayload: any = {
+            entityType: 'COMPANY',
+            entityCode: this.userModel['companyCode']?.trim().toUpperCase(),
+            entityName: this.userModel['companyName']?.trim(),
+            isActive: true,
+            addresses: this.userModel['addresses'] ?? [],
+            contacts: this.userModel['contacts'] ?? [],
+            files: this.userModel['files'] ?? [],
+            notes: this.userModel['notes'] ?? [],
+            tags: this.userModel['tags'] ?? [],
+          };
+          const entity: any = await firstValueFrom(this.http.post('/api/entities', entityPayload));
+          entityId = entity?.entityId ?? entity?.EntityId ?? null;
+        }
+
         const payload: CreateCompanyRequest = {
           companyCode: this.userModel['companyCode']?.trim().toUpperCase(),
           companyName: this.userModel['companyName']?.trim(),
@@ -360,6 +424,7 @@ export class CompanyPage implements OnInit {
           currencyId: this.userModel['currencyId'],
           languageId: this.userModel['languageId'],
           timeZoneId: this.userModel['timeZoneId'],
+          entityId,
         };
         await this.admin.company.create(payload);
       }

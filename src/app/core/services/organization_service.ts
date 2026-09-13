@@ -35,6 +35,7 @@ export interface EmploymentTypeDto {
 
 export interface BranchDto {
   id: number;
+  entityId?: number | null;
   companyId: number;
   branchCode: string;
   branchName: string;
@@ -60,6 +61,7 @@ export interface BranchDto {
 }
 export type CreateBranchRequest = {
   companyId: number;
+  entityId?: number | null;
   branchCode: string;
   branchName: string;
   shortName?: string | null;
@@ -80,6 +82,7 @@ export type UpdateBranchRequest = {
   branchCode: string;
   branchName: string;
   shortName?: string | null;
+  entityId?: number | null;
   branchTypeId?: number | null;
   parentBranchId?: number | null;
   managerEmployeeId?: number | null;
@@ -146,6 +149,7 @@ export type UpdateEmployeeRequest = Omit<EmployeeDto, 'id' | 'companyId' | 'empl
 
 export interface WarehouseDto {
   id: number;
+  entityId?: number | null;
   companyId: number;
   branchId?: number | null;
   warehouseTypeId?: number | null;

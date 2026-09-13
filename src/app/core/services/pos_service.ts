@@ -12,6 +12,7 @@ import { PagedCrudService, LookupService } from './crud';
 export interface StoreDto {
   storeId: number;
   id: number;
+  entityId?: number | null;
   companyId: number;
   branchId?: number | null;
   storeCode: string;

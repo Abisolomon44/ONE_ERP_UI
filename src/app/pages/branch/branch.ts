@@ -5,9 +5,11 @@ import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig, MasterToolbarAction } from '../shared/master-page/master-page';
 import { OrganizationService, BranchDto, CreateBranchRequest, UpdateBranchRequest } from '../../core/services/organization_service';
-import { AdministrationService } from '../../core/services/master_service';
 import { ToastService } from '../../core/services/toast.service';
+import { AuthService } from '../../core/services/auth.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { Action } from '../../core/models';
+import { buildScopeLabel } from '../shared/scope-label';
 
 @Component({
   selector: 'app-branch',
@@ -18,9 +20,11 @@ import { Action } from '../../core/models';
 })
 export class BranchPage implements OnInit {
   private readonly org = inject(OrganizationService);
-  private readonly admin = inject(AdministrationService);
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
+  private readonly perms = inject(PermissionService);
+  private defaultCompanyId = 0;
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -83,8 +87,7 @@ export class BranchPage implements OnInit {
   };
 
   ngOnInit(): void {
-    void this.loadDropdowns();
-    void this.load();
+    void this.loadDropdowns().then(() => this.load());
     void this.loadToolbarActions();
   }
 
@@ -219,7 +222,11 @@ export class BranchPage implements OnInit {
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const companyId = this.userModel['companyId'] ?? +(localStorage.getItem('companyId') ?? '1');
+      const companyId = this.userModel['companyId'] ?? this.defaultCompanyId;
+      if (!companyId) {
+        this.branches.set([]);
+        return;
+      }
       const res = await this.org.branches.getPaged({ companyId, page: 1, size: 100, search: '' });
       this.branches.set(res.items ?? []);
     } catch (err) {
@@ -228,47 +235,47 @@ export class BranchPage implements OnInit {
       this.loading.set(false);
     }
   }
-private async loadDropdowns(): Promise<void> {
-  try {
-    const companyId =
-      this.userModel['companyId'] ??
-      +(localStorage.getItem('companyId') ?? '1');
+  private async loadDropdowns(): Promise<void> {
+    try {
+      // Company/Branch options come strictly from the current user's role-based
+      // Data Scope + user overrides. No access -> no options -> no records.
+      const roleNames = this.auth.user()?.roles ?? [];
+      const { companies, branches } = await this.perms.loadMyDataScopeOptions(roleNames);
 
-    const [companiesRes, branchTypes] = await Promise.all([
-      this.admin.company.getPaged(1, 200, ''),
-      this.org.branchTypes.getAll(false),
-    ]);
+      const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
+      if (companies.length > 0) {
+        this.defaultCompanyId = companies[0].id;
+      }
 
-    const companyOptions = (companiesRes.items ?? []).map((c: any) => ({
-      value: c.id,
-      label: c.companyName,
-    }));
+      const { scopeLabel, noAccess } = buildScopeLabel({ companies, branches });
+      this.config = { ...this.config, scopeLabel, noAccess };
 
-    const branchTypeOptions = (branchTypes ?? []).map((t: any) => ({
-      value: t.branchTypeId,
-      label: t.name,
-    }));
+      this.setOptions('companyId', companyOptions);
 
-    this.setOptions('companyId', companyOptions);
-    this.setOptions('branchTypeId', branchTypeOptions);
+      if (this.defaultCompanyId) {
+        const [{ items: branchesRes }, branchTypes] = await Promise.all([
+          this.org.branches.getPaged({
+            companyId: this.defaultCompanyId,
+            page: 1,
+            size: 200,
+            search: '',
+          }),
+          this.org.branchTypes.getAll(false),
+        ]);
 
-    const branchesRes = await this.org.branches.getPaged({
-      companyId,
-      page: 1,
-      size: 200,
-      search: '',
-    });
-
-    const parentBranchOptions = (branchesRes.items ?? []).map((b: any) => ({
-      value: b.id,
-      label: b.branchName,
-    }));
-
-    this.setOptions('parentBranchId', parentBranchOptions);
-  } catch (err) {
-    console.error('loadDropdowns error:', err);
+        this.setOptions(
+          'branchTypeId',
+          (branchTypes ?? []).map((t: any) => ({ value: t.branchTypeId, label: t.name })),
+        );
+        this.setOptions(
+          'parentBranchId',
+          (branchesRes ?? []).map((b: any) => ({ value: b.id, label: b.branchName })),
+        );
+      }
+    } catch (err) {
+      console.error('loadDropdowns error:', err);
+    }
   }
-}
 
   private setOptions(fieldName: string, options: { value: any; label: string }[]): void {
     const field = this.config.fields.find((f) => f.name === fieldName);
@@ -282,9 +289,10 @@ private async loadDropdowns(): Promise<void> {
   protected createBranch(): void {
     this.editing.set(null);
     this.userModel = {
-      companyId: null,
+      companyId: this.defaultCompanyId || null,
       branchCode: '',
       branchName: '',
+      shortName: null,
       branchTypeId: null,
       parentBranchId: null,
       gstNumber: '',
@@ -296,14 +304,54 @@ private async loadDropdowns(): Promise<void> {
       sortOrder: 0,
       isActive: true,
       isBlocked: false,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
     };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
   }
 
-  protected editBranch(row: Record<string, any>): void {
+  protected async editBranch(row: Record<string, any>): Promise<void> {
     this.editing.set(row as BranchDto);
-    this.userModel = { ...row };
+    this.userModel = {
+      ...row,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
+    };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
+
+    const entityId = row['entityId'] ?? row['EntityId'];
+    if (entityId == null) return;
+    try {
+      const entity = await this.loadEntity(entityId);
+      if (entity) {
+        this.userModel['addresses'] = entity.addresses ?? [];
+        this.userModel['contacts'] = entity.contacts ?? [];
+        this.userModel['files'] = entity.files ?? [];
+        this.userModel['notes'] = entity.notes ?? [];
+        this.userModel['tags'] = entity.tags ?? [];
+      }
+    } catch {
+      /* entity fetch is optional; tab stays empty */
+    }
+  }
+
+  private async loadEntity(entityId: number): Promise<any | null> {
+    const res: any = await firstValueFrom(this.http.get(`/api/entities/${entityId}`));
+    return res ?? null;
+  }
+
+  private withEntityTab() {
+    const tabs = this.config.tabs;
+    if (tabs.some(t => t.entity)) return tabs;
+    return [...tabs, { name: 'Address & Contacts', fields: [] as string[], entity: true as const }];
   }
 
   protected async saveBranch(): Promise<void> {
@@ -316,6 +364,7 @@ private async loadDropdowns(): Promise<void> {
           branchCode: this.userModel['branchCode']?.trim(),
           branchName: this.userModel['branchName']?.trim(),
           shortName: this.userModel['shortName'] || null,
+          entityId: this.userModel['entityId'] ?? this.userModel['EntityId'] ?? null,
           branchTypeId: this.userModel['branchTypeId'] || null,
           parentBranchId: this.userModel['parentBranchId'] || null,
           gstNumber: this.userModel['gstNumber'] || null,
@@ -330,11 +379,36 @@ private async loadDropdowns(): Promise<void> {
         };
         await this.org.branches.update(editing.id, payload);
       } else {
+        const hasEntityData =
+          (this.userModel['addresses']?.length > 0) ||
+          (this.userModel['contacts']?.length > 0) ||
+          (this.userModel['files']?.length > 0) ||
+          (this.userModel['notes']?.length > 0) ||
+          (this.userModel['tags']?.length > 0);
+
+        let entityId: number | null = this.userModel['entityId'] as number | null ?? null;
+        if (entityId == null && hasEntityData) {
+          const entityPayload: any = {
+            entityType: 'BRANCH',
+            entityCode: this.userModel['branchCode']?.trim().toUpperCase(),
+            entityName: this.userModel['branchName']?.trim(),
+            isActive: true,
+            addresses: this.userModel['addresses'] ?? [],
+            contacts: this.userModel['contacts'] ?? [],
+            files: this.userModel['files'] ?? [],
+            notes: this.userModel['notes'] ?? [],
+            tags: this.userModel['tags'] ?? [],
+          };
+          const entity: any = await firstValueFrom(this.http.post('/api/entities', entityPayload));
+          entityId = entity?.entityId ?? entity?.EntityId ?? null;
+        }
+
         const payload: CreateBranchRequest = {
           companyId: this.userModel['companyId'],
           branchCode: this.userModel['branchCode']?.trim().toUpperCase(),
           branchName: this.userModel['branchName']?.trim(),
           shortName: this.userModel['shortName'] || null,
+          entityId,
           branchTypeId: this.userModel['branchTypeId'] || null,
           parentBranchId: this.userModel['parentBranchId'] || null,
           gstNumber: this.userModel['gstNumber'] || null,

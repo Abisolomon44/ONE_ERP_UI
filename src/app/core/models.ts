@@ -609,19 +609,20 @@ export interface DataScope {
   companyName?: string;
   branchId?: number;
   branchName?: string;
-  departmentId?: number;
-  departmentName?: string;
   warehouseId?: number;
   warehouseName?: string;
-  businessUnitId?: number;
-  costCenterId?: number;
-  profitCenterId?: number;
   canView: boolean;
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
   isActive: boolean;
   createdDate: string;
+}
+
+export interface EffectiveDataScope {
+  level: 'Company' | 'Branch' | 'Warehouse';
+  id: number;
+  name?: string;
 }
 
 export interface UserDataScopeOverride {

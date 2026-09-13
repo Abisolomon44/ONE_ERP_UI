@@ -12,6 +12,7 @@ export const USER_KEY = 'oneerp-erp-user';
 export const PERMS_KEY = 'oneerp-erp-permissions';
 export const MODULE_PERMS_KEY = 'oneerp-erp-module-permissions';
 export const TENANT_KEY = 'oneerp-erp-tenant';
+export const COMPANY_KEY = 'oneerp-erp-company';
 
 @Injectable({
   providedIn: 'root',
@@ -22,6 +23,9 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this.token());
 
   readonly user = signal<LoginResponse['user'] | null>(this.readUser());
+
+  // The user's own company (id/name), known from login without needing Companies.View permission
+  readonly company = signal<LoginResponse['company'] | null>(this.readCompany());
 
   private readonly router = inject(Router);
 
@@ -58,7 +62,7 @@ export class AuthService {
       })
     );
 
-    this.persist(response);
+    await this.persist(response);
 
     return response;
   }
@@ -118,12 +122,13 @@ export class AuthService {
     return this.user()?.username ?? null;
   }
 
-  private persist(data: LoginResponse): void {
+  private async persist(data: LoginResponse): Promise<void> {
 
   localStorage.setItem(TOKEN_KEY, data.accessToken);
   localStorage.setItem(REFRESH_KEY, data.refreshToken);
   localStorage.setItem(TENANT_KEY, data.tenantCode);
   localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+  localStorage.setItem(COMPANY_KEY, JSON.stringify(data.company));
   // Super admins bypass authorization server-side, so treat them as having
   // every permission on the client too (otherwise their UI controls hide).
   const effectivePermissions = data.user?.isSuperAdmin ? ['*'] : data.permissions;
@@ -138,10 +143,11 @@ export class AuthService {
 
   this.token.set(data.accessToken);
   this.user.set(data.user);
+  this.company.set(data.company);
   this.perms.permissions.set(effectivePermissions);
 
   // Load module-scoped permissions
-  this.loadModulePermissions();
+  await this.loadModulePermissions();
 }
   private readUser(): LoginResponse['user'] | null {
     const raw = localStorage.getItem(USER_KEY);
@@ -157,10 +163,20 @@ export class AuthService {
     }
   }
 
+  private readCompany(): LoginResponse['company'] | null {
+    const raw = localStorage.getItem(COMPANY_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
   private async loadModulePermissions(): Promise<void> {
     try {
       const res = await firstValueFrom(
-        this.http.get<UserPermission[]>('/api/permission/modules/user-permissions')
+        this.http.get<UserPermission[]>('/api/permission/user-permissions')
       );
       this.perms.userPermissions.set(res);
       localStorage.setItem(MODULE_PERMS_KEY, JSON.stringify(res));

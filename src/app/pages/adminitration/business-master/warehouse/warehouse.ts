@@ -1,5 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig } from '../../../shared/master-page/master-page';
 import {
@@ -8,7 +10,9 @@ import {
   CreateWarehouseRequest,
   UpdateWarehouseRequest,
 } from '../../../../core/services/organization_service';
-import { AdministrationService } from '../../../../core/services/master_service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { buildScopeLabel } from '../../../shared/scope-label';
 
 @Component({
   selector: 'app-warehouse',
@@ -19,13 +23,17 @@ import { AdministrationService } from '../../../../core/services/master_service'
 })
 export class Warehouse implements OnInit {
   private readonly org = inject(OrganizationService);
-  private readonly admin = inject(AdministrationService);
+  private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
+  private readonly perms = inject(PermissionService);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly showEntry = signal(false);
   protected readonly warehouses = signal<WarehouseDto[]>([]);
   protected readonly editing = signal<WarehouseDto | null>(null);
+
+  private defaultCompanyId = 0;
 
   protected userModel: Record<string, any> = {};
 
@@ -99,14 +107,17 @@ export class Warehouse implements OnInit {
   };
 
   ngOnInit(): void {
-    void this.loadDropdowns();
-    void this.load();
+    void this.loadDropdowns().then(() => this.load());
   }
 
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const companyId = this.userModel['companyId'] ?? +(localStorage.getItem('companyId') ?? '1');
+      const companyId = this.userModel['companyId'] ?? this.defaultCompanyId;
+      if (!companyId) {
+        this.warehouses.set([]);
+        return;
+      }
       const branchId = this.userModel['branchId'] ?? null;
       const res = await this.org.warehouses.getPaged({
         companyId,
@@ -124,45 +135,33 @@ export class Warehouse implements OnInit {
   }
 
   private async loadDropdowns(): Promise<void> {
+    // Company/Branch options come from the current user's role-based Data Scope
+    // entries (not /api/companies or /api/organization/branches), so this doesn't
+    // need separate Companies.View/Branches.View permissions.
+    const roleNames = this.auth.user()?.roles ?? [];
+    const { companies, branches } = await this.perms.loadMyDataScopeOptions(roleNames);
+
+    if (companies.length > 0) {
+      this.setOptions('companyId', companies.map((c) => ({ value: c.id, label: c.name })));
+      this.defaultCompanyId = companies[0].id;
+    } else {
+      this.setOptions('companyId', []);
+    }
+
+      const { scopeLabel, noAccess } = buildScopeLabel({ companies, branches });
+      this.config = { ...this.config, scopeLabel, noAccess };
+
+    this.setOptions('branchId', branches.map((b) => ({ value: b.id, label: b.name })));
+
     try {
-      const companyId = +(localStorage.getItem('companyId') ?? '1');
-
-      const [companiesRes, branchesRes, warehouseTypesRes] = await Promise.all([
-        this.admin.company.getPaged(1, 200, ''),
-        this.org.branches.getPaged({
-          companyId,
-          page: 1,
-          size: 200,
-          search: '',
-        }),
-        this.org.warehouseTypes.getAll(false),
-      ]);
-
-      this.setOptions(
-        'companyId',
-        (companiesRes.items ?? []).map((c: any) => ({
-          value: c.id,
-          label: c.companyName,
-        })),
-      );
-
-      this.setOptions(
-        'branchId',
-        (branchesRes.items ?? []).map((b: any) => ({
-          value: b.id,
-          label: b.branchName,
-        })),
-      );
-
+      const warehouseTypesRes = await this.org.warehouseTypes.getAll(false);
       this.setOptions(
         'warehouseTypeId',
-        (warehouseTypesRes ?? []).map((w: any) => ({
-          value: w.warehouseTypeId,
-          label: w.name,
-        })),
+        (warehouseTypesRes ?? []).map((w: any) => ({ value: w.warehouseTypeId, label: w.name })),
       );
     } catch (err) {
-      console.error('loadDropdowns failed:', err);
+      console.error('loadDropdowns: warehouse types failed:', err);
+      this.setOptions('warehouseTypeId', []);
     }
   }
 
@@ -178,7 +177,7 @@ export class Warehouse implements OnInit {
   protected createWarehouse(): void {
     this.editing.set(null);
     this.userModel = {
-      companyId: +(localStorage.getItem('companyId') ?? '1'),
+      companyId: this.defaultCompanyId || null,
       branchId: null,
       warehouseTypeId: null,
       warehouseCode: '',
@@ -186,14 +185,54 @@ export class Warehouse implements OnInit {
       address: '',
       city: '',
       isActive: true,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
     };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
   }
 
-  protected editWarehouse(row: Record<string, any>): void {
+  protected async editWarehouse(row: Record<string, any>): Promise<void> {
     this.editing.set(row as WarehouseDto);
-    this.userModel = { ...row };
+    this.userModel = {
+      ...row,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
+    };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
+
+    const entityId = row['entityId'] ?? row['EntityId'];
+    if (entityId == null) return;
+    try {
+      const entity = await this.loadEntity(entityId);
+      if (entity) {
+        this.userModel['addresses'] = entity.addresses ?? [];
+        this.userModel['contacts'] = entity.contacts ?? [];
+        this.userModel['files'] = entity.files ?? [];
+        this.userModel['notes'] = entity.notes ?? [];
+        this.userModel['tags'] = entity.tags ?? [];
+      }
+    } catch {
+      /* entity fetch is optional; tab stays empty */
+    }
+  }
+
+  private async loadEntity(entityId: number): Promise<any | null> {
+    const res: any = await firstValueFrom(this.http.get(`/api/entities/${entityId}`));
+    return res ?? null;
+  }
+
+  private withEntityTab() {
+    const tabs = this.config.tabs;
+    if (tabs.some(t => t.entity)) return tabs;
+    return [...tabs, { name: 'Address & Contacts', fields: [] as string[], entity: true as const }];
   }
 
   protected async saveWarehouse(): Promise<void> {
@@ -205,6 +244,7 @@ export class Warehouse implements OnInit {
         const payload: UpdateWarehouseRequest = {
           warehouseName: this.userModel['warehouseName']?.trim(),
           branchId: this.userModel['branchId'] || null,
+          entityId: this.userModel['entityId'] ?? this.userModel['EntityId'] ?? null,
           warehouseTypeId: this.userModel['warehouseTypeId'] || null,
           address: this.userModel['address'] || null,
           city: this.userModel['city'] || null,
@@ -212,9 +252,34 @@ export class Warehouse implements OnInit {
         };
         await this.org.warehouses.update(editing.id, payload);
       } else {
+        const hasEntityData =
+          (this.userModel['addresses']?.length > 0) ||
+          (this.userModel['contacts']?.length > 0) ||
+          (this.userModel['files']?.length > 0) ||
+          (this.userModel['notes']?.length > 0) ||
+          (this.userModel['tags']?.length > 0);
+
+        let entityId: number | null = this.userModel['entityId'] as number | null ?? null;
+        if (entityId == null && hasEntityData) {
+          const entityPayload: any = {
+            entityType: 'WAREHOUSE',
+            entityCode: this.userModel['warehouseCode']?.trim().toUpperCase(),
+            entityName: this.userModel['warehouseName']?.trim(),
+            isActive: true,
+            addresses: this.userModel['addresses'] ?? [],
+            contacts: this.userModel['contacts'] ?? [],
+            files: this.userModel['files'] ?? [],
+            notes: this.userModel['notes'] ?? [],
+            tags: this.userModel['tags'] ?? [],
+          };
+          const entity: any = await firstValueFrom(this.http.post('/api/entities', entityPayload));
+          entityId = entity?.entityId ?? entity?.EntityId ?? null;
+        }
+
         const payload: CreateWarehouseRequest = {
           companyId: this.userModel['companyId'],
           branchId: this.userModel['branchId'] || null,
+          entityId,
           warehouseTypeId: this.userModel['warehouseTypeId'] || null,
           warehouseCode: this.userModel['warehouseCode']?.trim().toUpperCase(),
           warehouseName: this.userModel['warehouseName']?.trim(),

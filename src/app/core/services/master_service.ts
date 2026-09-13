@@ -61,6 +61,7 @@ class LookupService<TDto, TCreate = Partial<TDto>, TUpdate = Partial<TDto>> {
 
 export interface CompanyDto {
   id: number;
+  entityId?: number | null;
   companyCode: string;
   companyName: string;
   shortName?: string | null;
@@ -249,6 +250,7 @@ class ProductUnitService {
 
 export interface ProductDto {
   id: number;
+  entityId?: number | null;
   companyId: number;
   branchId?: number | null;
   productCode: string;
@@ -281,6 +283,7 @@ export type CreateProductRequest = {
   productCode: string;
   productName: string;
   companyId: number;
+  entityId?: number | null;
   categoryId?: number | null;
   subCategoryId?: number | null;
   brandId?: number | null;
@@ -301,8 +304,12 @@ export type UpdateProductRequest = CreateProductRequest & { isActive: boolean };
 
 class ProductService {
   constructor(private readonly http: HttpClient) {}
-  getPaged(page = 1, size = 10, search = ''): Promise<PaginatedResult<ProductDto>> {
-    const params = new HttpParams().set('page', page).set('size', size).set('search', search ?? '');
+  getPaged(page = 1, size = 10, search = '', companyId?: number | null): Promise<PaginatedResult<ProductDto>> {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('search', search ?? '')
+      .set('companyId', companyId ?? 0);
     return firstValueFrom(this.http.get<PaginatedResult<ProductDto>>('/api/products', { params }));
   }
   getById(id: number): Promise<ProductDto> { return firstValueFrom(this.http.get<ProductDto>(`/api/products/${id}`)); }
@@ -494,6 +501,7 @@ export type UpdateServiceCategoryRequest = CreateServiceCategoryRequest & { desc
 
 export interface ServiceDto {
   serviceId: number;
+  entityId?: number | null;
   companyId: number;
   code: string;
   name: string;
@@ -514,6 +522,7 @@ export interface ServiceDto {
 export type CreateServiceRequest = {
   code: string;
   name: string;
+  entityId?: number | null;
   serviceCategoryId?: number | null;
   unitId?: number | null;
   hsnSacId?: number | null;

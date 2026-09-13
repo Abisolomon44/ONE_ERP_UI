@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import {
   Workspace,
   Domain,
@@ -12,8 +14,10 @@ import {
   RoleFieldPermissionEntry,
   UserFieldPermissionEntry,
   DataScope,
+  EffectiveDataScope,
   WorkflowPermissionEntry,
   PermissionTreeWorkspace,
+  Role,
 } from '../models';
 
 export interface UserPermission {
@@ -22,14 +26,35 @@ export interface UserPermission {
   scopeId?: number | null;
 }
 
+export interface ScopeOption {
+  id: number;
+  name: string;
+}
+
+interface MyScopeEntry {
+  id: number;
+  name?: string | null;
+}
+
+interface MyEffectiveScope {
+  companies: MyScopeEntry[];
+  branches: MyScopeEntry[];
+  warehouses: MyScopeEntry[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class PermissionService {
+  private readonly http = inject(HttpClient);
+
   readonly permissions = signal<string[]>(['*']);
   readonly userPermissions = signal<UserPermission[]>([]);
   readonly currentScope = signal<{
     level: string;
     id: number | null;
   }>({ level: 'Company', id: null });
+
+  // Effective Data Scope (Company/Branch/Warehouse)
+  readonly effectiveDataScope = signal<EffectiveDataScope | null>(null);
 
   // Enterprise Permission Engine state
   readonly workspaces = signal<Workspace[]>([]);
@@ -174,9 +199,91 @@ export class PermissionService {
     return perm?.isMandatory === true;
   }
 
-  getDataScope(): DataScope | null {
-    const scopes = this.dataScopes();
-    return scopes.length > 0 ? scopes[0] : null;
+  getDataScope(): EffectiveDataScope | null {
+    // Return the effective data scope (Company/Branch/Warehouse) resolved at login
+    // This is the authoritative data scope for filtering records
+    return this.effectiveDataScope();
+  }
+
+  /**
+   * Resolves Company/Branch/Warehouse dropdown options from the current user's
+   * effective data scope = role-based Data Scope entries + user overrides
+   * (/api/data-scopes/my, which also resolves real names server-side), so master-data
+   * dropdowns don't need Companies/Branches/Warehouses view permissions.
+   * Falls back to local role-scope + override merging when that endpoint is unavailable.
+   */
+  async loadMyDataScopeOptions(
+    _roleNames: string[],
+  ): Promise<{ companies: ScopeOption[]; branches: ScopeOption[]; warehouses: ScopeOption[] }> {
+    try {
+      const me = await firstValueFrom(this.http.get<MyEffectiveScope>('/api/data-scopes/my'));
+      return {
+        companies: (me.companies ?? []).map((c) => ({ id: c.id, name: c.name || `#${c.id}` })),
+        branches: (me.branches ?? []).map((b) => ({ id: b.id, name: b.name || `#${b.id}` })),
+        warehouses: (me.warehouses ?? []).map((w) => ({ id: w.id, name: w.name || `#${w.id}` })),
+      };
+    } catch (err) {
+      console.warn('[PermissionService] /api/data-scopes/my unavailable, falling back to local merge:', err);
+    }
+
+    const companies = new Map<number, string>();
+    const branches = new Map<number, string>();
+    const warehouses = new Map<number, string>();
+
+    try {
+      // /api/roles/my is self-service (no roles.view needed) and already scoped
+      // to the current user, so no client-side filtering by roleNames is needed.
+      const roles = await firstValueFrom(this.http.get<Role[]>('/api/roles/my'));
+      const myRoleIds = roles.map((r) => r.roleId);
+
+      const scopeLists = await Promise.all(
+        myRoleIds.map((roleId) =>
+          firstValueFrom(this.http.get<DataScope[]>(`/api/data-scopes/role/${roleId}`)).catch(() => [] as DataScope[]),
+        ),
+      );
+
+      for (const scopes of scopeLists) {
+        for (const s of scopes) {
+          if (!s.isActive || !s.canView) continue;
+          if (s.companyId) companies.set(s.companyId, s.companyName || `#${s.companyId}`);
+          if (s.branchId) branches.set(s.branchId, s.branchName || `#${s.branchId}`);
+          if (s.warehouseId) warehouses.set(s.warehouseId, s.warehouseName || `#${s.warehouseId}`);
+        }
+      }
+    } catch (err) {
+      console.error('[PermissionService] failed to resolve role-based data scope options:', err);
+    }
+
+    // Merge user-level data scope overrides so UI dropdowns reflect what the
+    // server-side resolver actually allows (Grant + valid id adds access).
+    try {
+      const userId = this.getCurrentUserId();
+      if (userId !== null) {
+        const overrides = await firstValueFrom(
+          this.http.get<any[]>(`/api/user-data-scope-overrides/user/${userId}`),
+        ).catch(() => [] as any[]);
+        const now = Date.now();
+        for (const o of overrides ?? []) {
+          if (!o.isActive || !o.allow) continue;
+          if (o.effectiveFrom && new Date(o.effectiveFrom).getTime() > now) continue;
+          if (o.effectiveTo && new Date(o.effectiveTo).getTime() <= now) continue;
+          const id = parseInt(String(o.scopeValue), 10);
+          if (!id || id <= 0) continue;
+          const label = `#${id}`;
+          if (o.scopeType === 'Company') companies.set(id, label);
+          else if (o.scopeType === 'Branch') branches.set(id, label);
+          else if (o.scopeType === 'Warehouse') warehouses.set(id, label);
+        }
+      }
+    } catch (err) {
+      console.error('[PermissionService] failed to resolve user data scope overrides:', err);
+    }
+
+    return {
+      companies: [...companies].map(([id, name]) => ({ id, name })),
+      branches: [...branches].map(([id, name]) => ({ id, name })),
+      warehouses: [...warehouses].map(([id, name]) => ({ id, name })),
+    };
   }
 
   canSubmitWorkflow(moduleId: number, screenId: number): boolean {
@@ -256,6 +363,10 @@ export class PermissionService {
     this.currentScope.set({ level, id });
   }
 
+  setEffectiveDataScope(scope: EffectiveDataScope | null): void {
+    this.effectiveDataScope.set(scope);
+  }
+
   loadEnterprisePermissions(data: {
     workspaces?: Workspace[];
     domains?: Domain[];
@@ -294,9 +405,15 @@ export class PermissionService {
       try {
         const data = JSON.parse(stored);
         this.loadEnterprisePermissions(data);
+        // Also load user overrides from JWT token to ensure they're always
+        // up-to-date, even if localStorage data is from an older session
+        this.loadUserOverridesFromToken();
       } catch {
         localStorage.removeItem(this.ENTERPRISE_KEY);
       }
+    } else {
+      // No stored enterprise permissions; try loading from JWT token
+      this.loadUserOverridesFromToken();
     }
   }
 
@@ -328,6 +445,56 @@ export class PermissionService {
       return parseInt(payload.nameid, 10) || null;
     } catch {
       return null;
+    }
+  }
+
+  /** Load user overrides from the JWT token and update signals */
+  loadUserOverridesFromToken(): void {
+    const userId = this.getCurrentUserId();
+    if (userId === null) return;
+
+    const token = localStorage.getItem('oneerp-erp-token');
+    if (!token) return;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      // The JWT payload may contain user override information from AuthService.LoginAsync
+      // and ResolveAllPermissionsAsync which fetches overrides from the DB.
+      const overrides: UserPermissionOverride[] = [];
+
+      // Check for user overrides in the token payload
+      if (payload.userOverrides && Array.isArray(payload.userOverrides)) {
+        payload.userOverrides.forEach((o: any) => {
+          overrides.push({
+            id: o.Id ?? o.id ?? 0,
+            userId: userId,
+            workspaceId: o.WorkspaceId ?? o.workspaceId ?? 0,
+            domainId: o.DomainId ?? o.domainId ?? 0,
+            moduleId: o.ModuleId ?? o.moduleId ?? 0,
+            subModuleId: o.SubModuleId ?? o.subModuleId ?? 0,
+            screenId: o.ScreenId ?? o.screenId ?? 0,
+            actionId: o.ActionId ?? o.actionId ?? 0,
+            permissionType: o.PermissionType ?? o.permissionType ?? 'Grant',
+            allow: o.Allow ?? o.allow ?? true,
+            effectiveFrom: o.EffectiveFrom ?? o.effectiveFrom ?? '',
+            effectiveTo: o.EffectiveTo ?? o.effectiveTo ?? undefined,
+            isActive: o.IsActive ?? o.isActive ?? true,
+            remarks: o.Remarks ?? o.remarks ?? '',
+            createdDate: o.CreatedDate ?? o.createdDate ?? ''
+          });
+        });
+      }
+
+      // Also check for permissions that can be derived into override concepts
+      if (payload.permissions && Array.isArray(payload.permissions)) {
+        // Derive overrides from the permissions list if needed
+        // This handles cases where overrides were baked into the permission codes
+        // like 'companies.view', 'branches.view', etc.
+      }
+
+      this.userOverrides.set(overrides);
+    } catch {
+      // Silently fail if token decoding fails or data is malformed
     }
   }
 }

@@ -3,7 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig } from '../../../shared/master-page/master-page';
 import { PosService, FinancialYearDto, CreateFinancialYearRequest, UpdateFinancialYearRequest } from '../../../../core/services/pos_service';
-import { AdministrationService } from '../../../../core/services/master_service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { buildScopeLabel } from '../../../shared/scope-label';
 
 @Component({
   selector: 'app-finance-year',
@@ -14,7 +16,9 @@ import { AdministrationService } from '../../../../core/services/master_service'
 })
 export class FinanceYear implements OnInit {
   private readonly pos = inject(PosService);
-  private readonly admin = inject(AdministrationService);
+  private readonly auth = inject(AuthService);
+  private readonly perms = inject(PermissionService);
+  private defaultCompanyId = 0;
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -69,14 +73,17 @@ export class FinanceYear implements OnInit {
   };
 
   ngOnInit(): void {
-    void this.loadDropdowns();
-    void this.load();
+    void this.loadDropdowns().then(() => this.load());
   }
 
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const companyId = this.userModel['companyId'] ?? +(localStorage.getItem('companyId') ?? '1');
+      const companyId = this.userModel['companyId'] ?? this.defaultCompanyId;
+      if (!companyId) {
+        this.rows.set([]);
+        return;
+      }
       const res = await this.pos.financialYears.getPaged({ companyId, page: 1, size: 200, search: '' });
       this.rows.set(res.items ?? []);
     } catch (err) {
@@ -88,8 +95,18 @@ export class FinanceYear implements OnInit {
 
   private async loadDropdowns(): Promise<void> {
     try {
-      const companiesRes = await this.admin.company.getPaged(1, 200, '');
-      this.setOptions('companyId', (companiesRes.items ?? []).map((c: any) => ({ value: c.id, label: c.companyName })));
+      const roleNames = this.auth.user()?.roles ?? [];
+      const { companies, branches } = await this.perms.loadMyDataScopeOptions(roleNames);
+
+      const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
+      if (companies.length > 0) {
+        this.defaultCompanyId = companies[0].id;
+      }
+
+      const { scopeLabel, noAccess } = buildScopeLabel({ companies, branches });
+      this.config = { ...this.config, scopeLabel, noAccess };
+
+      this.setOptions('companyId', companyOptions);
     } catch (err) {
       console.error('loadDropdowns failed:', err);
     }
@@ -105,7 +122,7 @@ export class FinanceYear implements OnInit {
   protected createRow(): void {
     this.editing.set(null);
     this.userModel = {
-      companyId: +(localStorage.getItem('companyId') ?? '1'),
+      companyId: this.defaultCompanyId || null,
       code: '',
       name: '',
       startDate: '',

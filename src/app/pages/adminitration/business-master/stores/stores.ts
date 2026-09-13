@@ -1,5 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig } from '../../../shared/master-page/master-page';
 import {
@@ -8,7 +10,9 @@ import {
   CreateStoreRequest,
   UpdateStoreRequest,
 } from '../../../../core/services/pos_service';
-import { AdministrationService } from '../../../../core/services/master_service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { buildScopeLabel } from '../../../shared/scope-label';
 import { OrganizationService } from '../../../../core/services/organization_service';
 
 @Component({
@@ -20,8 +24,11 @@ import { OrganizationService } from '../../../../core/services/organization_serv
 })
 export class StoresPage implements OnInit {
   private readonly pos = inject(PosService);
-  private readonly admin = inject(AdministrationService);
+  private readonly auth = inject(AuthService);
+  private readonly perms = inject(PermissionService);
   private readonly org = inject(OrganizationService);
+  private readonly http = inject(HttpClient);
+  private defaultCompanyId = 0;
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -88,22 +95,19 @@ export class StoresPage implements OnInit {
   };
 
   ngOnInit(): void {
-    void this.loadDropdowns();
-    void this.load();
+    void this.loadDropdowns().then(() => this.load());
   }
 
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const companyId = this.userModel['companyId'] ?? +(localStorage.getItem('companyId') ?? '1');
+      const companyId = this.userModel['companyId'] ?? this.defaultCompanyId;
+      if (!companyId) {
+        this.stores.set([]);
+        return;
+      }
       const branchId = this.userModel['branchId'] ?? null;
-      const res = await this.pos.stores.getPaged({
-        companyId,
-        branchId,
-        page: 1,
-        size: 100,
-        search: '',
-      });
+      const res = await this.pos.stores.getPaged({ companyId, branchId, page: 1, size: 100, search: '' });
       this.stores.set(res.items ?? []);
     } catch (err) {
       console.error('[StoresPage] load failed:', err);
@@ -114,35 +118,21 @@ export class StoresPage implements OnInit {
 
   private async loadDropdowns(): Promise<void> {
     try {
-      const companyId = +(localStorage.getItem('companyId') ?? '1');
+      const roleNames = this.auth.user()?.roles ?? [];
+      const { companies, branches } = await this.perms.loadMyDataScopeOptions(roleNames);
 
-      const [companiesRes, branchesRes] = await Promise.all([
-        this.admin.company.getPaged(1, 200, ''),
-        this.org.branches.getPaged({
-          companyId,
-          page: 1,
-          size: 200,
-          search: '',
-        }),
-      ]);
+      const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
+      if (companies.length > 0) {
+        this.defaultCompanyId = companies[0].id;
+      }
 
-      this.setOptions(
-        'companyId',
-        (companiesRes.items ?? []).map((c: any) => ({
-          value: c.id,
-          label: c.companyName,
-        })),
-      );
+      const { scopeLabel, noAccess } = buildScopeLabel({ companies, branches });
+      this.config = { ...this.config, scopeLabel, noAccess };
 
-      this.setOptions(
-        'branchId',
-        (branchesRes.items ?? []).map((b: any) => ({
-          value: b.id,
-          label: b.branchName,
-        })),
-      );
+      this.setOptions('companyId', companyOptions);
+      this.setOptions('branchId', branches.map((b) => ({ value: b.id, label: b.name })));
     } catch (err) {
-      console.error('loadDropdowns failed:', err);
+      console.error('loadDropdowns error:', err);
     }
   }
 
@@ -158,7 +148,7 @@ export class StoresPage implements OnInit {
   protected createStore(): void {
     this.editing.set(null);
     this.userModel = {
-      companyId: +(localStorage.getItem('companyId') ?? '1'),
+      companyId: this.defaultCompanyId || null,
       branchId: null,
       storeCode: '',
       storeName: '',
@@ -167,14 +157,54 @@ export class StoresPage implements OnInit {
       phone: '',
       email: '',
       isActive: true,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
     };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
   }
 
-  protected editStore(row: Record<string, any>): void {
+  protected async editStore(row: Record<string, any>): Promise<void> {
     this.editing.set(row as StoreDto);
-    this.userModel = { ...row };
+    this.userModel = {
+      ...row,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
+    };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
+
+    const entityId = row['entityId'] ?? row['EntityId'];
+    if (entityId == null) return;
+    try {
+      const entity = await this.loadEntity(entityId);
+      if (entity) {
+        this.userModel['addresses'] = entity.addresses ?? [];
+        this.userModel['contacts'] = entity.contacts ?? [];
+        this.userModel['files'] = entity.files ?? [];
+        this.userModel['notes'] = entity.notes ?? [];
+        this.userModel['tags'] = entity.tags ?? [];
+      }
+    } catch {
+      /* entity fetch is optional; tab stays empty */
+    }
+  }
+
+  private async loadEntity(entityId: number): Promise<any | null> {
+    const res: any = await firstValueFrom(this.http.get(`/api/entities/${entityId}`));
+    return res ?? null;
+  }
+
+  private withEntityTab() {
+    const tabs = this.config.tabs;
+    if (tabs.some(t => t.entity)) return tabs;
+    return [...tabs, { name: 'Address & Contacts', fields: [] as string[], entity: true as const }];
   }
 
   protected async saveStore(): Promise<void> {
@@ -191,9 +221,34 @@ export class StoresPage implements OnInit {
           phone: this.userModel['phone'] || null,
           email: this.userModel['email'] || null,
           isActive: this.userModel['isActive'],
+          entityId: this.userModel['entityId'] ?? this.userModel['EntityId'] ?? null,
         };
         await this.pos.stores.update(editing.id, payload);
       } else {
+        const hasEntityData =
+          (this.userModel['addresses']?.length > 0) ||
+          (this.userModel['contacts']?.length > 0) ||
+          (this.userModel['files']?.length > 0) ||
+          (this.userModel['notes']?.length > 0) ||
+          (this.userModel['tags']?.length > 0);
+
+        let entityId: number | null = this.userModel['entityId'] as number | null ?? null;
+        if (entityId == null && hasEntityData) {
+          const entityPayload: any = {
+            entityType: 'STORE',
+            entityCode: this.userModel['storeCode']?.trim().toUpperCase(),
+            entityName: this.userModel['storeName']?.trim(),
+            isActive: true,
+            addresses: this.userModel['addresses'] ?? [],
+            contacts: this.userModel['contacts'] ?? [],
+            files: this.userModel['files'] ?? [],
+            notes: this.userModel['notes'] ?? [],
+            tags: this.userModel['tags'] ?? [],
+          };
+          const entity: any = await firstValueFrom(this.http.post('/api/entities', entityPayload));
+          entityId = entity?.entityId ?? entity?.EntityId ?? null;
+        }
+
         const payload: CreateStoreRequest = {
           companyId: this.userModel['companyId'],
           branchId: this.userModel['branchId'] || null,
@@ -204,6 +259,7 @@ export class StoresPage implements OnInit {
           phone: this.userModel['phone'] || null,
           email: this.userModel['email'] || null,
           isActive: this.userModel['isActive'],
+          entityId,
         };
         await this.pos.stores.create(payload);
       }

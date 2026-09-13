@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
+import { NavigationStoreService } from '../../core/services/navigation-store.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { ToastService } from '../../core/services/toast.service';
 import { BaseButton } from '../../shared/base-button';
@@ -17,6 +18,7 @@ import { BaseInput } from '../../shared/base-controls';
 })
 export class LoginPage {
   private readonly auth = inject(AuthService);
+  private readonly nav = inject(NavigationStoreService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   protected readonly theme = inject(ThemeService);
@@ -33,7 +35,9 @@ export class LoginPage {
     try {
       const res = await this.auth.login(this.username(), this.password());
       this.toast.success('Welcome back', `Signed in as ${this.username()} · ${res.tenantName ?? res.tenantCode}`);
-      await this.router.navigateByUrl('/dashboard');
+      const navigation = await this.nav.ensureLoaded();
+      const destination = navigation.hasAccess ? '/dashboard' : '/contact-administrator';
+      await this.router.navigateByUrl(destination);
     } catch (e) {
       const body = (e as { error?: { message?: string } })?.error;
       const message = body?.message ?? (e as { message?: string })?.message;

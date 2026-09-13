@@ -1,0 +1,370 @@
+<div class="entity-editor">
+
+  <div class="entry-tabs ee-tabs">
+    @for (t of [
+      { key: 'address', label: 'Address', icon: 'MapPin' },
+      { key: 'contact', label: 'Contact', icon: 'UserRound' },
+      { key: 'files', label: 'Files', icon: 'Paperclip' },
+      { key: 'notes', label: 'Notes', icon: 'StickyNote' },
+      { key: 'tags', label: 'Tags', icon: 'Tags' }
+    ]; track t.key) {
+      <button
+        class="entry-tab ee-tab"
+        [class.active]="activeSection == t.key"
+        type="button"
+        (click)="setSection(t.key)">
+        <i-lucide [name]="t.icon" [size]="14"></i-lucide>
+        {{ t.label }}
+      </button>
+    }
+  </div>
+
+  <div class="ee-body">
+
+    <!-- ============ ADDRESSES ============ -->
+    @if (activeSection == 'address') {
+      <div class="ee-section">
+        <div class="ee-section-head">
+          <span class="ee-section-title">Addresses</span>
+          <div class="ee-head-actions">
+            <button class="btn btn-sm btn-primary" type="button" (click)="saveAddresses()" [disabled]="savingSection != null">
+              <i-lucide name="Save" [size]="13"></i-lucide>
+              {{ savingSection == 'addresses' ? 'Saving…' : 'Save Addresses' }}
+            </button>
+            <button class="btn btn-sm btn-secondary" type="button" (click)="addAddress()">
+              <i-lucide name="Plus" [size]="13"></i-lucide>
+              Add Address
+            </button>
+          </div>
+        </div>
+
+        @if (addresses().length === 0) {
+          <div class="ee-empty">
+            <i-lucide name="MapPin" [size]="20" class="text-muted"></i-lucide>
+            <span>No addresses added yet.</span>
+          </div>
+        }
+
+        @for (addr of addresses(); track $index) {
+          <div class="ee-card">
+            <div class="ee-card-head">
+              <span class="ee-card-title">Address #{{ $index + 1 }}</span>
+              <button class="icon-btn btn-danger-soft" type="button" (click)="removeAddress($index)" aria-label="Remove address">
+                <i-lucide name="Trash2" [size]="14"></i-lucide>
+              </button>
+            </div>
+            <div class="ee-grid">
+              <div class="ee-field">
+                <label class="ee-label">Address Type</label>
+                <select class="input" [(ngModel)]="addr.addressTypeId">
+                  <option [ngValue]="null">— Select —</option>
+                  @for (o of addressTypeOptions; track o.value) {
+                    <option [ngValue]="o.value">{{ o.label }}</option>
+                  }
+                </select>
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Postal Code</label>
+                <input class="input" [(ngModel)]="addr.postalCode" placeholder="Postal code" maxlength="20">
+              </div>
+              <div class="ee-field ee-span-2">
+                <label class="ee-label">Address Line 1</label>
+                <input class="input" [(ngModel)]="addr.addressLine1" placeholder="Street / building" maxlength="200">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Address Line 2</label>
+                <input class="input" [(ngModel)]="addr.addressLine2" placeholder="Area / locality" maxlength="200">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Address Line 3</label>
+                <input class="input" [(ngModel)]="addr.addressLine3" placeholder="Landmark" maxlength="200">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Country</label>
+                <select class="input" [(ngModel)]="addr.countryId" (ngModelChange)="onCountryChange(addr)">
+                  <option [ngValue]="null">— Select —</option>
+                  @for (o of countryOptions; track o.value) {
+                    <option [ngValue]="o.value">{{ o.label }}</option>
+                  }
+                </select>
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">State</label>
+                <select class="input" [(ngModel)]="addr.stateId" (ngModelChange)="onStateChange(addr)">
+                  <option [ngValue]="null">— Select —</option>
+                  @for (o of statesFor(addr); track o.value) {
+                    <option [ngValue]="o.value">{{ o.label }}</option>
+                  }
+                </select>
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">City</label>
+                <select class="input" [(ngModel)]="addr.cityId">
+                  <option [ngValue]="null">— Select —</option>
+                  @for (o of citiesFor(addr); track o.value) {
+                    <option [ngValue]="o.value">{{ o.label }}</option>
+                  }
+                </select>
+              </div>
+              <div class="ee-field ee-check">
+                <input type="checkbox" id="addr-primary-{{ $index }}" [(ngModel)]="addr.isPrimary">
+                <label for="addr-primary-{{ $index }}">Primary address</label>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ============ CONTACTS ============ -->
+    @if (activeSection == 'contact') {
+      <div class="ee-section">
+        <div class="ee-section-head">
+          <span class="ee-section-title">Contacts</span>
+          <div class="ee-head-actions">
+            <button class="btn btn-sm btn-primary" type="button" (click)="saveContacts()" [disabled]="savingSection != null">
+              <i-lucide name="Save" [size]="13"></i-lucide>
+              {{ savingSection == 'contacts' ? 'Saving…' : 'Save Contacts' }}
+            </button>
+            <button class="btn btn-sm btn-secondary" type="button" (click)="addContact()">
+              <i-lucide name="Plus" [size]="13"></i-lucide>
+              Add Contact
+            </button>
+          </div>
+        </div>
+
+        @if (contacts().length === 0) {
+          <div class="ee-empty">
+            <i-lucide name="UserRound" [size]="20" class="text-muted"></i-lucide>
+            <span>No contacts added yet.</span>
+          </div>
+        }
+
+        @for (con of contacts(); track $index) {
+          <div class="ee-card">
+            <div class="ee-card-head">
+              <span class="ee-card-title">Contact #{{ $index + 1 }}</span>
+              <button class="icon-btn btn-danger-soft" type="button" (click)="removeContact($index)" aria-label="Remove contact">
+                <i-lucide name="Trash2" [size]="14"></i-lucide>
+              </button>
+            </div>
+            <div class="ee-grid">
+              <div class="ee-field">
+                <label class="ee-label">Contact Type</label>
+                <select class="input" [(ngModel)]="con.contactTypeId">
+                  <option [ngValue]="null">— Select —</option>
+                  @for (o of contactTypeOptions; track o.value) {
+                    <option [ngValue]="o.value">{{ o.label }}</option>
+                  }
+                </select>
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Contact Name</label>
+                <input class="input" [(ngModel)]="con.contactName" placeholder="Person name" maxlength="200">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Designation</label>
+                <input class="input" [(ngModel)]="con.designation" placeholder="Role" maxlength="100">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Email</label>
+                <input class="input" [(ngModel)]="con.email" placeholder="name@email.com" maxlength="200">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Mobile</label>
+                <input class="input" [(ngModel)]="con.mobile" placeholder="Mobile" maxlength="30">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Phone</label>
+                <input class="input" [(ngModel)]="con.phone" placeholder="Phone" maxlength="30">
+              </div>
+              <div class="ee-field ee-span-2">
+                <label class="ee-label">Website</label>
+                <input class="input" [(ngModel)]="con.website" placeholder="https://" maxlength="300">
+              </div>
+              <div class="ee-field ee-check">
+                <input type="checkbox" id="con-primary-{{ $index }}" [(ngModel)]="con.isPrimary">
+                <label for="con-primary-{{ $index }}">Primary contact</label>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ============ FILES ============ -->
+    @if (activeSection == 'files') {
+      <div class="ee-section">
+        <div class="ee-section-head">
+          <span class="ee-section-title">Files</span>
+          <div class="ee-head-actions">
+            <button class="btn btn-sm btn-primary" type="button" (click)="saveFiles()" [disabled]="savingSection != null">
+              <i-lucide name="Save" [size]="13"></i-lucide>
+              {{ savingSection == 'files' ? 'Saving…' : 'Save Files' }}
+            </button>
+            <button class="btn btn-sm btn-secondary" type="button" (click)="addFile()">
+              <i-lucide name="Plus" [size]="13"></i-lucide>
+              Add File
+            </button>
+          </div>
+        </div>
+
+        @if (files().length === 0) {
+          <div class="ee-empty">
+            <i-lucide name="Paperclip" [size]="20" class="text-muted"></i-lucide>
+            <span>No files added yet.</span>
+          </div>
+        }
+
+        @for (f of files(); track $index) {
+          <div class="ee-card">
+            <div class="ee-card-head">
+              <span class="ee-card-title">File #{{ $index + 1 }}</span>
+              <button class="icon-btn btn-danger-soft" type="button" (click)="removeFile($index)" aria-label="Remove file">
+                <i-lucide name="Trash2" [size]="14"></i-lucide>
+              </button>
+            </div>
+            <div class="ee-grid">
+              <div class="ee-field">
+                <label class="ee-label">File Name</label>
+                <input class="input" [(ngModel)]="f.fileName" placeholder="Stored name" maxlength="255">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Original File Name</label>
+                <input class="input" [(ngModel)]="f.originalFileName" placeholder="Original name" maxlength="255">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">File Type</label>
+                <input class="input" [(ngModel)]="f.fileType" placeholder="LOGO / IMAGE / DOC" maxlength="30">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Bucket Name</label>
+                <input class="input" [(ngModel)]="f.bucketName" maxlength="100">
+              </div>
+              <div class="ee-field ee-span-2">
+                <label class="ee-label">Object Key</label>
+                <input class="input" [(ngModel)]="f.objectKey" placeholder="company/{id}/logo/{file}.png" maxlength="1000">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Content Type</label>
+                <input class="input" [(ngModel)]="f.contentType" placeholder="image/png" maxlength="150">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Extension</label>
+                <input class="input" [(ngModel)]="f.extension" placeholder="png" maxlength="20">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">File Size (bytes)</label>
+                <input class="input" type="number" [(ngModel)]="f.fileSize" min="0">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Storage Provider</label>
+                <input class="input" [(ngModel)]="f.storageProvider" maxlength="30">
+              </div>
+              <div class="ee-field ee-check">
+                <input type="checkbox" id="file-primary-{{ $index }}" [(ngModel)]="f.isPrimary">
+                <label for="file-primary-{{ $index }}">Primary file</label>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ============ NOTES ============ -->
+    @if (activeSection == 'notes') {
+      <div class="ee-section">
+        <div class="ee-section-head">
+          <span class="ee-section-title">Notes</span>
+          <div class="ee-head-actions">
+            <button class="btn btn-sm btn-primary" type="button" (click)="saveNotes()" [disabled]="savingSection != null">
+              <i-lucide name="Save" [size]="13"></i-lucide>
+              {{ savingSection == 'notes' ? 'Saving…' : 'Save Notes' }}
+            </button>
+            <button class="btn btn-sm btn-secondary" type="button" (click)="addNote()">
+              <i-lucide name="Plus" [size]="13"></i-lucide>
+              Add Note
+            </button>
+          </div>
+        </div>
+
+        @if (notes().length === 0) {
+          <div class="ee-empty">
+            <i-lucide name="StickyNote" [size]="20" class="text-muted"></i-lucide>
+            <span>No notes added yet.</span>
+          </div>
+        }
+
+        @for (n of notes(); track $index) {
+          <div class="ee-card">
+            <div class="ee-card-head">
+              <span class="ee-card-title">Note #{{ $index + 1 }}</span>
+              <button class="icon-btn btn-danger-soft" type="button" (click)="removeNote($index)" aria-label="Remove note">
+                <i-lucide name="Trash2" [size]="14"></i-lucide>
+              </button>
+            </div>
+            <div class="ee-grid">
+              <div class="ee-field ee-span-2">
+                <label class="ee-label">Note Text</label>
+                <textarea class="input ee-textarea" [(ngModel)]="n.noteText" rows="3" maxlength="2000"
+                  placeholder="Note text"></textarea>
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Note Type</label>
+                <input class="input" [(ngModel)]="n.noteType" placeholder="GENERAL / PRIORITY" maxlength="30">
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ============ TAGS ============ -->
+    @if (activeSection == 'tags') {
+      <div class="ee-section">
+        <div class="ee-section-head">
+          <span class="ee-section-title">Tags</span>
+          <div class="ee-head-actions">
+            <button class="btn btn-sm btn-primary" type="button" (click)="saveTags()" [disabled]="savingSection != null">
+              <i-lucide name="Save" [size]="13"></i-lucide>
+              {{ savingSection == 'tags' ? 'Saving…' : 'Save Tags' }}
+            </button>
+            <button class="btn btn-sm btn-secondary" type="button" (click)="addTag()">
+              <i-lucide name="Plus" [size]="13"></i-lucide>
+              Add Tag
+            </button>
+          </div>
+        </div>
+
+        @if (tags().length === 0) {
+          <div class="ee-empty">
+            <i-lucide name="Tags" [size]="20" class="text-muted"></i-lucide>
+            <span>No tags added yet.</span>
+          </div>
+        }
+
+        @for (t of tags(); track $index) {
+          <div class="ee-card">
+            <div class="ee-card-head">
+              <span class="ee-card-title">Tag #{{ $index + 1 }}</span>
+              <button class="icon-btn btn-danger-soft" type="button" (click)="removeTag($index)" aria-label="Remove tag">
+                <i-lucide name="Trash2" [size]="14"></i-lucide>
+              </button>
+            </div>
+            <div class="ee-grid">
+              <div class="ee-field">
+                <label class="ee-label">Tag Name</label>
+                <input class="input" [(ngModel)]="t.tagName" placeholder="e.g. VAT" maxlength="100">
+              </div>
+              <div class="ee-field">
+                <label class="ee-label">Color</label>
+                <input class="input" [(ngModel)]="t.color" placeholder="#ff0000" maxlength="20">
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>

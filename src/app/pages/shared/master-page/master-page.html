@@ -12,6 +12,12 @@
       @if (config.description) {
         <small>{{ config.description }}</small>
       }
+      @if (config.scopeLabel) {
+        <span class="scope-chip" [class.no-access]="config.noAccess">
+          <i-lucide name="ShieldCheck" [size]="13"></i-lucide>
+          {{ config.scopeLabel }}
+        </span>
+      }
     </div>
 
     <div class="toolbar">
@@ -101,9 +107,15 @@
         @else if (isEmpty) {
           <div class="list-empty empty-state">
             <i-lucide name="Inbox" [size]="40" class="empty-icon"></i-lucide>
-            <h5 class="empty-title">No Records Found</h5>
-            @if (searchText) {
-              <span class="text-muted">Try adjusting your search</span>
+            @if (config.noAccess) {
+              <h5 class="empty-title">No Access</h5>
+              <span class="text-muted">Assign a data scope for this role to load records.</span>
+            }
+            @else {
+              <h5 class="empty-title">No Records Found</h5>
+              @if (searchText) {
+                <span class="text-muted">Try adjusting your search</span>
+              }
             }
           </div>
         }
@@ -135,7 +147,12 @@
                           <span class="currency">{{ row[col.field] | number:'1.2-2' }}</span>
                         }
                         @default {
-                          {{ row[col.field] }}
+                          @if (isNoAccessCell(col, row)) {
+                            <span class="pill danger">No Access</span>
+                          }
+                          @else {
+                            {{ cellText(col, row) }}
+                          }
                         }
                       }
                     </td>
@@ -211,8 +228,13 @@
       }
 
       <div class="card-body">
-        <div class="entry-grid">
-          @for (field of visibleCurrentTabFields; track field.name) {
+        @if (currentTab?.entity) {
+          <app-entity-editor [model]="userModel" [entityId]="userModel['entityId'] ?? userModel['EntityId'] ?? null"
+            (entityCreated)="onEntityCreated($event)"></app-entity-editor>
+        }
+        @else {
+          <div class="entry-grid">
+            @for (field of visibleCurrentTabFields; track field.name) {
 
             <!-- Checkbox: own layout, not a floating-label field -->
             @if (field.type == 'checkbox') {
@@ -253,14 +275,10 @@
                       [type]="field.type"
                       [(ngModel)]="userModel[field.name]"
                       [placeholder]="field.placeholder || ' '"
-                      [readonly]="
-    field.readonly ||
-    !this.perm.canEditField(field.screenCode ?? '', field.name) ||
-    this.perm.isFieldReadonly(field.screenCode ?? '', field.name)
-"
-                      [disabled]="field.disabled ?? false"
-                      [minlength]="field.minLength ?? null"
-                      [maxlength]="field.maxLength ?? null">
+[readonly]="field.readonly"
+                       [disabled]="field.disabled ?? false"
+                       [minlength]="field.minLength ?? null"
+                       [maxlength]="field.maxLength ?? null">
                   }
 
                   @if (field.type == 'textarea') {
@@ -270,11 +288,7 @@
                       rows="3"
                       [(ngModel)]="userModel[field.name]"
                       [placeholder]="field.placeholder || ' '"
-                      [readonly]="
-    field.readonly ||
-    !this.perm.canEditField(field.screenCode ?? '', field.name) ||
-    this.perm.isFieldReadonly(field.screenCode ?? '', field.name)
-"
+                      [readonly]="field.readonly"
                       [disabled]="field.disabled ?? false">
                     </textarea>
                   }
@@ -284,7 +298,7 @@
                       class="ff-control ff-control-select filled"
                       [(ngModel)]="userModel[field.name]"
                       (ngModelChange)="onFieldChange(field.name, $event)"
-                      [disabled]="field.disabled ?? false">
+                      [disabled]="(field.disabled ?? false) || isNoAccessField(field)">
 
                       <option [ngValue]="null" disabled>Select</option>
 
@@ -294,6 +308,13 @@
                         </option>
                       }
                     </select>
+
+                    @if (isNoAccessField(field)) {
+                      <span class="no-access-tag">
+                        <i-lucide name="Ban" [size]="12"></i-lucide>
+                        No Access
+                      </span>
+                    }
                   }
 
                   <label class="ff-label">
@@ -307,6 +328,7 @@
 
           }
         </div>
+        }
       </div>
 
       <div class="dialog-inner-footer" style="margin:0 20px 20px;">

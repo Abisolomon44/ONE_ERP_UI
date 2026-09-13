@@ -1,7 +1,7 @@
 <div class="page-header">
   <div>
     <h1>Data Scopes</h1>
-    <div class="page-sub">Configure data access restrictions per role.</div>
+    <div class="page-sub">Configure data access restrictions per role. Pick a role, then check companies, branches and warehouses (single or multi).</div>
   </div>
 </div>
 
@@ -10,7 +10,7 @@
     <div class="field" style="margin-bottom:0; min-width:240px">
       <label class="field-label">Select Role</label>
       <div class="input-wrap">
-        <select class="input" [value]="selectedRoleId()" (change)="onRoleChange(); selectedRoleId.set($any($event.target).value)">
+        <select class="input" [value]="selectedRoleId()" (change)="selectedRoleId.set($any($event.target).value); onRoleChange()">
           <option value="">Choose a role...</option>
           @for (opt of roleOptions(); track opt.value) {
             <option [value]="opt.value">{{ opt.label }}</option>
@@ -19,181 +19,146 @@
       </div>
     </div>
     @if (selectedRoleId()) {
-      <base-button *basePermission="'data-scopes.manage'" icon="plus" (click)="openCreate()">New Data Scope</base-button>
+      <base-button [loading]="saving()" icon="save" *basePermission="'data-scopes.manage'" (click)="save()">Save Scope</base-button>
     }
   </div>
 </div>
 
 @if (!selectedRoleId()) {
   <div class="card">
-    <base-empty icon="shield" title="Select a role" subtitle="Choose a role above to configure data scopes."></base-empty>
+    <base-empty icon="shield" title="Select a role" subtitle="Choose a role above to configure its data scope."></base-empty>
   </div>
 } @else if (loading()) {
   <div class="card flex" style="justify-content:center; padding: 44px">
     <span class="spinner spinner-lg" style="color: var(--accent)"></span>
   </div>
-} @else if (rows().length === 0) {
-  <div class="card">
-    <base-empty icon="database" title="No data scopes" subtitle="Create a data scope to restrict data access for this role."></base-empty>
-  </div>
 } @else {
   <div class="card">
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Module</th>
-            <th>Screen</th>
-            <th>Branch</th>
-            <th>Department</th>
-            <th>Warehouse</th>
-            <th>View</th>
-            <th>Create</th>
-            <th>Edit</th>
-            <th>Delete</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of rows(); track item.id) {
-            <tr>
-              <td>{{ item.moduleName || 'All' }}</td>
-              <td>{{ item.screenName || 'All' }}</td>
-              <td>{{ item.branchName || 'All' }}</td>
-              <td>{{ item.departmentName || 'All' }}</td>
-              <td>{{ item.warehouseName || 'All' }}</td>
-              <td>
-                @if (item.canView) {
-                  <span class="pill pill-green">Yes</span>
-                } @else {
-                  <span class="pill pill-gray">No</span>
-                }
-              </td>
-              <td>
-                @if (item.canCreate) {
-                  <span class="pill pill-green">Yes</span>
-                } @else {
-                  <span class="pill pill-gray">No</span>
-                }
-              </td>
-              <td>
-                @if (item.canEdit) {
-                  <span class="pill pill-green">Yes</span>
-                } @else {
-                  <span class="pill pill-gray">No</span>
-                }
-              </td>
-              <td>
-                @if (item.canDelete) {
-                  <span class="pill pill-green">Yes</span>
-                } @else {
-                  <span class="pill pill-gray">No</span>
-                }
-              </td>
-              <td>
-                @if (item.isActive) {
-                  <span class="pill pill-green">Active</span>
-                } @else {
-                  <span class="pill pill-gray">Inactive</span>
-                }
-              </td>
-              <td>
-                <div class="flex" style="gap: 4px">
-                  <button class="icon-btn" title="Edit" *basePermission="'data-scopes.manage'" (click)="openEdit(item)">
-                    <i-lucide name="square-pen" [size]="15"></i-lucide>
-                  </button>
-                  <button class="icon-btn" title="Delete" *basePermission="'data-scopes.manage'" (click)="remove(item.id)">
-                    <i-lucide name="trash-2" [size]="15"></i-lucide>
-                  </button>
-                </div>
-              </td>
-            </tr>
+    <div class="scope-panel">
+      <div class="scope-grid">
+
+        <div class="scope-group">
+          <div class="scope-group-header">
+            <label class="check-item scope-master">
+              <input
+                type="checkbox"
+                [checked]="allCompanies()"
+                (change)="toggleAll('company', $any($event.target).checked)"/>
+              <span>All Companies</span>
+            </label>
+          </div>
+          @if (allCompanies()) {
+            <div class="scope-hint">Full access to every company.</div>
           }
-        </tbody>
-      </table>
+          <div class="scope-list" [class.disabled]="allCompanies()">
+            @for (opt of companyOptions(); track opt.id) {
+              <label class="check-item scope-list-item">
+                <input
+                  type="checkbox"
+                  [checked]="isChecked('company', opt.id)"
+                  [disabled]="allCompanies()"
+                  (change)="toggleItem('company', opt.id, $any($event.target).checked)"/>
+                <span>{{ opt.label }}</span>
+              </label>
+            }
+            @if (companyOptions().length === 0) {
+              <span class="scope-empty">No companies available</span>
+            }
+          </div>
+        </div>
+
+        <div class="scope-group">
+          <div class="scope-group-header">
+            <label class="check-item scope-master">
+              <input
+                type="checkbox"
+                [checked]="allBranches()"
+                (change)="toggleAll('branch', $any($event.target).checked)"/>
+              <span>All Branches</span>
+            </label>
+          </div>
+          @if (allBranches()) {
+            <div class="scope-hint">Full access to every branch.</div>
+          } @else if (companyIds().length === 0) {
+            <div class="scope-hint">Select companies to load their branches.</div>
+          } @else {
+            <div class="scope-hint">Branches of {{ selectedCompanyNames() }} ({{ branchOptions().length }}).</div>
+          }
+          <div class="scope-list" [class.disabled]="allBranches()">
+            @for (opt of branchOptions(); track opt.id) {
+              <label class="check-item scope-list-item">
+                <input
+                  type="checkbox"
+                  [checked]="isChecked('branch', opt.id)"
+                  [disabled]="allBranches()"
+                  (change)="toggleItem('branch', opt.id, $any($event.target).checked)"/>
+                <span>{{ opt.label }}</span>
+              </label>
+            }
+            @if (branchOptions().length === 0) {
+              <span class="scope-empty">No branches available</span>
+            }
+          </div>
+        </div>
+
+        <div class="scope-group">
+          <div class="scope-group-header">
+            <label class="check-item scope-master">
+              <input
+                type="checkbox"
+                [checked]="allWarehouses()"
+                (change)="toggleAll('warehouse', $any($event.target).checked)"/>
+              <span>All Warehouses</span>
+            </label>
+          </div>
+          @if (allWarehouses()) {
+            <div class="scope-hint">Full access to every warehouse.</div>
+          } @else if (companyIds().length === 0) {
+            <div class="scope-hint">Select companies to load their warehouses.</div>
+          } @else {
+            <div class="scope-hint">Warehouses of {{ selectedCompanyNames() }} ({{ warehouseOptions().length }}).</div>
+          }
+          <div class="scope-list" [class.disabled]="allWarehouses()">
+            @for (opt of warehouseOptions(); track opt.id) {
+              <label class="check-item scope-list-item">
+                <input
+                  type="checkbox"
+                  [checked]="isChecked('warehouse', opt.id)"
+                  [disabled]="allWarehouses()"
+                  (change)="toggleItem('warehouse', opt.id, $any($event.target).checked)"/>
+                <span>{{ opt.label }}</span>
+              </label>
+            }
+            @if (warehouseOptions().length === 0) {
+              <span class="scope-empty">No warehouses available</span>
+            }
+          </div>
+        </div>
+
+      </div>
+
+      <div class="scope-toggles">
+        <label class="check-item">
+          <input type="checkbox" [checked]="canView()" (change)="canView.set($any($event.target).checked)"/>
+          <span>Can View</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" [checked]="canCreate()" (change)="canCreate.set($any($event.target).checked)"/>
+          <span>Can Create</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" [checked]="canEdit()" (change)="canEdit.set($any($event.target).checked)"/>
+          <span>Can Edit</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" [checked]="canDelete()" (change)="canDelete.set($any($event.target).checked)"/>
+          <span>Can Delete</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" [checked]="isActive()" (change)="isActive.set($any($event.target).checked)"/>
+          <span>Active</span>
+        </label>
+      </div>
     </div>
   </div>
 }
-
-<base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Data Scope' : 'New Data Scope'" (closeRequest)="closeDialog()">
-  <div class="scope-form-grid">
-    <div class="field">
-      <label class="field-label">Module</label>
-      <div class="input-wrap">
-        <select class="input" [value]="form.moduleId()" (change)="form.moduleId.set($any($event.target).value)">
-          <option value="">All Modules</option>
-          @for (opt of moduleOptions(); track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label class="field-label">Screen</label>
-      <div class="input-wrap">
-        <select class="input" [value]="form.screenId()" (change)="form.screenId.set($any($event.target).value)">
-          <option value="">All Screens</option>
-          @for (opt of screenOptions(); track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label class="field-label">Branch</label>
-      <div class="input-wrap">
-        <select class="input" [value]="form.branchId()" (change)="form.branchId.set($any($event.target).value)">
-          <option value="">All Branches</option>
-          @for (opt of branchOptions(); track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label class="field-label">Department</label>
-      <div class="input-wrap">
-        <select class="input" [value]="form.departmentId()" (change)="form.departmentId.set($any($event.target).value)">
-          <option value="">All Departments</option>
-          @for (opt of departmentOptions(); track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label class="field-label">Warehouse</label>
-      <div class="input-wrap">
-        <select class="input" [value]="form.warehouseId()" (change)="form.warehouseId.set($any($event.target).value)">
-          <option value="">All Warehouses</option>
-          @for (opt of warehouseOptions(); track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
-    </div>
-  </div>
-  <div class="scope-toggles">
-    <label class="check-item">
-      <input type="checkbox" [checked]="form.canView()" (change)="form.canView.set($any($event.target).checked)"/>
-      <span>Can View</span>
-    </label>
-    <label class="check-item">
-      <input type="checkbox" [checked]="form.canCreate()" (change)="form.canCreate.set($any($event.target).checked)"/>
-      <span>Can Create</span>
-    </label>
-    <label class="check-item">
-      <input type="checkbox" [checked]="form.canEdit()" (change)="form.canEdit.set($any($event.target).checked)"/>
-      <span>Can Edit</span>
-    </label>
-    <label class="check-item">
-      <input type="checkbox" [checked]="form.canDelete()" (change)="form.canDelete.set($any($event.target).checked)"/>
-      <span>Can Delete</span>
-    </label>
-  </div>
-  <div dialog-actions style="display:flex; gap:8px; justify-content:flex-end">
-    <base-button variant="secondary" label="Cancel" (click)="closeDialog()"></base-button>
-    <base-button [loading]="saving()" icon="save" (click)="save()">Save</base-button>
-  </div>
-</base-dialog>

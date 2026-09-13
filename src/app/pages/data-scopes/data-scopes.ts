@@ -1,54 +1,78 @@
-import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
-import { BaseEmpty, BasePill } from '../../shared/base-data';
+import { BaseEmpty } from '../../shared/base-data';
 import { BaseButton } from '../../shared/base-button';
-import { BaseDialog } from '../../shared/base-feedback';
-import { BaseInput, DropdownOption } from '../../shared/base-controls';
 import { BasePermission } from '../../shared/base-permission';
-import { DataScope, Role, Module, Screen } from '../../core/models';
+import { Role } from '../../core/models';
+import { OrganizationService } from '../../core/services/organization_service';
+import { AdministrationService } from '../../core/services/master_service';
+import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+
+interface ScopeOption {
+  id: number;
+  label: string;
+}
+
+interface ScopeSelection {
+  hasScope: boolean;
+  companyIds: number[];
+  allCompanies: boolean;
+  branchIds: number[];
+  allBranches: boolean;
+  warehouseIds: number[];
+  allWarehouses: boolean;
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  isActive: boolean;
+}
+
+type ScopeLevel = 'company' | 'branch' | 'warehouse';
 
 @Component({
   selector: 'app-data-scopes',
   standalone: true,
-  imports: [ LucideAngularModule, BaseEmpty, BaseButton, BaseDialog, BasePermission],
+  imports: [LucideAngularModule, BaseEmpty, BaseButton, BasePermission],
   templateUrl: './data-scopes.html',
   styleUrl: './data-scopes.css',
 })
 export class DataScopesPage {
   private readonly http = inject(HttpClient);
+  private readonly org = inject(OrganizationService);
+  private readonly admin = inject(AdministrationService);
+  private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
-  protected readonly rows = signal<DataScope[]>([]);
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
-  protected readonly dialogOpen = signal(false);
-  protected readonly editing = signal<DataScope | null>(null);
 
   protected readonly selectedRoleId = signal<string>('');
 
-  protected readonly roleOptions = signal<DropdownOption[]>([]);
-  protected readonly moduleOptions = signal<DropdownOption[]>([]);
-  protected readonly screenOptions = signal<DropdownOption[]>([]);
-  protected readonly branchOptions = signal<DropdownOption[]>([]);
-  protected readonly departmentOptions = signal<DropdownOption[]>([]);
-  protected readonly warehouseOptions = signal<DropdownOption[]>([]);
+  protected readonly roleOptions = signal<{ value: number; label: string }[]>([]);
 
-  protected readonly form = {
-    moduleId: signal<string>(''),
-    screenId: signal<string>(''),
-    branchId: signal<string>(''),
-    departmentId: signal<string>(''),
-    warehouseId: signal<string>(''),
-    canView: signal(true),
-    canCreate: signal(false),
-    canEdit: signal(false),
-    canDelete: signal(false),
-    isActive: signal(true),
-  };
+  protected readonly companyOptions = signal<ScopeOption[]>([]);
+  protected readonly branchOptions = signal<ScopeOption[]>([]);
+  protected readonly warehouseOptions = signal<ScopeOption[]>([]);
+
+  /** Company whose branches/warehouses the lists currently show. */
+  protected readonly activeCompanyId = signal<number | null>(null);
+
+  protected readonly companyIds = signal<number[]>([]);
+  protected readonly allCompanies = signal(false);
+  protected readonly branchIds = signal<number[]>([]);
+  protected readonly allBranches = signal(false);
+  protected readonly warehouseIds = signal<number[]>([]);
+  protected readonly allWarehouses = signal(false);
+
+  protected readonly canView = signal(true);
+  protected readonly canCreate = signal(false);
+  protected readonly canEdit = signal(false);
+  protected readonly canDelete = signal(false);
+  protected readonly isActive = signal(true);
 
   constructor() {
     void this.loadRoles();
@@ -56,45 +80,13 @@ export class DataScopesPage {
 
   protected async onRoleChange(): Promise<void> {
     const roleId = this.selectedRoleId();
-    if (!roleId) {
-      this.rows.set([]);
-      return;
+    if (!roleId) return;
+    this.loading.set(true);
+    try {
+      await Promise.all([this.loadSelection(+roleId), this.loadOptions()]);
+    } finally {
+      this.loading.set(false);
     }
-    await this.loadRows(roleId);
-  }
-
-  protected openCreate(): void {
-    this.editing.set(null);
-    this.form.moduleId.set('');
-    this.form.screenId.set('');
-    this.form.branchId.set('');
-    this.form.departmentId.set('');
-    this.form.warehouseId.set('');
-    this.form.canView.set(true);
-    this.form.canCreate.set(false);
-    this.form.canEdit.set(false);
-    this.form.canDelete.set(false);
-    this.form.isActive.set(true);
-    this.dialogOpen.set(true);
-  }
-
-  protected openEdit(item: DataScope): void {
-    this.editing.set(item);
-    this.form.moduleId.set(item.moduleId?.toString() ?? '');
-    this.form.screenId.set(item.screenId?.toString() ?? '');
-    this.form.branchId.set(item.branchId?.toString() ?? '');
-    this.form.departmentId.set(item.departmentId?.toString() ?? '');
-    this.form.warehouseId.set(item.warehouseId?.toString() ?? '');
-    this.form.canView.set(item.canView);
-    this.form.canCreate.set(item.canCreate);
-    this.form.canEdit.set(item.canEdit);
-    this.form.canDelete.set(item.canDelete);
-    this.form.isActive.set(item.isActive);
-    this.dialogOpen.set(true);
-  }
-
-  protected closeDialog(): void {
-    this.dialogOpen.set(false);
   }
 
   protected async save(): Promise<void> {
@@ -103,51 +95,97 @@ export class DataScopesPage {
 
     this.saving.set(true);
     try {
-      const payload = {
-        roleId,
-        moduleId: this.form.moduleId() ? parseInt(this.form.moduleId(), 10) : null,
-        screenId: this.form.screenId() ? parseInt(this.form.screenId(), 10) : null,
-        branchId: this.form.branchId() ? parseInt(this.form.branchId(), 10) : null,
-        departmentId: this.form.departmentId() ? parseInt(this.form.departmentId(), 10) : null,
-        warehouseId: this.form.warehouseId() ? parseInt(this.form.warehouseId(), 10) : null,
-        canView: this.form.canView(),
-        canCreate: this.form.canCreate(),
-        canEdit: this.form.canEdit(),
-        canDelete: this.form.canDelete(),
-        isActive: this.form.isActive(),
-      };
+      await firstValueFrom(
+        this.http.post(`/api/data-scopes/role/${roleId}/replace`, {
+          companyIds: this.companyIds(),
+          allCompanies: this.allCompanies(),
+          branchIds: this.branchIds(),
+          allBranches: this.allBranches(),
+          warehouseIds: this.warehouseIds(),
+          allWarehouses: this.allWarehouses(),
+          canView: this.canView(),
+          canCreate: this.canCreate(),
+          canEdit: this.canEdit(),
+          canDelete: this.canDelete(),
+          isActive: this.isActive(),
+        }),
+      );
+      this.toast.success('Data scope saved');
+      await this.loadSelection(roleId);
+    } catch {
+      /* handled by interceptor */
+    } finally {
+      this.saving.set(false);
+    }
+  }
 
-      const editingId = this.editing()?.id;
-      if (editingId) {
-        await firstValueFrom(this.http.put(`/api/data-scopes/${editingId}`, payload));
-        this.toast.success('Data scope updated');
-      } else {
-        await firstValueFrom(this.http.post('/api/data-scopes', payload));
-        this.toast.success('Data scope created');
+  //===========================
+  // Checkbox list helpers
+  //===========================
+
+  protected isAll(level: ScopeLevel): boolean {
+    return level === 'company' ? this.allCompanies() : level === 'branch' ? this.allBranches() : this.allWarehouses();
+  }
+
+  protected ids(level: ScopeLevel): number[] {
+    return level === 'company' ? this.companyIds() : level === 'branch' ? this.branchIds() : this.warehouseIds();
+  }
+
+  protected options(level: ScopeLevel): ScopeOption[] {
+    return level === 'company' ? this.companyOptions() : level === 'branch' ? this.branchOptions() : this.warehouseOptions();
+  }
+
+  protected isChecked(level: ScopeLevel, id: number): boolean {
+    return this.ids(level).includes(id);
+  }
+
+  protected selectedCompanyNames(): string {
+    const names = this.companyIds().map((id) => this.companyOptions().find((o) => o.id === id)?.label).filter((n): n is string => !!n);
+    return names.join(', ');
+  }
+
+  protected toggleAll(level: ScopeLevel, checked: boolean): void {
+    const all = level === 'company' ? this.allCompanies : level === 'branch' ? this.allBranches : this.allWarehouses;
+    const ids = level === 'company' ? this.companyIds : level === 'branch' ? this.branchIds : this.warehouseIds;
+    all.set(checked);
+    if (checked) ids.set([]);
+
+    if (level === 'company') {
+      this.activeCompanyId.set(null);
+      this.branchOptions.set([]);
+      this.warehouseOptions.set([]);
+    }
+  }
+
+  protected toggleItem(level: ScopeLevel, id: number, checked: boolean): void {
+    const all = level === 'company' ? this.allCompanies : level === 'branch' ? this.allBranches : this.allWarehouses;
+    const ids = level === 'company' ? this.companyIds : level === 'branch' ? this.branchIds : this.warehouseIds;
+
+    if (checked) {
+      if (all()) {
+        all.set(false);
+        ids.set([id]);
+      } else if (!ids().includes(id)) {
+        ids.set([...ids(), id]);
       }
-      this.dialogOpen.set(false);
-      await this.loadRows(roleId.toString());
-    } catch {
-      /* handled by interceptor */
-    } finally {
-      this.saving.set(false);
+    } else {
+      ids.set(ids().filter((x) => x !== id));
+    }
+
+    if (level === 'company') {
+      this.activeCompanyId.set(this.companyIds()[0] ?? null);
+      if (this.allCompanies() || this.companyIds().length === 0) {
+        this.branchOptions.set([]);
+        this.warehouseOptions.set([]);
+      } else {
+        void this.loadChildOptions(this.companyIds());
+      }
     }
   }
 
-  protected async remove(id: number): Promise<void> {
-    if (!confirm('Delete this data scope?')) return;
-
-    this.saving.set(true);
-    try {
-      await firstValueFrom(this.http.delete(`/api/data-scopes/${id}`));
-      this.toast.success('Data scope deleted');
-      await this.loadRows(this.selectedRoleId());
-    } catch {
-      /* handled by interceptor */
-    } finally {
-      this.saving.set(false);
-    }
-  }
+  //===========================
+  // Loading
+  //===========================
 
   private async loadRoles(): Promise<void> {
     try {
@@ -158,31 +196,72 @@ export class DataScopesPage {
     }
   }
 
-  private async loadRows(roleId: string): Promise<void> {
-    this.loading.set(true);
+  private async loadSelection(roleId: number): Promise<void> {
     try {
-      const res = await firstValueFrom(this.http.get<DataScope[]>(`/api/data-scopes/role/${roleId}`));
-      this.rows.set(res ?? []);
-      await this.loadDropdowns();
+      const res = await firstValueFrom(this.http.get<ScopeSelection>(`/api/data-scopes/role/${roleId}/selection`));
+      this.companyIds.set(res.companyIds ?? []);
+      this.allCompanies.set(res.allCompanies ?? !res.hasScope);
+      this.branchIds.set(res.branchIds ?? []);
+      this.allBranches.set(res.allBranches ?? !res.hasScope);
+      this.warehouseIds.set(res.warehouseIds ?? []);
+      this.allWarehouses.set(res.allWarehouses ?? !res.hasScope);
+      this.canView.set(res.canView ?? true);
+      this.canCreate.set(res.canCreate ?? false);
+      this.canEdit.set(res.canEdit ?? false);
+      this.canDelete.set(res.canDelete ?? false);
+      this.isActive.set(res.isActive ?? true);
     } catch {
-      this.rows.set([]);
-    } finally {
-      this.loading.set(false);
+      /* handled by interceptor */
     }
   }
 
-  private async loadDropdowns(): Promise<void> {
-    const [modules, screens, branches, departments, warehouses] = await Promise.all([
-      firstValueFrom(this.http.get<Module[]>('/api/modules')).catch(() => [] as Module[]),
-      firstValueFrom(this.http.get<Screen[]>('/api/screens')).catch(() => [] as Screen[]),
-      firstValueFrom(this.http.get<{ id: number; branchName: string }[]>('/api/branches')).catch(() => []),
-      firstValueFrom(this.http.get<{ id: number; departmentName: string }[]>('/api/departments')).catch(() => []),
-      firstValueFrom(this.http.get<{ id: number; warehouseName: string }[]>('/api/warehouses')).catch(() => []),
-    ]);
-    this.moduleOptions.set(modules.map((m) => ({ value: m.id, label: m.moduleName })));
-    this.screenOptions.set(screens.map((s: any) => ({ value: s.id, label: s.screenName })));
-    this.branchOptions.set((branches as any[]).map((b) => ({ value: b.id, label: b.branchName })));
-    this.departmentOptions.set((departments as any[]).map((d) => ({ value: d.id, label: d.departmentName })));
-    this.warehouseOptions.set((warehouses as any[]).map((w) => ({ value: w.id, label: w.warehouseName })));
+  private async loadOptions(): Promise<void> {
+    // Prefer the full company list; fall back to the logged-in user's own company.
+    try {
+      const companies = await this.admin.company.getPaged(1, 1000);
+      this.companyOptions.set(companies.items.map((c) => ({ id: c.id, label: c.companyName })));
+    } catch {
+      const myCompany = this.auth.company();
+      this.companyOptions.set(myCompany ? [{ id: myCompany.id, label: myCompany.companyName }] : []);
+    }
+
+    // Branch/Warehouse lists follow the selected companies (union). All Companies
+    // -> child lists stay empty until specific companies are picked.
+    if (this.allCompanies()) {
+      this.activeCompanyId.set(null);
+      this.branchOptions.set([]);
+      this.warehouseOptions.set([]);
+      return;
+    }
+    const targetIds = this.companyIds().length > 0
+      ? this.companyIds()
+      : [this.companyOptions()[0]?.id].filter((x): x is number => x != null);
+    this.activeCompanyId.set(targetIds[0] ?? null);
+    await this.loadChildOptions(targetIds);
+  }
+
+  private async loadChildOptions(companyIds: number[]): Promise<void> {
+    const branchMap = new Map<number, string>();
+    const warehouseMap = new Map<number, string>();
+
+    await Promise.all(
+      companyIds.map(async (companyId) => {
+        try {
+          const branches = await this.org.branches.getPaged({ companyId, page: 1, size: 1000 });
+          for (const b of branches.items ?? []) branchMap.set(b.id, b.branchName);
+        } catch {
+          /* skipped */
+        }
+        try {
+          const warehouses = await this.org.warehouses.getPaged({ companyId, page: 1, size: 1000 });
+          for (const w of warehouses.items ?? []) warehouseMap.set(w.id, w.warehouseName);
+        } catch {
+          /* skipped */
+        }
+      }),
+    );
+
+    this.branchOptions.set([...branchMap].map(([id, label]) => ({ id, label })));
+    this.warehouseOptions.set([...warehouseMap].map(([id, label]) => ({ id, label })));
   }
 }

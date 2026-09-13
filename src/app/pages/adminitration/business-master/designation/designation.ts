@@ -3,7 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig } from '../../../shared/master-page/master-page';
 import { OrganizationService, DesignationDto, CreateDesignationRequest, UpdateDesignationRequest } from '../../../../core/services/organization_service';
-import { AdministrationService } from '../../../../core/services/master_service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { buildScopeLabel } from '../../../shared/scope-label';
 
 @Component({
   selector: 'app-designation',
@@ -14,7 +16,9 @@ import { AdministrationService } from '../../../../core/services/master_service'
 })
 export class Designation implements OnInit {
   private readonly org = inject(OrganizationService);
-  private readonly admin = inject(AdministrationService);
+  private readonly auth = inject(AuthService);
+  private readonly perms = inject(PermissionService);
+  private defaultCompanyId = 0;
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -61,14 +65,17 @@ export class Designation implements OnInit {
   };
 
   ngOnInit(): void {
-    void this.loadDropdowns();
-    void this.load();
+    void this.loadDropdowns().then(() => this.load());
   }
 
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const companyId = this.userModel['companyId'] ?? +(localStorage.getItem('companyId') ?? '1');
+      const companyId = this.userModel['companyId'] ?? this.defaultCompanyId;
+      if (!companyId) {
+        this.designations.set([]);
+        return;
+      }
       const res = await this.org.designations.getPaged({ companyId, page: 1, size: 100, search: '' });
       this.designations.set(res.items ?? []);
     } catch (err) {
@@ -80,16 +87,16 @@ export class Designation implements OnInit {
 
   private async loadDropdowns(): Promise<void> {
     try {
-      const companyId =
-        this.userModel['companyId'] ??
-        +(localStorage.getItem('companyId') ?? '1');
+      const roleNames = this.auth.user()?.roles ?? [];
+      const { companies, branches } = await this.perms.loadMyDataScopeOptions(roleNames);
 
-      const companiesRes = await this.admin.company.getPaged(1, 200, '');
+      const companyOptions = companies.map((c) => ({ value: c.id, label: c.name }));
+      if (companies.length > 0) {
+        this.defaultCompanyId = companies[0].id;
+      }
 
-      const companyOptions = (companiesRes.items ?? []).map((c: any) => ({
-        value: c.id,
-        label: c.companyName,
-      }));
+      const { scopeLabel, noAccess } = buildScopeLabel({ companies, branches });
+      this.config = { ...this.config, scopeLabel, noAccess };
 
       this.setOptions('companyId', companyOptions);
     } catch (err) {
@@ -109,7 +116,7 @@ export class Designation implements OnInit {
   protected createDesignation(): void {
     this.editing.set(null);
     this.userModel = {
-      companyId: null,
+      companyId: this.defaultCompanyId || null,
       designationCode: '',
       designationName: '',
       level: 0,

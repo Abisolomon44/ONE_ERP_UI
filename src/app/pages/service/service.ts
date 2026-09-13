@@ -1,5 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig } from '../shared/master-page/master-page';
 import { MasterRow } from '../shared/master.model';
@@ -25,6 +27,7 @@ export class ServicePage implements OnInit {
   private readonly billing = inject(BillingMasterService);
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
+  private readonly http = inject(HttpClient);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
@@ -141,14 +144,54 @@ export class ServicePage implements OnInit {
       isTaxInclusive: false,
       description: '',
       isActive: true,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
     };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
   }
 
-  protected editRow(row: Record<string, any>): void {
+  protected async editRow(row: Record<string, any>): Promise<void> {
     this.editing.set(row as ServiceDto);
-    this.userModel = { ...row };
+    this.userModel = {
+      ...row,
+      addresses: [],
+      contacts: [],
+      files: [],
+      notes: [],
+      tags: [],
+    };
+    this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
+
+    const entityId = row['entityId'] ?? row['EntityId'];
+    if (entityId == null) return;
+    try {
+      const entity = await this.loadEntity(entityId);
+      if (entity) {
+        this.userModel['addresses'] = entity.addresses ?? [];
+        this.userModel['contacts'] = entity.contacts ?? [];
+        this.userModel['files'] = entity.files ?? [];
+        this.userModel['notes'] = entity.notes ?? [];
+        this.userModel['tags'] = entity.tags ?? [];
+      }
+    } catch {
+      /* entity fetch is optional; tab stays empty */
+    }
+  }
+
+  private async loadEntity(entityId: number): Promise<any | null> {
+    const res: any = await firstValueFrom(this.http.get(`/api/entities/${entityId}`));
+    return res ?? null;
+  }
+
+  private withEntityTab() {
+    const tabs = this.config.tabs;
+    if (tabs.some(t => t.entity)) return tabs;
+    return [...tabs, { name: 'Address & Contacts', fields: [] as string[], entity: true as const }];
   }
 
   protected async save(): Promise<void> {
@@ -156,6 +199,31 @@ export class ServicePage implements OnInit {
     this.saving.set(true);
     try {
       const editing = this.editing();
+
+      const hasEntityData =
+        (this.userModel['addresses']?.length > 0) ||
+        (this.userModel['contacts']?.length > 0) ||
+        (this.userModel['files']?.length > 0) ||
+        (this.userModel['notes']?.length > 0) ||
+        (this.userModel['tags']?.length > 0);
+
+      let entityId: number | null = this.userModel['entityId'] ?? this.userModel['EntityId'] ?? null;
+      if (entityId == null && hasEntityData) {
+        const entityPayload: any = {
+          entityType: 'SERVICE',
+          entityCode: this.userModel['code']?.trim().toUpperCase(),
+          entityName: this.userModel['name']?.trim(),
+          isActive: true,
+          addresses: this.userModel['addresses'] ?? [],
+          contacts: this.userModel['contacts'] ?? [],
+          files: this.userModel['files'] ?? [],
+          notes: this.userModel['notes'] ?? [],
+          tags: this.userModel['tags'] ?? [],
+        };
+        const entity: any = await firstValueFrom(this.http.post('/api/entities', entityPayload));
+        entityId = entity?.entityId ?? entity?.EntityId ?? null;
+      }
+
       const payload: CreateServiceRequest = {
         code: this.userModel['code']?.trim().toUpperCase(),
         name: this.userModel['name']?.trim(),
@@ -166,6 +234,7 @@ export class ServicePage implements OnInit {
         standardRate: this.userModel['standardRate'] ?? 0,
         isTaxInclusive: this.userModel['isTaxInclusive'] ?? false,
         description: this.userModel['description'] || null,
+        entityId,
       };
       if (editing) {
         const updatePayload: UpdateServiceRequest = {
