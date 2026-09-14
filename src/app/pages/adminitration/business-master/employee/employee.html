@@ -1,0 +1,14 @@
+<app-master-page
+  [config]="config"
+  [data]="employees()"
+  [userModel]="userModel"
+  [showEntry]="showEntry()"
+  [loading]="loading()"
+  [saving]="saving()"
+  (createClick)="createEmployee()"
+  (editClick)="editEmployee($event)"
+  (deleteClick)="deleteEmployee($event)"
+  (saveClick)="saveEmployee()"
+  (cancelClick)="cancel()"
+  (refreshClick)="refresh()">
+</app-master-page>

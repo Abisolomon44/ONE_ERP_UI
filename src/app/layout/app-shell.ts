@@ -1,5 +1,6 @@
 ﻿import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../core/services/auth.service';
 import { ThemeService } from '../core/services/theme.service';
@@ -27,6 +28,8 @@ export class AppShell {
   protected readonly collapsed = signal(false);
   protected readonly mobileOpen = signal(false);
   protected readonly isMobile = signal(this.initIsMobile());
+  private onPurchaseEntry = false;
+  private collapsePrior = false;
 
   protected readonly workspaces = signal<WorkspaceNode[]>([]);
 
@@ -44,6 +47,24 @@ export class AppShell {
     });
 
     void this.loadWorkspaces();
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => this.applyRouteCollapse(e.urlAfterRedirects));
+    this.applyRouteCollapse(this.router.url);
+  }
+
+  private applyRouteCollapse(url: string): void {
+    const path = url.split('?')[0];
+    const entering = path === '/purchase-entry' || path.startsWith('/purchase-entry/');
+    if (entering && !this.onPurchaseEntry) {
+      // First time on Purchase Entry: remember current state, force collapsed.
+      this.collapsePrior = this.collapsed();
+      this.collapsed.set(true);
+    } else if (!entering && this.onPurchaseEntry) {
+      // Leaving Purchase Entry: restore the sidebar state used elsewhere.
+      this.collapsed.set(this.collapsePrior);
+    }
+    this.onPurchaseEntry = entering;
   }
 
   private initIsMobile(): boolean {

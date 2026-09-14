@@ -1,13 +1,7 @@
 <div class="entity-editor">
 
   <div class="entry-tabs ee-tabs">
-    @for (t of [
-      { key: 'address', label: 'Address', icon: 'MapPin' },
-      { key: 'contact', label: 'Contact', icon: 'UserRound' },
-      { key: 'files', label: 'Files', icon: 'Paperclip' },
-      { key: 'notes', label: 'Notes', icon: 'StickyNote' },
-      { key: 'tags', label: 'Tags', icon: 'Tags' }
-    ]; track t.key) {
+    @for (t of visibleSections(); track t.key) {
       <button
         class="entry-tab ee-tab"
         [class.active]="activeSection == t.key"

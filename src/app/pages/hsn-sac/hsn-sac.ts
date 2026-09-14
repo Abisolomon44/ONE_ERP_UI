@@ -4,6 +4,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig } from '../shared/master-page/master-page';
 import { MasterRow } from '../shared/master.model';
 import {
+  AdministrationService,
   BillingMasterService,
   HsnSacDto,
   CreateHsnSacRequest,
@@ -21,6 +22,7 @@ import { PermissionService } from '../../core/services/permission.service';
 })
 export class HsnSacPage implements OnInit {
   private readonly billing = inject(BillingMasterService);
+  private readonly admin = inject(AdministrationService);
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
 
@@ -50,6 +52,7 @@ export class HsnSacPage implements OnInit {
       { field: 'code', header: 'Code', width: '130px' },
       { field: 'name', header: 'Name' },
       { field: 'hsnSacType', header: 'Type', type: 'badge', width: '90px' },
+      { field: 'taxName', header: 'Tax' },
       { field: 'isActive', header: 'Active', type: 'checkbox', width: '90px' },
     ],
     fields: [
@@ -62,6 +65,7 @@ export class HsnSacPage implements OnInit {
           { value: 'SAC', label: 'SAC' },
         ],
       },
+      { name: 'taxId', label: 'Tax', type: 'dropdown', options: [] },
       { name: 'description', label: 'Description', type: 'textarea', maxLength: 500 },
       { name: 'isActive', label: 'Active', type: 'checkbox' },
     ],
@@ -72,7 +76,21 @@ export class HsnSacPage implements OnInit {
       this.loading.set(false);
       return;
     }
+    void this.loadTaxes();
     void this.load();
+  }
+
+  private async loadTaxes(): Promise<void> {
+    try {
+      const taxes = await this.admin.taxes.getPaged(1, 1000, '');
+      this.setOptions('taxId', (taxes.items ?? []).map((t: any) => ({ value: t.id, label: t.taxName })));
+    } catch {
+    }
+  }
+
+  private setOptions(fieldName: string, options: { value: any; label: string }[]): void {
+    const field = this.config.fields.find((f) => f.name === fieldName);
+    if (field) field.options = options;
   }
 
   private async load(): Promise<void> {
@@ -98,7 +116,7 @@ export class HsnSacPage implements OnInit {
     } catch {
       /* code will be generated server-side on save */
     }
-    this.userModel = { code: nextCode, name: '', hsnSacType: 'HSN', description: '', isActive: true };
+    this.userModel = { code: nextCode, name: '', hsnSacType: 'HSN', taxId: null, description: '', isActive: true };
     this.showEntry.set(true);
   }
 
@@ -117,6 +135,7 @@ export class HsnSacPage implements OnInit {
         code: this.userModel['code']?.trim().toUpperCase(),
         name: this.userModel['name']?.trim(),
         hsnSacType: this.userModel['hsnSacType'],
+        taxId: this.userModel['taxId'] || null,
         description: this.userModel['description'] || null,
       };
       if (editing) {

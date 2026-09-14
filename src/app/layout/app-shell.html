@@ -11,7 +11,7 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobile()">
+      <a class="nav-item" routerLink="/dashboard" title="Dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobile()">
         <i-lucide name="layout-dashboard" [size]="18"></i-lucide>
         @if (!collapsed()) {
           <span>Dashboard</span>
@@ -19,7 +19,7 @@
       </a>
 
       @for (ws of workspaces(); track ws.workspace.id) {
-        <a class="nav-item" [routerLink]="['/workspace', ws.workspace.id]" routerLinkActive="active" (click)="closeMobile()">
+        <a class="nav-item" [routerLink]="['/workspace', ws.workspace.id]" [attr.title]="ws.workspace.name" routerLinkActive="active" (click)="closeMobile()">
           <i-lucide [name]="ws.workspace.icon || 'layout-grid'" [size]="18"></i-lucide>
           @if (!collapsed()) {
             <span>{{ ws.workspace.name }}</span>
@@ -29,6 +29,9 @@
     </nav>
 
     <div class="sidebar-footer">
+      <button class="pe-side-toggle" type="button" [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'" (click)="toggleSidebar()">
+        <i-lucide [name]="collapsed() ? 'panel-left-open' : 'panel-left-close'" [size]="18"></i-lucide>
+      </button>
       <div class="user-chip">
         <span class="avatar">{{ initials() }}</span>
         @if (!collapsed()) {

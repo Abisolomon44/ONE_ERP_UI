@@ -92,6 +92,8 @@ export class Warehouse implements OnInit {
         type: 'text',
         required: true,
         maxLength: 20,
+        readonly: true,
+        placeholder: 'Auto-generated',
       },
       {
         name: 'warehouseName',
@@ -174,7 +176,7 @@ export class Warehouse implements OnInit {
     };
   }
 
-  protected createWarehouse(): void {
+  protected async createWarehouse(): Promise<void> {
     this.editing.set(null);
     this.userModel = {
       companyId: this.defaultCompanyId || null,
@@ -193,6 +195,22 @@ export class Warehouse implements OnInit {
     };
     this.config = { ...this.config, tabs: this.withEntityTab() };
     this.showEntry.set(true);
+    await this.loadNextCode();
+  }
+
+  private async loadNextCode(): Promise<void> {
+    const companyId = this.userModel['companyId'];
+    if (!companyId) return;
+    try {
+      const code = await firstValueFrom(
+        this.http.get<string>(`/api/organization/warehouses/next-code`, {
+          params: { companyId },
+        }),
+      );
+      this.userModel['warehouseCode'] = code;
+    } catch {
+      /* best-effort; backend still auto-generates on save */
+    }
   }
 
   protected async editWarehouse(row: Record<string, any>): Promise<void> {

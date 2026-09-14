@@ -57,6 +57,10 @@ export interface MasterTab {
   /** When true, this tab renders the universal entity editor (address/contact/file/note/tag)
    *  bound to `userModel['addresses' | 'contacts' | 'files' | 'notes' | 'tags']`. */
   entity?: boolean;
+  /** Restrict which entity editor sections appear (default: all sections). */
+  entitySections?: string[];
+  /** Entity type used when the entity editor must create the owning entity (default 'COMPANY'). */
+  entityType?: string;
 }
 
 export interface MasterToolbarAction {

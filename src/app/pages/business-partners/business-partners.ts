@@ -84,9 +84,10 @@ export class BusinessPartnersPage {
     }
   }
 
-  protected openCreate(): void {
+  protected async openCreate(): Promise<void> {
     this.editing.set(null);
     this.partnerCode.set('');
+    await this.loadNextCode();
     this.partnerName.set('');
     this.contactPerson.set('');
     this.mobileNo.set('');
@@ -101,6 +102,17 @@ export class BusinessPartnersPage {
     this.isActive.set(true);
     this.selectedRoleIds.set([]);
     this.dialogOpen.set(true);
+  }
+
+  private async loadNextCode(): Promise<void> {
+    try {
+      const code = await firstValueFrom(
+        this.http.get<string>('/api/business-partners/next-code'),
+      );
+      this.partnerCode.set(code);
+    } catch {
+      /* best-effort; backend still auto-generates on save */
+    }
   }
 
   protected openEdit(item: BusinessPartner): void {

@@ -265,6 +265,7 @@ export interface ProductDto {
   purchasePrice?: number | null;
   salesPrice?: number | null;
   taxId?: number | null;
+  hsnSacId?: number | null;
   isStockItem: boolean;
   isSaleable: boolean;
   isPurchaseable: boolean;
@@ -275,6 +276,7 @@ export interface ProductDto {
   brandName?: string | null;
   uomName?: string | null;
   branchName?: string | null;
+  hsnSacCode?: string | null;
   createdAt: string;
   updatedAt?: string | null;
 }
@@ -295,6 +297,7 @@ export type CreateProductRequest = {
   purchasePrice?: number | null;
   salesPrice?: number | null;
   taxId?: number | null;
+  hsnSacId?: number | null;
   isStockItem?: boolean;
   isSaleable?: boolean;
   isPurchaseable?: boolean;
@@ -470,6 +473,8 @@ export interface HsnSacDto {
   name: string;
   hsnSacType: string;
   description?: string | null;
+  taxId?: number | null;
+  taxName?: string | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -477,6 +482,7 @@ export type CreateHsnSacRequest = {
   code: string;
   name: string;
   hsnSacType: 'HSN' | 'SAC';
+  taxId?: number | null;
   description?: string | null;
 };
 export type UpdateHsnSacRequest = CreateHsnSacRequest & { description?: string | null; isActive: boolean };
@@ -964,11 +970,11 @@ export class BillingMasterService {
 export interface ImportColumnMetaDto {
   key: string;
   label: string;
-  isMandatory: boolean;
-  isReference: boolean;
-  referenceMaster?: string | null;
-  dataType: string;
-  example?: string | null;
+  required: boolean;
+  type: string;
+  referenceEntity?: string | null;
+  referenceDisplay?: string | null;
+  unique?: boolean;
 }
 
 export interface MasterImportMetaDto {
@@ -978,55 +984,100 @@ export interface MasterImportMetaDto {
   columns: ImportColumnMetaDto[];
 }
 
-export interface ImportRowErrorField {
-  field: string;
-  message: string;
-}
-
 export interface ImportRowResultDto {
   rowNumber: number;
   valid: boolean;
-  errors: ImportRowErrorField[];
-  values: Record<string, string>;
+  data: Record<string, unknown>;
+  errors: string[];
 }
 
 export interface ImportPreviewResponse {
-  fileName?: string | null;
-  entityName: string;
-  totalRows: number;
-  validRowsCount: number;
-  errorRowsCount: number;
   rows: ImportRowResultDto[];
+  totalRows: number;
+  validCount: number;
+  errorCount: number;
 }
 
 export interface ImportConfirmResponse {
-  importLogId: number;
-  fileName?: string | null;
-  entityName: string;
   totalRows: number;
-  successCount: number;
-  errorCount: number;
-  message?: string | null;
+  successRows: number;
+  failedRows: number;
+  status: string;
+  logId: number;
+  errors: string[];
 }
 
 export interface ImportConfirmRequest {
   entityName: string;
   fileName?: string | null;
-  rows: Record<string, unknown>[];
+  rows: Record<string, string>[];
 }
 
 export interface ImportLogDto {
   id: number;
+  companyId: number;
+  branchId?: number | null;
   importType: string;
-  fileName?: string | null;
+  moduleName: string;
   entityName: string;
-  status: string;
+  fileName?: string | null;
+  fileType: string;
   totalRows: number;
   successRows: number;
-  errorRows: number;
+  failedRows: number;
+  status: string;
   errorMessage?: string | null;
-  createdAt: string;
-  createdByName?: string | null;
+  importedBy: number;
+  importedAt: string;
+}
+
+// ============================================================
+// Master Export — driven by the same column metadata as import
+// (single source of truth: ImportColumnMetaDto).
+// ============================================================
+
+export interface ExportFilterMetaDto {
+  key: string;
+  label: string;
+  type: string; // reference | status | date | text
+  referenceEntity?: string | null;
+  referenceDisplay?: string | null;
+}
+
+export interface MasterExportMetaDto {
+  name: string;
+  label: string;
+  description: string;
+  columns: ImportColumnMetaDto[];
+  filters: ExportFilterMetaDto[];
+}
+
+export interface ExportFilterOptionDto {
+  value: string;
+  label: string;
+}
+
+export interface ExportQueryDto {
+  entityName: string;
+  format: 'xlsx' | 'csv';
+  filters: Record<string, string>;
+  columns: string[];
+  search?: string | null;
+  includeHeaders: boolean;
+  useDisplayNames: boolean;
+  includeInactive: boolean;
+  includeEmptyColumns: boolean;
+  page: number;
+  pageSize: number;
+}
+
+export interface ExportPreviewResponseDto {
+  columns: ImportColumnMetaDto[];
+  rows: Record<string, unknown>[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -1037,7 +1088,13 @@ export class MasterImportService {
     return firstValueFrom(this.http.get<MasterImportMetaDto[]>('/api/import/masters'));
   }
 
-  preview(entityName: string, fileName: string | null, rows: Record<string, unknown>[]): Promise<ImportPreviewResponse> {
+  getTemplate(entityName: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`/api/import/${encodeURIComponent(entityName)}/template`, { responseType: 'blob' }),
+    );
+  }
+
+  preview(entityName: string, fileName: string | null, rows: Record<string, string>[]): Promise<ImportPreviewResponse> {
     return firstValueFrom(
       this.http.post<ImportPreviewResponse>('/api/import/preview', { entityName, fileName, rows }),
     );
@@ -1045,6 +1102,28 @@ export class MasterImportService {
 
   confirm(request: ImportConfirmRequest): Promise<ImportConfirmResponse> {
     return firstValueFrom(this.http.post<ImportConfirmResponse>('/api/import/confirm', request));
+  }
+
+  getExportMeta(entityName: string): Promise<MasterExportMetaDto> {
+    const name = encodeURIComponent(entityName);
+    return firstValueFrom(this.http.get<MasterExportMetaDto>(`/api/import/${name}/export/meta`));
+  }
+
+  getExportOptions(entityName: string): Promise<Record<string, ExportFilterOptionDto[]>> {
+    const name = encodeURIComponent(entityName);
+    return firstValueFrom(this.http.post<Record<string, ExportFilterOptionDto[]>>(`/api/import/${name}/export/options`, {}));
+  }
+
+  getExportPreview(query: ExportQueryDto): Promise<ExportPreviewResponseDto> {
+    const name = encodeURIComponent(query.entityName);
+    return firstValueFrom(this.http.post<ExportPreviewResponseDto>(`/api/import/${name}/export/preview`, query));
+  }
+
+  exportFile(query: ExportQueryDto): Promise<Blob> {
+    const name = encodeURIComponent(query.entityName);
+    return firstValueFrom(
+      this.http.post(`/api/import/${name}/export`, query, { responseType: 'blob' }),
+    );
   }
 }
 
@@ -1143,9 +1222,17 @@ export interface LookupItem {
   name?: string | null;
 }
 
+export interface ProductLookupItem extends LookupItem {
+  uomId?: number | null;
+  uomName?: string | null;
+  hsnCode?: string | null;
+  gstRate?: number | null;
+  barcode?: string | null;
+}
+
 export interface PurchaseLookupsDto {
   suppliers: LookupItem[];
-  products: LookupItem[];
+  products: ProductLookupItem[];
   units: LookupItem[];
   paymentTypes: LookupItem[];
   paymentMethods: LookupItem[];
@@ -1193,6 +1280,17 @@ export interface PurchaseItemDto {
   manufacturingDate?: string | null;
   expiryDate?: string | null;
   remarks?: string | null;
+  taxId?: number | null;
+  cessId?: number | null;
+  orderedQuantity?: number | null;
+  receivedQuantity?: number | null;
+  returnedQuantity?: number | null;
+  remainingQuantity?: number | null;
+  purchaseOrderId?: number | null;
+  purchaseOrderItemId?: number | null;
+  grnId?: number | null;
+  batchNumber?: string | null;
+  serialNumber?: string | null;
 }
 
 export interface PurchaseDto {
@@ -1224,6 +1322,16 @@ export interface PurchaseDto {
   createdByUserID: number;
   createdAt: string;
   items: PurchaseItemDto[];
+  supplierPoNumber?: string | null;
+  referenceNumber?: string | null;
+  currencyId?: number | null;
+  purchaseTypeId?: number | null;
+  accountingYearId?: number | null;
+  taxId?: number | null;
+  isGSTInclusive?: boolean | null;
+  cancelledByUserID?: number | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
 }
 
 export interface CreatePurchaseItemInput {
@@ -1251,6 +1359,17 @@ export interface CreatePurchaseItemInput {
   manufacturingDate?: string | null;
   expiryDate?: string | null;
   remarks?: string | null;
+  taxId?: number | null;
+  cessId?: number | null;
+  orderedQuantity?: number | null;
+  receivedQuantity?: number | null;
+  returnedQuantity?: number | null;
+  remainingQuantity?: number | null;
+  purchaseOrderId?: number | null;
+  purchaseOrderItemId?: number | null;
+  grnId?: number | null;
+  batchNumber?: string | null;
+  serialNumber?: string | null;
 }
 
 export interface CreatePurchasePaymentInput {
@@ -1269,6 +1388,13 @@ export interface CreatePurchaseRequest {
   purchaseDate: string;
   supplierInvoiceNumber?: string | null;
   supplierInvoiceDate?: string | null;
+  supplierPoNumber?: string | null;
+  referenceNumber?: string | null;
+  currencyId?: number | null;
+  purchaseTypeId?: number | null;
+  accountingYearId?: number | null;
+  taxId?: number | null;
+  isGSTInclusive?: boolean | null;
   paymentTypeID?: number | null;
   paymentMethodID?: number | null;
   remarks?: string | null;
@@ -1290,6 +1416,13 @@ export interface UpdatePurchaseRequest {
   remarks?: string | null;
   items: CreatePurchaseItemInput[];
   companyId: number;
+  supplierPoNumber?: string | null;
+  referenceNumber?: string | null;
+  currencyId?: number | null;
+  purchaseTypeId?: number | null;
+  accountingYearId?: number | null;
+  taxId?: number | null;
+  isGSTInclusive?: boolean | null;
 }
 
 @Injectable({ providedIn: 'root' })

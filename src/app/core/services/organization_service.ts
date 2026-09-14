@@ -128,19 +128,31 @@ export type UpdateDesignationRequest = Omit<DesignationDto, 'id' | 'companyId' |
 
 export interface EmployeeDto {
   id: number;
+  entityId?: number | null;
   companyId: number;
   branchId?: number | null;
   departmentId?: number | null;
   designationId?: number | null;
   employmentTypeId?: number | null;
   employeeCode: string;
+  employeeNumber?: string | null;
   firstName: string;
+  middleName?: string | null;
   lastName?: string | null;
-  email?: string | null;
-  phone?: string | null;
+  displayName?: string | null;
+  genderId?: number | null;
+  maritalStatusId?: number | null;
+  dateOfBirth?: string | null;
   dateOfJoining?: string | null;
+  dateOfLeaving?: string | null;
+  officialEmail?: string | null;
+  personalEmail?: string | null;
+  mobileNo?: string | null;
+  alternateMobileNo?: string | null;
   reportingManagerId?: number | null;
+  remarks?: string | null;
   isActive: boolean;
+  isBlocked?: boolean;
   createdAt: string;
   updatedAt?: string | null;
 }

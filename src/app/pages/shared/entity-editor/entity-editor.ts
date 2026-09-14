@@ -24,10 +24,31 @@ export class EntityEditorComponent implements OnInit {
   /** Stable id of the owning entity; children are saved against it. */
   @Input() entityId: number | null = null;
 
+  /** Restrict which sections are shown. Empty/undefined shows all sections. */
+  @Input() sections: string[] = [];
+
+  /** Entity type used when the editor has to create the owning entity. */
+  @Input() entityType: string = 'COMPANY';
+
   /** Emitted when a tab save creates the entity (returns the new EntityId). */
   @Output() entityCreated = new EventEmitter<number>();
 
+  private static readonly ALL_SECTIONS: { key: string; label: string; icon: string }[] = [
+    { key: 'address', label: 'Address', icon: 'MapPin' },
+    { key: 'contact', label: 'Contact', icon: 'UserRound' },
+    { key: 'files', label: 'Files', icon: 'Paperclip' },
+    { key: 'notes', label: 'Notes', icon: 'StickyNote' },
+    { key: 'tags', label: 'Tags', icon: 'Tags' },
+  ];
+
   activeSection = 'address';
+
+  visibleSections(): { key: string; label: string; icon: string }[] {
+    const allowed = this.sections?.length
+      ? this.sections
+      : EntityEditorComponent.ALL_SECTIONS.map((s) => s.key);
+    return EntityEditorComponent.ALL_SECTIONS.filter((t) => allowed.includes(t.key));
+  }
 
   addressTypeOptions: LabelOption[] = [];
   contactTypeOptions: LabelOption[] = [];
@@ -41,6 +62,10 @@ export class EntityEditorComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.loadLookups();
+    if (!this.sections.includes(this.activeSection)) {
+      const first = this.visibleSections()[0];
+      if (first) this.activeSection = first.key;
+    }
   }
 
   private async loadLookups(): Promise<void> {
@@ -102,10 +127,10 @@ export class EntityEditorComponent implements OnInit {
       if (this.entityId != null) {
         body = await firstValueFrom(this.http.put(`/api/entities/${this.entityId}/${urlKey}`, rows));
       } else {
-        const entityName = this.model['companyName'] ?? this.model['entityName'] ?? '';
-        const entityCode = this.model['companyCode'] ?? this.model['entityCode'] ?? '';
+        const entityName = this.model['entityName'] ?? this.model['companyName'] ?? this.model['productName'] ?? this.model['branchName'] ?? '';
+        const entityCode = this.model['entityCode'] ?? this.model['companyCode'] ?? this.model['productCode'] ?? '';
         body = await firstValueFrom(this.http.post('/api/entities', {
-          entityType: 'COMPANY',
+          entityType: this.entityType || 'COMPANY',
           entityCode: entityCode?.trim(),
           entityName: entityName?.trim(),
           isActive: true,

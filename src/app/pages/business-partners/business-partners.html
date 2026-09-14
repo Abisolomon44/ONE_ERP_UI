@@ -54,7 +54,7 @@
 
 <base-dialog [open]="dialogOpen()" [title]="editing() ? 'Edit Partner' : 'Create Partner'" (closeRequest)="dialogOpen.set(false)">
   <div class="bp-grid">
-    <base-input label="Partner Code" icon="hash" [(value)]="partnerCode" [disabled]="!!editing()" hint="Unique code, e.g. CUST001"></base-input>
+    <base-input label="Partner Code" icon="hash" [(value)]="partnerCode" [disabled]="true" hint="Auto-generated, read-only"></base-input>
     <base-input label="Partner Name" icon="users" [(value)]="partnerName"></base-input>
     <base-input label="Contact Person" icon="user" [(value)]="contactPerson"></base-input>
     <base-input label="Mobile No" icon="phone" [(value)]="mobileNo"></base-input>
@@ -116,7 +116,7 @@
 
   <div class="dialog-inner-footer">
     <base-button variant="secondary" (click)="dialogOpen.set(false)">Cancel</base-button>
-    <base-button [loading]="saving()" [disabled]="!partnerCode() || !partnerName() || selectedRoleIds().length === 0" (click)="save()">
+    <base-button [loading]="saving()" [disabled]="!partnerName() || selectedRoleIds().length === 0" (click)="save()">
       {{ editing() ? 'Save Changes' : 'Create Partner' }}
     </base-button>
   </div>

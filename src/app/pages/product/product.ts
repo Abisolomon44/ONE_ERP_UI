@@ -6,6 +6,7 @@ import { LucideAngularModule } from 'lucide-angular';
 import { MasterPage, MasterConfig, MasterToolbarAction } from '../shared/master-page/master-page';
 import {
   AdministrationService,
+  BillingMasterService,
   ProductDto,
   CreateProductRequest,
   UpdateProductRequest,
@@ -25,6 +26,7 @@ import { buildScopeLabel } from '../shared/scope-label';
 })
 export class ProductPage implements OnInit {
   private readonly admin = inject(AdministrationService);
+  private readonly billing = inject(BillingMasterService);
   private readonly http = inject(HttpClient);
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
@@ -38,6 +40,9 @@ export class ProductPage implements OnInit {
   protected readonly editing = signal<ProductDto | null>(null);
 
   protected userModel: Record<string, any> = {};
+
+  /** hsnSacId -> HsnSacDto lookup for auto-loading the tax from the selected HSN/SAC. */
+  private readonly hsnMap = new Map<number, any>();
 
   protected config: MasterConfig = {
     title: 'Products',
@@ -53,7 +58,7 @@ export class ProductPage implements OnInit {
     allowExport: true,
     allowRefresh: true,
     tabs: [
-      { name: 'General', fields: ['productCode', 'productName', 'categoryId', 'subCategoryId', 'brandId', 'uomId', 'companyId', 'branchId', 'sku', 'barcode'] },
+      { name: 'General', fields: ['productCode', 'productName', 'categoryId', 'subCategoryId', 'brandId', 'uomId', 'companyId', 'branchId', 'sku', 'barcode', 'hsnSacId'] },
       { name: 'Pricing', fields: ['mrp', 'purchasePrice', 'salesPrice', 'taxId'] },
       { name: 'Classification', fields: ['isStockItem', 'isSaleable', 'isPurchaseable'] },
       { name: 'Status', fields: ['description', 'isActive'] },
@@ -79,6 +84,7 @@ export class ProductPage implements OnInit {
       { name: 'branchId', label: 'Branch', type: 'dropdown', options: [] },
       { name: 'sku', label: 'SKU', type: 'text', maxLength: 50 },
       { name: 'barcode', label: 'Barcode', type: 'text', maxLength: 100 },
+      { name: 'hsnSacId', label: 'HSN/SAC', type: 'dropdown', options: [] },
       { name: 'mrp', label: 'MRP', type: 'number' },
       { name: 'purchasePrice', label: 'Purchase Price', type: 'number' },
       { name: 'salesPrice', label: 'Sales Price', type: 'number' },
@@ -180,16 +186,20 @@ export class ProductPage implements OnInit {
 
   private async loadDropdowns(): Promise<void> {
     try {
-      const [cats, subs, brands, units] = await Promise.all([
+      const [cats, subs, brands, units, hsns] = await Promise.all([
         this.admin.productCategories.getPaged(1, 1000, ''),
         this.admin.productSubCategories.getPaged(1, 1000, ''),
         this.admin.productBrands.getPaged(1, 1000, ''),
         this.admin.productUnits.getPaged(1, 1000, ''),
+        this.billing.hsnSacs.getPaged(1, 1000, ''),
       ]);
       this.setOptions('categoryId', (cats.items ?? []).map((c: any) => ({ value: c.id, label: c.categoryName })));
       this.setOptions('subCategoryId', (subs.items ?? []).map((s: any) => ({ value: s.id, label: s.subCategoryName })));
       this.setOptions('brandId', (brands.items ?? []).map((b: any) => ({ value: b.id, label: b.brandName })));
       this.setOptions('uomId', (units.items ?? []).map((u: any) => ({ value: u.id, label: u.unitName })));
+      this.hsnMap.clear();
+      (hsns.items ?? []).forEach((h: any) => this.hsnMap.set(h.hsnSacId, h));
+      this.setOptions('hsnSacId', (hsns.items ?? []).map((h: any) => ({ value: h.hsnSacId, label: h.code })));
     } catch {
     }
     try {
@@ -218,6 +228,10 @@ export class ProductPage implements OnInit {
   protected onFieldChange(evt: { name: string; value: any }): void {
     if (evt.name === 'companyId') {
       void this.loadBranches(evt.value);
+    } else if (evt.name === 'hsnSacId') {
+      // Auto-load the tax mapped on the HSN/SAC master.
+      const hsn = evt.value != null ? this.hsnMap.get(evt.value) : null;
+      this.userModel['taxId'] = hsn?.taxId ?? null;
     }
   }
 
@@ -263,18 +277,16 @@ export class ProductPage implements OnInit {
       mrp: null,
       purchasePrice: null,
       salesPrice: null,
+      taxId: null,
+      hsnSacId: null,
       isStockItem: true,
       isSaleable: true,
       isPurchaseable: true,
       description: '',
       isActive: true,
-      addresses: [],
-      contacts: [],
       files: [],
-      notes: [],
-      tags: [],
     };
-    this.config = { ...this.config, tabs: this.withEntityTab() };
+    this.config = { ...this.config, tabs: this.withFileTab() };
     this.showEntry.set(true);
     void this.loadBranches(companyId);
   }
@@ -283,13 +295,9 @@ export class ProductPage implements OnInit {
     this.editing.set(row as ProductDto);
     this.userModel = {
       ...row,
-      addresses: [],
-      contacts: [],
       files: [],
-      notes: [],
-      tags: [],
     };
-    this.config = { ...this.config, tabs: this.withEntityTab() };
+    this.config = { ...this.config, tabs: this.withFileTab() };
     this.showEntry.set(true);
     void this.loadBranches(row['companyId']);
 
@@ -298,11 +306,7 @@ export class ProductPage implements OnInit {
     try {
       const entity = await this.loadEntity(entityId);
       if (entity) {
-        this.userModel['addresses'] = entity.addresses ?? [];
-        this.userModel['contacts'] = entity.contacts ?? [];
         this.userModel['files'] = entity.files ?? [];
-        this.userModel['notes'] = entity.notes ?? [];
-        this.userModel['tags'] = entity.tags ?? [];
       }
     } catch {
       /* entity fetch is optional; tab stays empty */
@@ -314,10 +318,16 @@ export class ProductPage implements OnInit {
     return res ?? null;
   }
 
-  private withEntityTab() {
+  private withFileTab() {
     const tabs = this.config.tabs;
     if (tabs.some(t => t.entity)) return tabs;
-    return [...tabs, { name: 'Address & Contacts', fields: [] as string[], entity: true as const }];
+    return [...tabs, {
+      name: 'File',
+      fields: [] as string[],
+      entity: true as const,
+      entitySections: ['files'],
+      entityType: 'PRODUCT',
+    }];
   }
 
   protected async save(): Promise<void> {
@@ -326,25 +336,14 @@ export class ProductPage implements OnInit {
     try {
       const editing = this.editing();
 
-      const hasEntityData =
-        (this.userModel['addresses']?.length > 0) ||
-        (this.userModel['contacts']?.length > 0) ||
-        (this.userModel['files']?.length > 0) ||
-        (this.userModel['notes']?.length > 0) ||
-        (this.userModel['tags']?.length > 0);
-
       let entityId: number | null = this.userModel['entityId'] ?? this.userModel['EntityId'] ?? null;
-      if (entityId == null && hasEntityData) {
+      if (!editing && entityId == null && (this.userModel['files']?.length > 0)) {
         const entityPayload: any = {
           entityType: 'PRODUCT',
           entityCode: this.userModel['productCode']?.trim().toUpperCase(),
           entityName: this.userModel['productName']?.trim(),
           isActive: true,
-          addresses: this.userModel['addresses'] ?? [],
-          contacts: this.userModel['contacts'] ?? [],
           files: this.userModel['files'] ?? [],
-          notes: this.userModel['notes'] ?? [],
-          tags: this.userModel['tags'] ?? [],
         };
         const entity: any = await firstValueFrom(this.http.post('/api/entities', entityPayload));
         entityId = entity?.entityId ?? entity?.EntityId ?? null;
@@ -366,6 +365,7 @@ export class ProductPage implements OnInit {
         purchasePrice: this.userModel['purchasePrice'] ?? null,
         salesPrice: this.userModel['salesPrice'] ?? null,
         taxId: this.userModel['taxId'] || null,
+        hsnSacId: this.userModel['hsnSacId'] || null,
         isStockItem: this.userModel['isStockItem'] ?? true,
         isSaleable: this.userModel['isSaleable'] ?? true,
         isPurchaseable: this.userModel['isPurchaseable'] ?? true,

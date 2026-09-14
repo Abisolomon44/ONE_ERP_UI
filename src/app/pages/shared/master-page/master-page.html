@@ -230,6 +230,7 @@
       <div class="card-body">
         @if (currentTab?.entity) {
           <app-entity-editor [model]="userModel" [entityId]="userModel['entityId'] ?? userModel['EntityId'] ?? null"
+            [sections]="currentTab?.entitySections ?? []" [entityType]="currentTab?.entityType ?? 'COMPANY'"
             (entityCreated)="onEntityCreated($event)"></app-entity-editor>
         }
         @else {

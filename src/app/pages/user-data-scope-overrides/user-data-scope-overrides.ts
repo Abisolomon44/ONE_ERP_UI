@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -38,7 +37,7 @@ type ScopeLevel = 'company' | 'branch' | 'warehouse';
 @Component({
   selector: 'app-user-data-scope-overrides',
   standalone: true,
-  imports: [DatePipe, LucideAngularModule, BaseEmpty, BaseButton, BasePermission],
+  imports: [LucideAngularModule, BaseEmpty, BaseButton, BasePermission],
   templateUrl: './user-data-scope-overrides.html',
   styleUrl: './user-data-scope-overrides.css',
 })

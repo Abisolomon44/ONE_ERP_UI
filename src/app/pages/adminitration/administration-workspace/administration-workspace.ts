@@ -100,6 +100,15 @@ export class AdministrationWorkspace {
       },
       {
         id: 6,
+        title: 'Employee',
+        description: 'Manage Employees',
+        icon: 'Users',
+        count: 0,
+        route: '/employee',
+        color: 'primary'
+      },
+      {
+        id: 7,
         title: 'Financial Year',
         description: 'Manage Financial Years',
         icon: 'CalendarRange',
@@ -108,7 +117,7 @@ export class AdministrationWorkspace {
         color: 'secondary'
       },
       {
-        id: 7,
+        id: 8,
         title: 'Users',
         description: 'Manage Users',
         icon: 'Users',
@@ -117,7 +126,7 @@ export class AdministrationWorkspace {
         color: 'primary'
       },
       {
-        id: 8,
+        id: 9,
         title: 'Roles',
         description: 'Manage Roles',
         icon: 'ShieldCheck',
@@ -126,7 +135,7 @@ export class AdministrationWorkspace {
         color: 'success'
       },
       {
-        id: 9,
+        id: 10,
         title: 'Permissions',
         description: 'Manage Permissions',
         icon: 'KeyRound',

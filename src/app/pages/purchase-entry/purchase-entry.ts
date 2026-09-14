@@ -12,6 +12,7 @@ import {
   CreatePurchaseItemInput,
   CreatePurchasePaymentInput,
   LookupItem,
+  ProductLookupItem,
 } from '../../core/services/master_service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -20,9 +21,11 @@ import { PurchaseHubService } from '../../core/purchase-hub.service';
 
 interface DraftItem {
   productId: number | null;
+  productCode?: string | null;
   unitID: number | null;
   productName?: string | null;
   productText?: string | null; // autocomplete display text
+  selected?: boolean;
   quantity: number;
   freeQuantity: number;
   purchaseRate: number;
@@ -35,6 +38,8 @@ interface DraftItem {
   sgstRate: number;
   igstRate: number;
   cessRate: number;
+  gstRate: number;
+  hsnCode?: string | null;
   remarks?: string | null;
 }
 
@@ -118,7 +123,7 @@ export class PurchaseEntryPage implements OnInit {
 
   // product autocomplete state
   protected productOpen: number | null = null;
-  protected productResults: LookupItem[] = [];
+  protected productResults: ProductLookupItem[] = [];
   protected productHi = 0;
 
   private kbDeregs: (() => void)[] = [];
@@ -379,20 +384,25 @@ export class PurchaseEntryPage implements OnInit {
     if (dir === 'up') row = Math.max(0, row - 1);
     else if (dir === 'down') row = Math.min(rows - 1, row + 1);
     else if (dir === 'left') col = Math.max(0, col - 1);
-    else if (dir === 'right') col = Math.min(8, col + 1);
+    else if (dir === 'right') col = Math.min(7, col + 1);
     e.preventDefault();
     this.focusCell(row, col);
   }
 
   private onHomeEnd(which: 'home' | 'end', e: KeyboardEvent): void {
     if (this.productOpen !== null) {
-      this.closeProduct();
+      e.preventDefault();
+      const n = this.productResults.length;
+      if (n) {
+        this.productHi = which === 'home' ? 0 : n - 1;
+        this.scrollActiveProduct();
+      }
       return;
     }
     const cell = this.currentCell(e.target);
     if (!cell) return;
     e.preventDefault();
-    this.focusCell(cell.row, which === 'home' ? 0 : 8);
+    this.focusCell(cell.row, which === 'home' ? 0 : 7);
   }
 
   private onCtrlArrow(dir: 'up' | 'down', e: KeyboardEvent): void {
@@ -407,12 +417,12 @@ export class PurchaseEntryPage implements OnInit {
     if (!rows) return null;
     if (back) {
       if (col > 0) return { row, col: col - 1 };
-      if (row > 0) return { row: row - 1, col: 8 };
+      if (row > 0) return { row: row - 1, col: 7 };
       return null;
     }
-    if (col < 8) return { row, col: col + 1 };
+    if (col < 7) return { row, col: col + 1 };
     if (row < rows - 1) return { row: row + 1, col: 0 };
-    return { row, col: 8 };
+    return { row, col: 7 };
   }
 
   private onGridTab(e: KeyboardEvent, back: boolean): void {
@@ -441,7 +451,7 @@ export class PurchaseEntryPage implements OnInit {
       this.closeProduct();
       const items = this.itemsOf(this.activeTab());
       const rows = items.length;
-      if (cell.col < 8) {
+      if (cell.col < 7) {
         this.focusCell(cell.row, cell.col + 1);
       } else if (cell.row < rows - 1) {
         this.focusCell(cell.row + 1, 0);
@@ -508,14 +518,39 @@ export class PurchaseEntryPage implements OnInit {
     const n = this.productResults.length;
     if (!n) return;
     this.productHi = (this.productHi + delta + n) % n;
+    this.scrollActiveProduct();
   }
 
-  protected selectProduct(it: DraftItem, row: number, p: LookupItem): void {
+  private scrollActiveProduct(): void {
+    const host = this.el.nativeElement as HTMLElement;
+    const row = host.querySelector('.product-panel .ac-row.hi') as HTMLElement | null;
+    row?.scrollIntoView({ block: 'nearest' });
+  }
+
+  protected selectProduct(it: DraftItem, row: number, p: ProductLookupItem): void {
     it.productId = p.id;
+    it.productCode = p.code ?? null;
     it.productName = p.name;
     it.productText = `${p.name} (${p.code})`;
+    if (p.uomId != null) it.unitID = p.uomId;
+    it.hsnCode = p.hsnCode ?? null;
+    if (p.gstRate != null) this.onGstChange(it, p.gstRate);
+    const tab = this.activeTab();
+    if (tab) {
+      const dupIdx = tab.items.findIndex((x, i) => i !== row && x.productId === p.id);
+      if (dupIdx >= 0) {
+        const dup = tab.items[dupIdx];
+        dup.quantity = round2((dup.quantity || 0) + (it.quantity || 0));
+        dup.freeQuantity = round2((dup.freeQuantity || 0) + (it.freeQuantity || 0));
+        this.removeItem(row);
+        this.markDirty();
+        this.closeProduct();
+        this.focusCell(dupIdx > row ? dupIdx - 1 : dupIdx, 3);
+        return;
+      }
+    }
     this.closeProduct();
-    this.focusCell(row, 1);
+    this.focusCell(row, 2);
   }
 
   private selectProductHighlighted(): void {
@@ -524,6 +559,12 @@ export class PurchaseEntryPage implements OnInit {
     const p = this.productResults[this.productHi];
     const it = this.activeTab()?.items[row];
     if (p && it) this.selectProduct(it, row, p);
+  }
+
+  protected selectPanelProduct(p: ProductLookupItem): void {
+    if (this.productOpen === null) return;
+    const it = this.activeTab()?.items[this.productOpen];
+    if (it) this.selectProduct(it, this.productOpen, p);
   }
 
   protected closeProduct(): void {
@@ -595,6 +636,8 @@ export class PurchaseEntryPage implements OnInit {
       sgstRate: 0,
       igstRate: 0,
       cessRate: 0,
+      gstRate: 0, // combined GST % (CGST + SGST + IGST) for single-edit UX
+      hsnCode: null,
       remarks: null,
     };
   }
@@ -604,6 +647,39 @@ export class PurchaseEntryPage implements OnInit {
     tab.items.push(this.blankItem());
     this.markDirty();
     this.tabs.update((arr) => [...arr]);
+  }
+
+  protected allSelected(): boolean {
+    const items = this.activeTab()?.items ?? [];
+    return items.length > 0 && items.every((it) => it.selected ?? false);
+  }
+
+  protected toggleAll(checked: boolean): void {
+    const tab = this.activeTab();
+    if (!tab) return;
+    tab.items.forEach((it) => (it.selected = checked));
+    this.tabs.update((arr) => [...arr]);
+  }
+
+  protected setSelected(idx: number, checked: boolean): void {
+    const tab = this.activeTab();
+    if (!tab || !tab.items[idx]) return;
+    tab.items[idx].selected = checked;
+    this.tabs.update((arr) => [...arr]);
+  }
+
+  protected deleteSelected(): void {
+    const tab = this.activeTab();
+    if (!tab) return;
+    const selected = tab.items.filter((it) => it.selected).length;
+    if (!selected) {
+      this.toast.error('Select at least one row');
+      return;
+    }
+    if (!confirm(`Delete ${selected} selected row(s)?`)) return;
+    tab.items = tab.items.filter((it) => !it.selected);
+    this.tabs.update((arr) => [...arr]);
+    this.markDirty();
   }
 
   protected removeItem(idx: number): void {
@@ -621,6 +697,8 @@ export class PurchaseEntryPage implements OnInit {
     t.supplierId = p.supplierId;
     t.purchaseNumber = p.purchaseNumber;
     t.supplierInvoiceNo = p.supplierInvoiceNumber ?? '';
+    t.supplierPoNo = p.supplierPoNumber ?? '';
+    t.referenceNo = p.referenceNumber ?? '';
     t.purchaseDate = p.purchaseDate ? p.purchaseDate.slice(0, 10) : t.purchaseDate;
     t.supplierInvoiceDate = p.supplierInvoiceDate ? p.supplierInvoiceDate.slice(0, 10) : '';
     t.paymentTypeID = p.paymentTypeID ?? null;
@@ -628,6 +706,7 @@ export class PurchaseEntryPage implements OnInit {
     t.remarks = p.remarks ?? '';
     t.items = p.items.map((i) => ({
       productId: i.productId,
+      productCode: i.productCodeSnapshot ?? null,
       unitID: i.unitID,
       productName: i.productNameSnapshot ?? null,
       productText: i.productNameSnapshot ?? null,
@@ -643,6 +722,8 @@ export class PurchaseEntryPage implements OnInit {
       sgstRate: i.sgstRate,
       igstRate: i.igstRate,
       cessRate: i.cessRate,
+      gstRate: (i.cgstRate || 0) + (i.sgstRate || 0) + (i.igstRate || 0),
+      hsnCode: i.hsnCodeSnapshot ?? null,
       remarks: i.remarks ?? null,
     }));
     t.label = `#${t.purchaseNumber}`;
@@ -650,10 +731,45 @@ export class PurchaseEntryPage implements OnInit {
     this.activeTabId.set(t.tabId);
   }
 
+  protected onGstChange(it: DraftItem, value: any): void {
+    const v = Number(value) || 0;
+    // Single GST % edits CGST/SGST/IGST split; intra-state default: split into CGST+SGST.
+    it.gstRate = v;
+    it.cgstRate = v / 2;
+    it.sgstRate = v / 2;
+    it.igstRate = 0;
+    this.markDirty();
+  }
+
+  protected productCode(it: DraftItem): string {
+    if (it.productCode) return it.productCode;
+    if (it.productId != null) {
+      const p = this.lookups()?.products.find((x) => x.id === it.productId);
+      if (p?.code) return p.code;
+    }
+    return '';
+  }
+
+  protected barcode(it: DraftItem): string {
+    if (it.productId != null) {
+      const p = this.lookups()?.products.find((x) => x.id === it.productId);
+      if (p?.barcode) return p.barcode;
+    }
+    return '';
+  }
+
+  protected unitName(it: DraftItem): string {
+    if (it.unitID != null) {
+      const u = this.lookups()?.units.find((x) => x.id === it.unitID);
+      if (u?.name) return u.name;
+    }
+    return '';
+  }
+
   private lineBase(it: DraftItem): number {
     return (it.quantity || 0) * (it.purchaseRate || 0);
   }
-  private lineDisc(it: DraftItem): number {
+  protected lineDisc(it: DraftItem): number {
     return (this.lineBase(it) * (it.discountPercentage || 0)) / 100;
   }
   protected lineTaxable(it: DraftItem): number {
@@ -670,6 +786,9 @@ export class PurchaseEntryPage implements OnInit {
   }
   protected lineCess(it: DraftItem): number {
     return round2((this.lineTaxable(it) * (it.cessRate || 0)) / 100);
+  }
+  protected lineGst(it: DraftItem): number {
+    return this.lineCgst(it) + this.lineSgst(it) + this.lineIgst(it);
   }
   protected lineTotal(it: DraftItem): number {
     return round2(this.lineTaxable(it) + this.lineCgst(it) + this.lineSgst(it) + this.lineIgst(it) + this.lineCess(it));
@@ -701,6 +820,12 @@ export class PurchaseEntryPage implements OnInit {
   protected get totalCess(): number {
     return this.itemsSum((it) => this.lineCess(it));
   }
+  protected get totalGst(): number {
+    return round2(this.totalCgst + this.totalSgst + this.totalIgst);
+  }
+  protected get netAmount(): number {
+    return round2(this.taxable + this.totalGst + this.totalCess);
+  }
   protected get grandTotal(): number {
     return round2(this.taxable + this.totalCgst + this.totalSgst + this.totalIgst + this.totalCess);
   }
@@ -717,11 +842,12 @@ export class PurchaseEntryPage implements OnInit {
       wholesalePrice: it.wholesalePrice ?? null,
       saleRate: it.saleRate ?? null,
       discountPercentage: it.discountPercentage || 0,
-      gstRate: (it.cgstRate || 0) + (it.sgstRate || 0),
+      gstRate: (it.cgstRate || 0) + (it.sgstRate || 0) + (it.igstRate || 0),
       cgstRate: it.cgstRate || 0,
       sgstRate: it.sgstRate || 0,
       igstRate: it.igstRate || 0,
       cessRate: it.cessRate || 0,
+      hsnCode: it.hsnCode ?? null,
       remarks: it.remarks ?? null,
     }));
   }
@@ -736,6 +862,8 @@ export class PurchaseEntryPage implements OnInit {
       purchaseDate: tab.purchaseDate,
       supplierInvoiceNumber: tab.supplierInvoiceNo || null,
       supplierInvoiceDate: tab.supplierInvoiceDate || null,
+      supplierPoNumber: tab.supplierPoNo || null,
+      referenceNumber: tab.referenceNo || null,
       paymentTypeID: tab.paymentTypeID ?? null,
       paymentMethodID: tab.paymentMethodID ?? null,
       remarks: tab.remarks || null,
@@ -783,7 +911,7 @@ export class PurchaseEntryPage implements OnInit {
         return 'grid';
       }
       if (!(it.quantity > 0)) {
-        this.focusCell(i, 2);
+        this.focusCell(i, 3);
         this.toast.error(`Quantity must be greater than 0 on row ${i + 1}`);
         return 'grid';
       }
@@ -888,6 +1016,7 @@ export class PurchaseEntryPage implements OnInit {
       const unit = this.matchUnit(units, get('unit'));
       const it = this.blankItem();
       it.productId = prod.id;
+      it.productCode = prod.code ?? null;
       it.productName = prod.name;
       it.productText = `${prod.name} (${prod.code})`;
       it.unitID = unit ? unit.id : null;
@@ -896,6 +1025,7 @@ export class PurchaseEntryPage implements OnInit {
       it.purchaseRate = this.num(get('rate'));
       it.discountPercentage = this.num(get('disc'));
       const gst = this.num(get('gst'));
+      it.gstRate = gst;
       it.cgstRate = gst / 2;
       it.sgstRate = gst / 2;
       it.cessRate = this.num(get('cess'));
@@ -935,7 +1065,7 @@ export class PurchaseEntryPage implements OnInit {
     return map;
   }
 
-  private matchProduct(products: LookupItem[], val: string): LookupItem | undefined {
+  private matchProduct(products: ProductLookupItem[], val: string): ProductLookupItem | undefined {
     const v = val.trim().toLowerCase();
     if (!v) return undefined;
     return (

@@ -56,19 +56,21 @@
               <tr>
                 <td>
                   <input type="checkbox" [checked]="isColumnChecked(c.key)"
-                         [disabled]="c.isMandatory" (change)="toggleColumn(c, $event.target.checked)" />
+                         [disabled]="c.required" (change)="toggleColumn(c, $event.target.checked)" />
                 </td>
                 <td><code>{{ c.key }}</code><div class="col-label">{{ c.label }}</div></td>
-                <td>{{ c.dataType }}</td>
-                <td>{{ c.referenceMaster || '—' }}</td>
-                <td>@if (c.isMandatory) { <span class="badge-error">Yes</span> } @else { No }</td>
+                <td>{{ c.type }}</td>
+                <td>{{ c.referenceDisplay || c.referenceEntity || '—' }}</td>
+                <td>@if (c.required) { <span class="badge-error">Yes</span> } @else { No }</td>
               </tr>
             }
           </tbody>
         </table>
         <div class="actions">
           <button class="btn ghost" (click)="reset()">Back</button>
-          <button class="btn" (click)="downloadTemplate()"><i-lucide name="download"></i-lucide> Download Template</button>
+          <button class="btn" [disabled]="templateBusy()" (click)="downloadTemplate()">
+            <i-lucide name="download"></i-lucide> {{ templateBusy() ? 'Preparing…' : 'Download Excel Template' }}
+          </button>
           <button class="btn primary" (click)="step.set(2)">Next: Upload</button>
         </div>
       </section>
@@ -96,11 +98,11 @@
     <!-- Step 4: preview -->
     @if (step() === 3 && preview()) {
       <section class="card">
-        <h2>Preview — {{ preview()!.entityName }}</h2>
+        <h2>Preview — {{ selectedMaster()!.label }}</h2>
         <div class="summary">
           <span class="badge">Total: {{ preview()!.totalRows }}</span>
-          <span class="badge-success">Valid: {{ preview()!.validRowsCount }}</span>
-          <span class="badge-error">Errors: {{ preview()!.errorRowsCount }}</span>
+          <span class="badge-success">Valid: {{ preview()!.validCount }}</span>
+          <span class="badge-error">Errors: {{ preview()!.errorCount }}</span>
         </div>
         <div class="table-wrap">
           <table class="preview-table">
@@ -116,11 +118,11 @@
                   <td>{{ r.rowNumber }}</td>
                   <td>@if (r.valid) { <span class="badge-success">OK</span> } @else { <span class="badge-error">ERR</span> }</td>
                   @for (c of selectedColumnList(); track c.key) {
-                    <td [class.cell-error]="hasError(r, c.key)">{{ r.values[c.key] }}</td>
+                    <td>{{ r.data[c.key] }}</td>
                   }
                   <td class="err-cell">
-                    @for (e of r.errors; track e.field) {
-                      <div class="err-msg"><code>{{ e.field }}</code>: {{ e.message }}</div>
+                    @for (e of r.errors; track $index) {
+                      <div class="err-msg">{{ e }}</div>
                     }
                   </td>
                 </tr>
@@ -149,10 +151,10 @@
         <h2>Import complete</h2>
         <div class="summary">
           <span class="badge">Total: {{ result()!.totalRows }}</span>
-          <span class="badge-success">Imported: {{ result()!.successCount }}</span>
-          <span class="badge-error">Skipped: {{ result()!.errorCount }}</span>
+          <span class="badge-success">Imported: {{ result()!.successRows }}</span>
+          <span class="badge-error">Skipped: {{ result()!.failedRows }}</span>
         </div>
-        @if (result()!.message) { <p class="hint">{{ result()!.message }}</p> }
+        <p class="hint">Status: <span [class]="statusClass(result()!.status)">{{ result()!.status }}</span></p>
         <div class="actions">
           <button class="btn ghost" (click)="reset()">Import another</button>
         </div>
@@ -179,9 +181,9 @@
                 <td><span [class]="statusClass(l.status)">{{ l.status }}</span></td>
                 <td>{{ l.totalRows }}</td>
                 <td>{{ l.successRows }}</td>
-                <td>{{ l.errorRows }}</td>
-                <td>{{ l.createdAt | slice:0:19 }}</td>
-                <td>{{ l.createdByName || '—' }}</td>
+                <td>{{ l.failedRows }}</td>
+                <td>{{ l.importedAt | slice:0:19 }}</td>
+                <td>{{ l.importedBy || '—' }}</td>
               </tr>
             }
           </tbody>

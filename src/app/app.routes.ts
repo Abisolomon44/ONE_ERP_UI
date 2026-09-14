@@ -295,6 +295,15 @@ export const routes: Routes = [
       },
 
       {
+        path: 'employee',
+        title: 'Employees',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/employee/employee').then(
+            (m) => m.Employee,
+          ),
+      },
+
+      {
         path: 'stores',
         title: 'Stores',
         loadComponent: () =>
@@ -476,6 +485,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/business-partners/business-partners').then(
             (m) => m.BusinessPartnersPage
+          ),
+      },
+      {
+        path: 'invoice-templates',
+        title: 'Invoice Design',
+        loadComponent: () =>
+          import('./pages/invoice-template/invoice-template').then(
+            (m) => m.InvoiceTemplatePage
           ),
       },
     ],
