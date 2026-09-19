@@ -43,6 +43,7 @@
               @else { <span class="badge off">Inactive</span> }
             </td>
             <td class="row-actions">
+              <button class="icon" title="View Details" (click)="openDetails(r)"><lucide-icon name="list"></lucide-icon></button>
               <button class="icon" (click)="openEdit(r)" [disabled]="!canManage()"><lucide-icon name="pencil"></lucide-icon></button>
               <button class="icon danger" (click)="remove(r)" [disabled]="!canManage()"><lucide-icon name="trash-2"></lucide-icon></button>
             </td>

@@ -1,0 +1,128 @@
+/* Purchase Register Table Styles */
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color, #dee2e6);
+  background: var(--card-background, #fff);
+  flex-wrap: wrap;
+}
+
+.select-all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary, #666);
+}
+
+.select-all input {
+  transform: scale(0.8);
+  margin: 0;
+}
+
+.selected-count {
+  font-size: 11px;
+  color: var(--text-secondary, #666);
+}
+
+.list {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.list thead th {
+  background: var(--table-header-bg, #f8f9fa);
+  border-bottom: 2px solid var(--border-color, #dee2e6);
+  padding: 8px 12px;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-secondary, #666);
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.list tbody td {
+  border-bottom: 1px solid var(--border-color, #dee2e6);
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+
+.list tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.list tbody tr:hover {
+  background: var(--row-hover-bg, #f0f2f5);
+}
+
+.select-row {
+  transform: scale(0.8);
+  margin-right: 4px;
+  cursor: pointer;
+}
+
+.row-actions .icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.row-actions .icon:hover {
+  opacity: 1;
+}
+
+.row-actions [disabled] {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.badge.unpaid {
+  background: #fff3e0;
+  color: #ff9800;
+}
+
+.badge.overdue {
+  background: #ffebee;
+  color: #f44336;
+}
+
+.badge.paid {
+  background: #e8f5e9;
+  color: #4caf50;
+}
+
+.badge.returned {
+  background: #e3f2fd;
+  color: #2196f3;
+}
+
+.num {
+  text-align: right;
+}
+
+.empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary, #666);
+  font-style: italic;
+}

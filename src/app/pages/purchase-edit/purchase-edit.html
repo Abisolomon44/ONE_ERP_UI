@@ -1,0 +1,146 @@
+@if (purchase) {
+  <div class="card">
+    <div class="card-header">
+      <h2>Edit Purchase</h2>
+      <button class="btn secondary float-right" type="button" (click)="goBack()">Back</button>
+    </div>
+
+    <div class="card-body">
+      <form>
+        <div class="form-section">
+          <h3>Purchase Details</h3>
+          <div class="form-row">
+            <label>Purchase Number</label>
+            <input type="text" [ngModel]="purchase.purchaseNumber" (ngModelChange)="purchase.purchaseNumber = $event" readonly />
+          </div>
+          <div class="form-row">
+            <label>Purchase Date</label>
+            <input type="date" [ngModel]="purchase.purchaseDate" (ngModelChange)="purchase.purchaseDate = $event" />
+          </div>
+          <div class="form-row">
+            <label>Supplier</label>
+            <select [ngModel]="purchase.supplierId" (ngModelChange)="purchase.supplierId = $event">
+              <option value="">Select Supplier</option>
+              @for (sup of lookups()?.suppliers ?? []; track sup.id) {
+                <option [value]="sup.id">{{ sup.name || sup.code }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Supplier Invoice No</label>
+            <input type="text" [ngModel]="purchase.supplierInvoiceNumber" (ngModelChange)="purchase.supplierInvoiceNumber = $event" />
+          </div>
+          <div class="form-row">
+            <label>Supplier Invoice Date</label>
+            <input type="date" [ngModel]="purchase.supplierInvoiceDate" (ngModelChange)="purchase.supplierInvoiceDate = $event" />
+          </div>
+          <div class="form-row">
+            <label>Reference No</label>
+            <input type="text" [ngModel]="purchase.referenceNumber" (ngModelChange)="purchase.referenceNumber = $event" />
+          </div>
+          <div class="form-row">
+            <label>Remarks</label>
+            <textarea [ngModel]="purchase.remarks" (ngModelChange)="purchase.remarks = $event"></textarea>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Organization</h3>
+          <div class="form-row">
+            <label>Company</label>
+            <select [ngModel]="purchase.companyId" (ngModelChange)="purchase.companyId = $event">
+              <option value="">Select Company</option>
+              @for (comp of lookups()?.companies ?? []; track comp.id) {
+                <option [value]="comp.id">{{ comp.name || comp.code }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Branch</label>
+            <select [ngModel]="purchase.branchId" (ngModelChange)="purchase.branchId = $event">
+              <option value="">Select Branch</option>
+              @for (br of lookups()?.branches ?? []; track br.id) {
+                <option [value]="br.id">{{ br.name || br.code }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Warehouse</label>
+            <select [ngModel]="purchase.warehouseId" (ngModelChange)="purchase.warehouseId = $event">
+              <option value="">Select Warehouse</option>
+              @for (wh of lookups()?.warehouses ?? []; track wh.id) {
+                <option [value]="wh.id">{{ wh.name || wh.code }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Payment</h3>
+          <div class="form-row">
+            <label>Payment Type</label>
+            <select [ngModel]="purchase.paymentTypeID" (ngModelChange)="purchase.paymentTypeID = $event">
+              <option value="">Select Payment Type</option>
+              @for (pt of lookups()?.paymentTypes ?? []; track pt.id) {
+                <option [value]="pt.id">{{ pt.name || pt.code }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Payment Method</label>
+            <select [ngModel]="purchase.paymentMethodID" (ngModelChange)="purchase.paymentMethodID = $event">
+              <option value="">Select Payment Method</option>
+              @for (pm of lookups()?.paymentMethods ?? []; track pm.id) {
+                <option [value]="pm.id">{{ pm.name || pm.code }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Paid Amount</label>
+            <input type="number" [ngModel]="purchase.paidAmount" (ngModelChange)="purchase.paidAmount = $event" step="0.01" />
+          </div>
+        </div>
+
+        <div class="form-section items-section">
+          <h3>Purchase Items</h3>
+          <p>Items will be loaded from the existing purchase record.</p>
+          @if (!purchase.items || purchase.items.length === 0) {
+            <p>No items found.</p>
+          } @else {
+            <table class="list items-table">
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Rate</th>
+                  <th>Disc %</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of purchase.items; track item.purchaseItemId; let i = $index) {
+                  <tr>
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ item.productNameSnapshot || item.productCodeSnapshot || 'N/A' }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.purchaseRate | number: '1.2-2' }}</td>
+                    <td>{{ item.discountPercentage | number: '0.0-0' }}</td>
+                    <td>{{ item.lineTotal | number: '1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </form>
+    </div>
+
+    <div class="card-footer">
+      <button class="btn secondary" (click)="goBack()">Cancel</button>
+      <button class="btn primary" (click)="savePurchase()" [disabled]="!canSave()">Save Changes</button>
+    </div>
+  </div>
+} @else {
+  <div class="empty">Loading purchase edit form…</div>
+}

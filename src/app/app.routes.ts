@@ -225,6 +225,31 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/purchase-entry/purchase-entry').then((m) => m.PurchaseEntryPage),
       },
       {
+        path: 'purchase',
+        title: 'Purchase Register',
+        loadComponent: () => import('./pages/purchase-register/purchase-register').then((m) => m.PurchaseRegisterPage),
+      },
+      {
+        path: 'purchase-view/:id',
+        title: 'Purchase View',
+        loadComponent: () => import('./pages/purchase-view/purchase-view').then((m) => m.PurchaseViewPage),
+      },
+      {
+        path: 'purchase-edit/:id',
+        title: 'Purchase Edit',
+        loadComponent: () => import('./pages/purchase-edit/purchase-edit').then((m) => m.PurchaseEditPage),
+      },
+      {
+        path: 'purchase-cancel/:id',
+        title: 'Purchase Cancel',
+        loadComponent: () => import('./pages/purchase-cancel/purchase-cancel').then((m) => m.PurchaseCancelPage),
+      },
+      {
+        path: 'purchase-delete/:id',
+        title: 'Purchase Delete',
+        loadComponent: () => import('./pages/purchase-delete/purchase-delete').then((m) => m.PurchaseDeletePage),
+      },
+      {
         path: 'sales-entry',
         title: 'Sales Entry',
         loadComponent: () => import('./pages/sales-entry/sales-entry').then((m) => m.SalesEntryPage),
@@ -245,6 +270,32 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/purchase/purchase').then((m) => m.PurchaseWorkspace),
       },
       {
+        path: 'purchases/:id',
+        title: 'Purchase Management',
+        loadComponent: () =>
+          import('./pages/purchase-management/purchase-management').then((m) => m.PurchaseManagementPage),
+      },
+      {
+        path: 'purchase-returns',
+        title: 'Purchase Returns',
+        loadComponent: () =>
+          import('./pages/purchase-return/purchase-return').then((m) => m.PurchaseReturnPage),
+      },
+      {
+        path: 'purchase-returns/new',
+        title: 'Purchase Return Entry',
+        loadComponent: () =>
+          import('./pages/purchase-return-entry/purchase-return-entry').then((m) => m.PurchaseReturnEntryPage),
+      },
+      {
+        path: 'purchase-returns/:id',
+        title: 'Purchase Return Management',
+        loadComponent: () =>
+          import('./pages/purchase-return-management/purchase-return-management').then(
+            (m) => m.PurchaseReturnManagementPage
+          ),
+      },
+      {
         path: 'stock',
         title: 'Stock',
         loadComponent: () => import('./pages/stock/stock').then((m) => m.StockPage),
@@ -263,6 +314,12 @@ export const routes: Routes = [
         path: 'payment-method',
         title: 'Payment Methods',
         loadComponent: () => import('./pages/payment-method/payment-method').then((m) => m.PaymentMethodPage),
+      },
+      {
+        path: 'payment-method-detail/:paymentMethodId',
+        title: 'Payment Method Details',
+        loadComponent: () =>
+          import('./pages/payment-method-detail/payment-method-detail').then((m) => m.PaymentMethodDetailPage),
       },
       {
         path: 'payment-entry',

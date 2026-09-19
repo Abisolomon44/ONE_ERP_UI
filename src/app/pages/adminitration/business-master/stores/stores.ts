@@ -78,6 +78,7 @@ export class StoresPage implements OnInit {
         type: 'text',
         required: true,
         maxLength: 20,
+        readonly: true,
       },
       {
         name: 'storeName',
@@ -145,7 +146,31 @@ export class StoresPage implements OnInit {
     };
   }
 
-  protected createStore(): void {
+  protected generatedCode = '';
+
+  protected onFieldChange(event: { name: string; value: any }): void {
+    this.userModel[event.name] = event.value;
+    if (event.name === 'branchId' && !this.editing()) {
+      this.generateStoreCode();
+    }
+  }
+
+  private async generateStoreCode(): Promise<void> {
+    this.generatedCode = '';
+    if (this.defaultCompanyId && this.userModel['branchId']) {
+      try {
+        this.generatedCode = await this.pos.stores.getNextCode(this.defaultCompanyId, this.userModel['branchId']);
+        this.userModel['storeCode'] = this.generatedCode;
+      } catch {
+        this.generatedCode = '';
+        this.userModel['storeCode'] = '';
+      }
+    } else {
+      this.userModel['storeCode'] = '';
+    }
+  }
+
+  protected async createStore(): Promise<void> {
     this.editing.set(null);
     this.userModel = {
       companyId: this.defaultCompanyId || null,

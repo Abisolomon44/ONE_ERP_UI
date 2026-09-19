@@ -1,0 +1,147 @@
+<div class="card">
+  <div class="ledger-head">
+    <h2>Purchase Register</h2>
+    <p>View and manage purchase invoices</p>
+    <button class="btn primary" type="button" (click)="newPurchase()" [disabled]="!canCreate()">
+      <lucide-icon name="plus"></lucide-icon> New Purchase
+    </button>
+    <button class="btn secondary" type="button" (click)="clearFilters()" [disabled]="loading()">
+      <lucide-icon name="reload"></lucide-icon> Refresh
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="empty">Loading…</div>
+  } @else if (rows().length === 0) {
+    <div class="empty">No purchases recorded yet.</div>
+  } @else {
+    <div class="toolbar">
+      <div class="search-group">
+        <input type="text" placeholder="Search purchases..." [ngModel]="search()" (ngModelChange)="search.set($event); onSearch()" />
+      </div>
+      <div class="filters">
+        <div class="filter-row">
+          <label>Date From</label>
+          <input type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event); onSearch()" />
+        </div>
+        <div class="filter-row">
+          <label>Date To</label>
+          <input type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event); onSearch()" />
+        </div>
+        <div class="filter-row">
+          <label>Supplier</label>
+          <select [ngModel]="supplierId()" (ngModelChange)="supplierId.set($event); onSearch()">
+            <option value="">All Suppliers</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <label>Company</label>
+          <select [ngModel]="companyId()" (ngModelChange)="companyId.set($event); onSearch()">
+            <option value="">All Companies</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <label>Branch</label>
+          <select [ngModel]="branchId()" (ngModelChange)="branchId.set($event); onSearch()">
+            <option value="">All Branches</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <label>Warehouse</label>
+          <select [ngModel]="warehouseId()" (ngModelChange)="warehouseId.set($event); onSearch()">
+            <option value="">All Warehouses</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <label>Status</label>
+          <select [ngModel]="statusId()" (ngModelChange)="statusId.set($event); onSearch()">
+            <option value="">All Statuses</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <label>Payment Status</label>
+          <select [ngModel]="paymentStatus()" (ngModelChange)="paymentStatus.set($event); onSearch()">
+            <option value="">All Payment Statuses</option>
+          </select>
+        </div>
+        <button class="btn clear" type="button" (click)="clearFilters()" [disabled]="loading()">Clear Filters</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="list">
+        <thead>
+          <tr>
+            <th>Select</th>
+            <th>S.No</th>
+            <th>Purchase Number</th>
+            <th>Purchase Date</th>
+            <th>Supplier</th>
+            <th>Supplier Invoice No</th>
+            <th>Company</th>
+            <th>Branch</th>
+            <th>Warehouse</th>
+            <th>Payment Status</th>
+            <th>Purchase Status</th>
+            <th class="num">Grand Total</th>
+            <th class="num">Paid Amount</th>
+            <th class="num">Balance</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of rows(); track p.purchaseId; let i = $index) {
+            <tr>
+              <td>
+                <input type="checkbox" class="select-row" />
+              </td>
+              <td>{{ $index + 1 }}</td>
+              <td>{{ p.purchaseNumber }}</td>
+              <td>{{ p.purchaseDate ? (p.purchaseDate | slice: 0 : 10) : '' }}</td>
+              <td>{{ p.supplierNameSnapshot || p.supplierId }}</td>
+              <td>{{ p.supplierInvoiceNumber || '' }}</td>
+              <td>{{ p.companyNameSnapshot || p.companyId }}</td>
+              <td>{{ p.branchId }}</td>
+              <td>{{ p.warehouseId }}</td>
+              <td>
+                @if (p.paidAmount >= p.grandTotal) {
+                  <span class="badge paid">Paid</span>
+                } @else if (p.paidAmount > 0) {
+                  <span class="badge partial">Partial</span>
+                } @else {
+                  <span class="badge">Unpaid</span>
+                }
+              </td>
+              <td>
+                @if (p.statusID) {
+                  <span class="badge">{{ p.statusID }}</span>
+                } @else {
+                  <span class="badge">Open</span>
+                }
+              </td>
+              <td class="num">{{ p.grandTotal | number: '1.2-2' }}</td>
+              <td class="num">{{ p.paidAmount | number: '1.2-2' }}</td>
+              <td class="num">{{ (p.grandTotal - p.paidAmount) | number: '1.2-2' }}</td>
+              <td class="row-actions">
+                <button class="icon" title="View" (click)="viewPurchase(p.purchaseId)" [disabled]="!canView()"><lucide-icon name="eye"></lucide-icon></button>
+                <button class="icon" title="Edit" (click)="editPurchase(p.purchaseId)" [disabled]="!canEdit()"><lucide-icon name="pencil"></lucide-icon></button>
+                <button class="icon" title="Cancel" (click)="cancelPurchase(p.purchaseId)" [disabled]="!canCancel()"><lucide-icon name="ban"></lucide-icon></button>
+                <button class="icon danger" title="Delete" (click)="deletePurchase(p.purchaseId)" [disabled]="!canDelete()"><lucide-icon name="trash-2"></lucide-icon></button>
+                <button class="icon" title="Return" (click)="returnPurchase(p.purchaseId)" [disabled]="!canReturn()"><lucide-icon name="undo-2"></lucide-icon></button>
+                <button class="icon" title="Print" (click)="printPurchase(p.purchaseId)"><lucide-icon name="printer"></lucide-icon></button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <button class="btn" (click)="loadPage(1)" [disabled]="loading()">First</button>
+      <button class="btn" (click)="loadPage(page() - 1)" [disabled]="page() <= 1 || loading()">Prev</button>
+      <span>Page {{ page() }} of {{ totalPages() }}</span>
+      <button class="btn" (click)="loadPage(page() + 1)" [disabled]="page() >= totalPages() || loading()">Next</button>
+      <button class="btn" (click)="loadPage(totalPages())" [disabled]="loading() || totalPages() <= 1">Last</button>
+    </div>
+  }
+</div>

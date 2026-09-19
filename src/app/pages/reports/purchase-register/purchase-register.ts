@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe, SlicePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { PurchaseService, PurchaseDto, PurchaseLookupsDto } from '../../../core/services/master_service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -16,8 +17,13 @@ export class PurchaseRegisterReport implements OnInit {
   private readonly svc = inject(PurchaseService);
   private readonly perm = inject(PermissionService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   protected readonly canView = signal(false);
+  protected readonly canEdit = signal(false);
+  protected readonly canCancel = signal(false);
+  protected readonly canDelete = signal(false);
+  protected readonly canReturn = signal(false);
   protected readonly loading = signal(false);
   protected readonly rows = signal<PurchaseDto[]>([]);
   protected readonly lookups = signal<PurchaseLookupsDto | null>(null);
@@ -28,7 +34,11 @@ export class PurchaseRegisterReport implements OnInit {
   protected search = '';
 
   async ngOnInit(): Promise<void> {
-    this.canView.set(this.perm.has('purchases.view'));
+    this.canView.set(this.perm.has(['purchases.view', 'purchases.manage']));
+    this.canEdit.set(this.perm.has(['purchases.edit', 'purchases.manage']));
+    this.canCancel.set(this.perm.has(['purchases.cancel', 'purchases.manage']));
+    this.canDelete.set(this.perm.has(['purchases.delete', 'purchases.manage']));
+    this.canReturn.set(this.perm.has(['purchases-return.create', 'purchases.return.manage', 'purchases.return.view']));
     if (!this.canView()) return;
     this.loading.set(true);
     try {
@@ -70,5 +80,13 @@ export class PurchaseRegisterReport implements OnInit {
   }
   protected get totalBalance(): number {
     return this.filtered().reduce((s, p) => s + p.balanceAmount, 0);
+  }
+
+  protected open(p: PurchaseDto, mode: 'view' | 'edit' | 'cancel' | 'delete'): void {
+    this.router.navigate(['/purchases', p.purchaseId], { queryParams: { mode } });
+  }
+
+  protected returnPurchase(p: PurchaseDto): void {
+    this.router.navigate(['/purchase-returns/new'], { queryParams: { purchaseId: p.purchaseId } });
   }
 }

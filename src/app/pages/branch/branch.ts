@@ -286,11 +286,19 @@ export class BranchPage implements OnInit {
   // MasterPage event handlers
   //===========================
 
-  protected createBranch(): void {
+  protected async createBranch(): Promise<void> {
     this.editing.set(null);
+    let nextCode = '';
+    if (this.defaultCompanyId) {
+      try {
+        nextCode = await this.org.branches.getNextCode(this.defaultCompanyId);
+      } catch {
+        nextCode = '';
+      }
+    }
     this.userModel = {
       companyId: this.defaultCompanyId || null,
-      branchCode: '',
+      branchCode: nextCode,
       branchName: '',
       shortName: null,
       branchTypeId: null,

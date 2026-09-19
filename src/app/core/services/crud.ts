@@ -102,4 +102,10 @@ export class PagedCrudService<TDto, TCreate = Partial<TDto>, TUpdate = Partial<T
   delete(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`${this.baseUrl}/${id}`)).then(() => undefined);
   }
+
+  getNextCode(companyId: number, branchId?: number): Promise<string> {
+    let params = new HttpParams().set('companyId', companyId);
+    if (branchId != null) params = params.set('branchId', branchId);
+    return firstValueFrom(this.http.get<string>(`${this.baseUrl}/next-code`, { params }));
+  }
 }

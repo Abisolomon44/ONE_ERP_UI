@@ -1,0 +1,87 @@
+<div class="table-actions">
+  <div class="select-all">
+    <input type="checkbox" (change)="toggleSelectAll()" [checked]="isSelectAll()" [indeterminate]="!isSelectAll() && selectedRows().length > 0 && selectedRows().length < rows().length" />
+    <label></label>
+  </div>
+  <span class="selected-count">Selected: {{ selectedRows().length }}</span>
+</div>
+
+<table class="list">
+  <thead>
+    <tr>
+      <th>Select</th>
+      <th>S.No</th>
+      <th>Purchase Number</th>
+      <th>Purchase Date</th>
+      <th>Supplier</th>
+      <th>Supplier Invoice No</th>
+      <th>Company</th>
+      <th>Branch</th>
+      <th>Warehouse</th>
+      <th>Payment Status</th>
+      <th>Purchase Status</th>
+      <th class="num">Grand Total</th>
+      <th class="num">Paid Amount</th>
+      <th class="num">Balance</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (p of rows(); track p.purchaseId; let i = $index) {
+      <tr [class.selected]="isSelected(p.purchaseId)">
+        <td>
+          <input type="checkbox" class="select-row" (change)="toggleSelect(p.purchaseId)" [checked]="isSelected(p.purchaseId)" />
+        </td>
+        <td>{{ $index + 1 }}</td>
+        <td>{{ p.purchaseNumber }}</td>
+        <td>{{ p.purchaseDate ? (p.purchaseDate | slice: 0 : 10) : '' }}</td>
+        <td>{{ p.supplierNameSnapshot || p.supplierId }}</td>
+        <td>{{ p.supplierInvoiceNumber || '' }}</td>
+        <td>{{ p.companyNameSnapshot || p.companyId }}</td>
+        <td>{{ p.branchId }}</td>
+        <td>{{ p.warehouseId }}</td>
+        <td>
+          @if (p.paidAmount >= p.grandTotal) {
+            <span class="badge paid">Paid</span>
+          } @else if (p.paidAmount > 0) {
+            <span class="badge partial">Partial</span>
+          } @else {
+            <span class="badge">Unpaid</span>
+          }
+        </td>
+        <td>
+          @if (p.statusID) {
+            <span class="badge">{{ p.statusID }}</span>
+          } @else {
+            <span class="badge">Open</span>
+          }
+        </td>
+        <td class="num">{{ p.grandTotal | number: '1.2-2' }}</td>
+        <td class="num">{{ p.paidAmount | number: '1.2-2' }}</td>
+        <td class="num">{{ (p.grandTotal - p.paidAmount) | number: '1.2-2' }}</td>
+        <td class="row-actions">
+          @if (canView()) {
+            <button class="icon" title="View" (click)="viewPurchase(p.purchaseId)"><lucide-icon name="eye"></lucide-icon></button>
+          }
+          @if (canEdit()) {
+            <button class="icon" title="Edit" (click)="editPurchase(p.purchaseId)"><lucide-icon name="pencil"></lucide-icon></button>
+          }
+          @if (canCancel()) {
+            <button class="icon" title="Cancel" (click)="cancelPurchase(p.purchaseId)"><lucide-icon name="ban"></lucide-icon></button>
+          }
+          @if (canDelete()) {
+            <button class="icon danger" title="Delete" (click)="deletePurchase(p.purchaseId)"><lucide-icon name="trash-2"></lucide-icon></button>
+          }
+          @if (canReturn()) {
+            <button class="icon" title="Return" (click)="returnPurchase(p.purchaseId)"><lucide-icon name="undo-2"></lucide-icon></button>
+          }
+          <button class="icon" title="Print" (click)="printPurchase(p.purchaseId)"><lucide-icon name="printer"></lucide-icon></button>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+@if (rows().length === 0) {
+  <div class="empty">No purchases recorded yet.</div>
+}

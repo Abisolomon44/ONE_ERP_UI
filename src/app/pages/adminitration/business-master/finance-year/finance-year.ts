@@ -62,7 +62,7 @@ export class FinanceYear implements OnInit {
 
     fields: [
       { name: 'companyId', label: 'Company', type: 'dropdown', required: true, options: [] },
-      { name: 'code', label: 'Code', type: 'text', required: true, maxLength: 30 },
+      { name: 'code', label: 'Code', type: 'text', required: true, maxLength: 30, readonly: true },
       { name: 'name', label: 'Name', type: 'text', required: true, maxLength: 100 },
       { name: 'startDate', label: 'Start Date', type: 'date', required: true },
       { name: 'endDate', label: 'End Date', type: 'date', required: true },
@@ -119,11 +119,19 @@ export class FinanceYear implements OnInit {
     };
   }
 
-  protected createRow(): void {
+  protected async createRow(): Promise<void> {
     this.editing.set(null);
+    let nextCode = '';
+    if (this.defaultCompanyId) {
+      try {
+        nextCode = await this.pos.financialYears.getNextCode(this.defaultCompanyId);
+      } catch {
+        nextCode = '';
+      }
+    }
     this.userModel = {
       companyId: this.defaultCompanyId || null,
-      code: '',
+      code: nextCode,
       name: '',
       startDate: '',
       endDate: '',

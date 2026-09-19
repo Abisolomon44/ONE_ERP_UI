@@ -1,0 +1,186 @@
+<div class="page">
+  <!-- Header Section -->
+  <header class="page-head">
+    <div>
+      <h1>Purchase Return Entry</h1>
+      <p class="muted">Return purchased goods to supplier</p>
+    </div>
+    <a class="btn ghost" routerLink="/purchase" [queryParams]="{ tab: 'returns' }">Back</a>
+    <button class="btn primary" [disabled]="saving()">Save Return</button>
+  </header>
+
+  <!-- Supplier & Invoice Selection -->
+  <section class="card">
+    <div class="grid">
+      <label>
+        <span>Supplier *</span>
+        <select [(ngModel)]="supplierId" (ngModelChange)="onSupplierChange()">
+          <option [ngValue]="null">-- Select --</option>
+          @for (s of lookups()?.suppliers ?? []; track s.id) { <option [ngValue]="s.id">{{ s.name }}</option> }
+        </select>
+      </label>
+      <label>
+        <span>Purchase Invoice *</span>
+        <select [(ngModel)]="purchaseId" (ngModelChange)="onInvoiceChange()" [disabled]="!invoices().length">
+          <option [ngValue]="null">-- Select --</option>
+          @for (p of invoices(); track p.purchaseId) { <option [ngValue]="p.purchaseId">{{ p.purchaseNumber }} ({{ p.purchaseDate | slice: 0 : 10 }})</option> }
+        </select>
+      </label>
+      <label><span>Return Date</span><input type="date" [(ngModel)]="returnDate" /></label>
+      <label><span>Return Reason</span><input [(ngModel)]="reason" placeholder="Reason" /></label>
+      <label><span>Remarks</span><input [(ngModel)]="remarks" placeholder="Remarks" /></label>
+    </div>
+  </section>
+
+  <!-- Original Purchase Information -->
+  @if (source()) {
+    <section class="card">
+      <div class="grid">
+        <div><strong>Purchase Number:</strong> {{ source()!.purchaseNumber }}</div>
+        <div><strong>Purchase Date:</strong> {{ source()!.purchaseDate | slice: 0 : 10 }}</div>
+        <div><strong>Supplier Invoice Number:</strong> {{ source()!.supplierInvoiceNumber || 'N/A' }}</div>
+        <div><strong>Supplier Invoice Date:</strong> {{ source()!.supplierInvoiceDate || 'N/A' }}</div>
+        <div><strong>Supplier Name:</strong> {{ source()!.supplierNameSnapshot || 'N/A' }}</div>
+        <div><strong>Company:</strong> {{ source()!.companyNameSnapshot || 'N/A' }}</div>
+        <div><strong>Branch:</strong> {{ source()!.branchId }}</div>
+        <div><strong>Warehouse:</strong> {{ source()!.warehouseId }}</div>
+        <div><strong>Original Grand Total:</strong> {{ source()!.grandTotal | currency }}</div>
+        <div><strong>Original Paid Amount:</strong> {{ source()!.paidAmount | currency }}</div>
+        <div><strong>Original Balance Amount:</strong> {{ source()!.balanceAmount | currency }}</div>
+        <div><strong>Purchase Status:</strong> 
+          @if (source()!.statusID === 2) { Cancelled }
+          @else if (source()!.statusID === 1) { Active }
+          @else { {{ source()!.statusID }} }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (loading()) { <div class="empty">Loading…</div> }
+
+  @if (rows().length > 0) {
+    <section class="card">
+      <div class="table-scroll">
+        <table class="list">
+          <thead>
+            <tr>
+              <th>Select</th>
+              <th>S.No</th>
+              <th>Product Code</th>
+              <th>Product Name</th>
+              <th>Barcode</th>
+              <th>UOM</th>
+              <th class="num">Original Purchased Qty</th>
+              <th class="num">Prev Returned Qty</th>
+              <th class="num">Returnable Qty</th>
+              <th class="num">Current Return Qty</th>
+              <th class="num">Purchase Rate</th>
+              <th class="num">Discount %</th>
+              <th class="num">Discount Amount</th>
+              <th class="num">Taxable Amount</th>
+              <th class="num">GST %</th>
+              <th class="num">CGST Amount</th>
+              <th class="num">SGST Amount</th>
+              <th class="num">IGST Amount</th>
+              <th class="num">CESS Amount</th>
+              <th class="num">Line Total</th>
+              <th>Reason</th>
+              <th>Validation Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track r.purchaseItemId; let i = $index) {
+              <tr [class.fully-returned]="r.validationStatus === 'fullyReturned'" [class.exceeds-limit]="r.validationStatus === 'exceedsLimit'" [class.valid-row]="r.validationStatus === 'valid'">
+                <td>
+                  <input type="checkbox" [checked]="r.returnQty > 0" (change)="r.returnQty = $event.target.checked ? r.availableQty : 0" />
+                </td>
+                <td>{{ $index + 1 }}</td>
+                <td>{{ r.productCode }}</td>
+                <td>{{ r.productName }}</td>
+                <td>{{ r.barcode || '-' }}</td>
+                <td>{{ r.unitName || r.unitId }}</td>
+                <td class="num">{{ r.purchasedQty }}</td>
+                <td class="num">{{ r.prevReturnedQty }}</td>
+                <td class="num" style="font-weight: bold; color: #dc2626;">{{ r.availableQty }}</td>
+                <td class="num">
+                  <input 
+                    type="number" 
+                    min="0" 
+                    [max]="r.availableQty" 
+                    step="0.01" 
+                    [(ngModel)]="r.returnQty" 
+                    (ngModelChange)="onQtyInput()"
+                  />
+                </td>
+                <td class="num">{{ r.purchaseRate }}</td>
+                <td class="num"><input type="number" step="0.01" [(ngModel)]="r.discountPercentage" (ngModelChange)="onQtyInput()" /></td>
+                <td class="num">{{ r.discountAmount }}</td>
+                <td class="num">{{ r.taxableValue }}</td>
+                <td class="num">{{ r.gstRate }}</td>
+                <td class="num">{{ r.cgstAmount }}</td>
+                <td class="num">{{ r.sgstAmount }}</td>
+                <td class="num">{{ r.igstAmount }}</td>
+                <td class="num">{{ r.cessAmount }}</td>
+                <td class="num">{{ r.lineTotal }}</td>
+                <td><input type="text" placeholder="Reason" /></td>
+                <td>
+                  @if (r.validationStatus === 'fullyReturned') {
+                    <span class="status-fully">Fully Returned</span>
+                  } @else if (r.validationStatus === 'exceedsLimit') {
+                    <span class="status-error">{{ r.validationMessage }}</span>
+                  } @else {
+                    <span class="status-valid">Valid</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="grand">
+        <span>Total Selected Items:</span>
+        <strong>{{ rows().length }}</strong>
+      </div>
+      <div class="grand">
+        <span>Total Return Qty:</span>
+        <strong>{{ totalReturnQty() }}</strong>
+      </div>
+      <div class="grand">
+        <span>Gross Amount:</span>
+        <strong>{{ totalGross() | currency }}</strong>
+      </div>
+      <div class="grand">
+        <span>Total Discount:</span>
+        <strong>{{ totalDiscount() | currency }}</strong>
+      </div>
+      <div class="grand">
+        <span>Total Taxable:</span>
+        <strong>{{ totalTaxable() | currency }}</strong>
+      </div>
+      <div class="grand">
+        <span>Total GST:</span>
+        <strong>{{ totalGst() | currency }}</strong>
+      </div>
+      <div class="grand">
+        <span>Total CESS:</span>
+        <strong>{{ totalCess() | currency }}</strong>
+      </div>
+      <hr />
+      <div class="grand">
+        <span style="font-weight: bold; color: #1e40af;">TOTAL RETURN AMOUNT</span>
+        <strong>{{ totalReturnAmount() | currency }}</strong>
+      </div>
+      <div class="actions">
+        <button class="btn primary" (click)="submit()" [disabled]="saving()">
+          @if (saving()) { Saving... }
+          @else { Save Return }
+        </button>
+        <button class="btn ghost" (click)="cancel()">Clear</button>
+      </div>
+    </section>
+  } @else {
+    <div class="empty">
+      <p>Select a supplier and invoice to load purchase items.</p>
+    </div>
+  }
+</div>

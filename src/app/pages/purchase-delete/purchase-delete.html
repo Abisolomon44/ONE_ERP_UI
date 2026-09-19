@@ -1,0 +1,48 @@
+@if (purchase) {
+  <div class="card">
+    <div class="card-header">
+      <h2>Delete Purchase</h2>
+      <button class="btn secondary float-right" type="button" (click)="goBack()">Back</button>
+    </div>
+
+    <div class="card-body">
+      <p>⚠️ <strong>Warning:</strong> This is a destructive operation. This will permanently delete the purchase record.</p>
+
+      <div class="detail-row">
+        <label>Purchase Number</label>
+        <span>{{ purchase.purchaseNumber }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Purchase Date</label>
+        <span>{{ purchase.purchaseDate ? (purchase.purchaseDate | slice: 0 : 10) : '' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Supplier</label>
+        <span>{{ purchase.supplierNameSnapshot || purchase.supplierId }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Grand Total</label>
+        <span class="num">{{ purchase.grandTotal | number: '1.2-2' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Current Status</label>
+        <span><span class="badge">{{ purchase.statusID || 'Open' }}</span></span>
+      </div>
+
+      <div class="form-section">
+        <h3>Delete Reason</h3>
+        <textarea [(ngModel)]="reason" rows="3" placeholder="Enter delete reason..."></textarea>
+        @if (reasonError) {
+          <div class="error">{{ reasonError }}</div>
+        }
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <button class="btn secondary" (click)="goBack()">Cancel</button>
+      <button class="btn primary danger" (click)="deletePurchase()" [disabled]="!canDelete() || loading()">Delete Purchase</button>
+    </div>
+  </div>
+} @else {
+  <div class="empty">Loading purchase details…</div>
+}

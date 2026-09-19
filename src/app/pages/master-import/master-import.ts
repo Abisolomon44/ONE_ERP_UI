@@ -266,7 +266,7 @@ export class MasterImportPage implements OnInit {
         this.importSvc.getExportMeta(entityName),
         this.importSvc.getExportOptions(entityName),
       ]);
-      this.eMeta.set(meta as any);
+      this.eMeta.set(meta);
       this.eFilters.set(meta.filters);
       this.eOptions.set(opts);
 
@@ -293,6 +293,14 @@ export class MasterImportPage implements OnInit {
 
   protected eSetFilter(key: string, value: string): void {
     this.eFilterValues.set({ ...this.eFilterValues(), [key]: value });
+  }
+
+  protected eOptionList(key: string): ExportFilterOptionDto[] {
+    return this.eOptions()[key] ?? [];
+  }
+
+  protected eFilterValue(key: string): string {
+    return this.eFilterValues()[key] ?? '';
   }
 
   protected eIsColumnSelected(key: string): boolean {

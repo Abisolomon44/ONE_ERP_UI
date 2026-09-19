@@ -63,6 +63,7 @@ export class CountersPage implements OnInit {
         type: 'text',
         required: true,
         maxLength: 20,
+        readonly: true,
       },
       {
         name: 'counterName',
@@ -128,7 +129,32 @@ export class CountersPage implements OnInit {
     };
   }
 
-  protected createCounter(): void {
+  protected generatedCode = '';
+
+  protected onFieldChange(event: { name: string; value: any }): void {
+    this.userModel[event.name] = event.value;
+    if (event.name === 'storeId' && !this.editing()) {
+      this.generateCounterCode();
+    }
+  }
+
+  private async generateCounterCode(): Promise<void> {
+    this.generatedCode = '';
+    const storeId = this.userModel['storeId'];
+    if (storeId) {
+      try {
+        this.generatedCode = await this.pos.counters.getNextCode(storeId);
+        this.userModel['counterCode'] = this.generatedCode;
+      } catch {
+        this.generatedCode = '';
+        this.userModel['counterCode'] = '';
+      }
+    } else {
+      this.userModel['counterCode'] = '';
+    }
+  }
+
+  protected async createCounter(): Promise<void> {
     this.editing.set(null);
     this.userModel = {
       storeId: this.stores()[0]?.id ?? null,

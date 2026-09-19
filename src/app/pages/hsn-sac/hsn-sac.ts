@@ -49,7 +49,8 @@ export class HsnSacPage implements OnInit {
     allowRefresh: true,
     tabs: [],
     columns: [
-      { field: 'code', header: 'Code', width: '130px' },
+      { field: 'code', header: 'Code', width: '120px' },
+      { field: 'governmentCode', header: 'Govt. Code', width: '120px' },
       { field: 'name', header: 'Name' },
       { field: 'hsnSacType', header: 'Type', type: 'badge', width: '90px' },
       { field: 'taxName', header: 'Tax' },
@@ -57,6 +58,7 @@ export class HsnSacPage implements OnInit {
     ],
     fields: [
       { name: 'code', label: 'Code', type: 'text', required: true, maxLength: 20, readonly: true },
+      { name: 'governmentCode', label: 'Government Code', type: 'text', required: true, maxLength: 20 },
       { name: 'name', label: 'Name', type: 'text', required: true, maxLength: 200 },
       {
         name: 'hsnSacType', label: 'Type', type: 'dropdown', required: true,
@@ -116,7 +118,7 @@ export class HsnSacPage implements OnInit {
     } catch {
       /* code will be generated server-side on save */
     }
-    this.userModel = { code: nextCode, name: '', hsnSacType: 'HSN', taxId: null, description: '', isActive: true };
+    this.userModel = { code: nextCode, governmentCode: nextCode, name: '', hsnSacType: 'HSN', taxId: null, description: '', isActive: true };
     this.showEntry.set(true);
   }
 
@@ -133,6 +135,7 @@ export class HsnSacPage implements OnInit {
       const editing = this.editing();
       const payload: CreateHsnSacRequest = {
         code: this.userModel['code']?.trim().toUpperCase(),
+        governmentCode: this.userModel['governmentCode']?.trim().toUpperCase(),
         name: this.userModel['name']?.trim(),
         hsnSacType: this.userModel['hsnSacType'],
         taxId: this.userModel['taxId'] || null,

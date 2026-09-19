@@ -41,6 +41,7 @@ interface DraftItem {
   gstRate: number;
   hsnCode?: string | null;
   remarks?: string | null;
+  isGSTInclusive: boolean;
 }
 
 interface PurchaseTab {
@@ -67,12 +68,15 @@ interface PurchaseTab {
   contactNo: string;
   paymentTypeID: number | null;
   paymentMethodID: number | null;
+  taxMode: string; // 'exclusive' | 'inclusive'
   remarks: string;
   payAmount: number;
   payTypeID: number | null;
   payMethodID: number | null;
   payReferenceNo: string;
   payRemarks: string;
+  paidAmount: number;
+  balanceAmount: number;
   items: DraftItem[];
 }
 
@@ -111,6 +115,13 @@ export class PurchaseEntryPage implements OnInit {
   protected readonly showHelp = signal(false);
 
   protected readonly currencies = CURRENCIES;
+
+  // Payment / tax validation messages.
+  protected readonly taxValidationMsg = signal<string>('');
+  protected readonly paymentValidationMsg = signal<string>('');
+
+  // Payment type lookup map for Cash/Credit detection.
+  protected paymentTypeCodeMap: Record<number, string> = {};
 
   // Multi-tab state.
   protected readonly tabs = signal<PurchaseTab[]>([]);
@@ -190,6 +201,7 @@ export class PurchaseEntryPage implements OnInit {
     this.tabs.update((arr) => [...arr, t]);
     this.activeTabId.set(t.tabId);
     void this.refreshTabNumber(t);
+    this.recalculatePayment(t);
     return t;
   }
 
@@ -219,12 +231,15 @@ export class PurchaseEntryPage implements OnInit {
       contactNo: '',
       paymentTypeID: null,
       paymentMethodID: null,
+      taxMode: 'exclusive',
       remarks: '',
       payAmount: 0,
       payTypeID: null,
       payMethodID: null,
       payReferenceNo: '',
       payRemarks: '',
+      paidAmount: 0,
+      balanceAmount: 0,
       items: [this.blankItem()],
     };
   }
@@ -303,6 +318,8 @@ export class PurchaseEntryPage implements OnInit {
     reg({ combo: 'alt+i', group: G, description: 'Focus Supplier Invoice No', handler: () => this.focusField('supplierInvoiceNo') });
     reg({ combo: 'alt+p', group: G, description: 'Focus Payment Type', handler: () => this.focusField('paymentType') });
     reg({ combo: 'alt+m', group: G, description: 'Focus Payment Method', handler: () => this.focusField('paymentMethod') });
+    reg({ combo: 'alt+a', group: G, description: 'Focus Paid Amount', handler: () => this.focusField('paidAmount') });
+    reg({ combo: 'alt+t', group: G, description: 'Focus Tax Mode', handler: () => this.focusField('taxMode') });
 
     reg({ combo: 'insert', group: G, description: 'Add item row', handler: () => this.onInsertRow() });
     reg({ combo: 'delete', group: G, description: 'Delete item row', handler: (e) => this.onDeleteRow(e) });
@@ -542,12 +559,13 @@ export class PurchaseEntryPage implements OnInit {
         const dup = tab.items[dupIdx];
         dup.quantity = round2((dup.quantity || 0) + (it.quantity || 0));
         dup.freeQuantity = round2((dup.freeQuantity || 0) + (it.freeQuantity || 0));
-        this.removeItem(row);
-        this.markDirty();
+        tab.items = tab.items.filter((_, n) => n !== row);
+        this.onItemChange(tab);
         this.closeProduct();
         this.focusCell(dupIdx > row ? dupIdx - 1 : dupIdx, 3);
         return;
       }
+      this.onItemChange(tab);
     }
     this.closeProduct();
     this.focusCell(row, 2);
@@ -611,10 +629,33 @@ export class PurchaseEntryPage implements OnInit {
   }
 
   /* =========================================================
-     Data loading
-     ========================================================= */
+      Data loading
+      ========================================================= */
   private async refreshLookups(): Promise<void> {
-    this.lookups.set(await this.svc.getLookups());
+    const lookups = await this.svc.getLookups();
+    this.lookups.set(lookups);
+    this.buildPaymentTypeCodeMap(lookups);
+  }
+
+  private buildPaymentTypeCodeMap(lookups: PurchaseLookupsDto): void {
+    this.paymentTypeCodeMap = {};
+    for (const pt of lookups.paymentTypes ?? []) {
+      // DB codes are PAYTYPE-001 etc, names are Cash/Credit — match on both.
+      const key = `${pt.code ?? ''} ${pt.name ?? ''}`.toLowerCase();
+      this.paymentTypeCodeMap[pt.id] = key;
+    }
+  }
+
+  protected isPaymentTypeCash(tab?: PurchaseTab): boolean {
+    const t = tab ?? this.activeTab();
+    if (!t || t.paymentTypeID == null) return false;
+    return (this.paymentTypeCodeMap[t.paymentTypeID] ?? '').includes('cash');
+  }
+
+  protected isPaymentTypeCredit(tab?: PurchaseTab): boolean {
+    const t = tab ?? this.activeTab();
+    if (!t || t.paymentTypeID == null) return false;
+    return (this.paymentTypeCodeMap[t.paymentTypeID] ?? '').includes('credit');
   }
 
   /* =========================================================
@@ -639,13 +680,14 @@ export class PurchaseEntryPage implements OnInit {
       gstRate: 0, // combined GST % (CGST + SGST + IGST) for single-edit UX
       hsnCode: null,
       remarks: null,
+      isGSTInclusive: false,
     };
   }
 
   protected addItem(): void {
     const tab = this.ensureTab();
     tab.items.push(this.blankItem());
-    this.markDirty();
+    this.onItemChange(tab);
     this.tabs.update((arr) => [...arr]);
   }
 
@@ -679,7 +721,7 @@ export class PurchaseEntryPage implements OnInit {
     if (!confirm(`Delete ${selected} selected row(s)?`)) return;
     tab.items = tab.items.filter((it) => !it.selected);
     this.tabs.update((arr) => [...arr]);
-    this.markDirty();
+    this.onItemChange(tab);
   }
 
   protected removeItem(idx: number): void {
@@ -687,6 +729,7 @@ export class PurchaseEntryPage implements OnInit {
     if (!tab) return;
     tab.items = tab.items.filter((_, n) => n !== idx);
     this.tabs.update((arr) => [...arr]);
+    this.onItemChange(tab);
   }
 
   private openTab(p: PurchaseDto): void {
@@ -703,6 +746,9 @@ export class PurchaseEntryPage implements OnInit {
     t.supplierInvoiceDate = p.supplierInvoiceDate ? p.supplierInvoiceDate.slice(0, 10) : '';
     t.paymentTypeID = p.paymentTypeID ?? null;
     t.paymentMethodID = p.paymentMethodID ?? null;
+    t.taxMode = p.isGSTInclusive ? 'inclusive' : 'exclusive';
+    t.paidAmount = p.paidAmount ?? 0;
+    t.balanceAmount = p.balanceAmount ?? p.grandTotal;
     t.remarks = p.remarks ?? '';
     t.items = p.items.map((i) => ({
       productId: i.productId,
@@ -725,10 +771,13 @@ export class PurchaseEntryPage implements OnInit {
       gstRate: (i.cgstRate || 0) + (i.sgstRate || 0) + (i.igstRate || 0),
       hsnCode: i.hsnCodeSnapshot ?? null,
       remarks: i.remarks ?? null,
+      isGSTInclusive: i.isGSTInclusive ?? false,
     }));
     t.label = `#${t.purchaseNumber}`;
     this.tabs.update((arr) => [...arr, t]);
     this.activeTabId.set(t.tabId);
+    this.recalculatePayment(t);
+    this.recalculateTotals(t);
   }
 
   protected onGstChange(it: DraftItem, value: any): void {
@@ -738,7 +787,9 @@ export class PurchaseEntryPage implements OnInit {
     it.cgstRate = v / 2;
     it.sgstRate = v / 2;
     it.igstRate = 0;
-    this.markDirty();
+    const tab = this.activeTab();
+    if (tab) this.onItemChange(tab);
+    else this.markDirty();
   }
 
   protected productCode(it: DraftItem): string {
@@ -769,28 +820,57 @@ export class PurchaseEntryPage implements OnInit {
   private lineBase(it: DraftItem): number {
     return (it.quantity || 0) * (it.purchaseRate || 0);
   }
+
+  protected lineTaxable(it: DraftItem): number {
+    const base = this.lineBase(it);
+    const disc = this.lineDisc(it);
+    const afterDisc = base - disc;
+    const rate = (it.gstRate || 0);
+    if (it.isGSTInclusive && rate > 0) {
+      return round2(afterDisc / (1 + rate / 100));
+    }
+    return round2(afterDisc);
+  }
+
   protected lineDisc(it: DraftItem): number {
     return (this.lineBase(it) * (it.discountPercentage || 0)) / 100;
   }
-  protected lineTaxable(it: DraftItem): number {
-    return round2(this.lineBase(it) - this.lineDisc(it));
-  }
+
   protected lineCgst(it: DraftItem): number {
-    return round2((this.lineTaxable(it) * (it.cgstRate || 0)) / 100);
+    const taxable = this.lineTaxable(it);
+    const rate = (it.cgstRate || 0);
+    return round2((taxable * rate) / 100);
   }
+
   protected lineSgst(it: DraftItem): number {
-    return round2((this.lineTaxable(it) * (it.sgstRate || 0)) / 100);
+    const taxable = this.lineTaxable(it);
+    const rate = (it.sgstRate || 0);
+    return round2((taxable * rate) / 100);
   }
+
   protected lineIgst(it: DraftItem): number {
-    return round2((this.lineTaxable(it) * (it.igstRate || 0)) / 100);
+    const taxable = this.lineTaxable(it);
+    const rate = (it.igstRate || 0);
+    return round2((taxable * rate) / 100);
   }
+
   protected lineCess(it: DraftItem): number {
-    return round2((this.lineTaxable(it) * (it.cessRate || 0)) / 100);
+    const taxable = this.lineTaxable(it);
+    const rate = (it.cessRate || 0);
+    return round2((taxable * rate) / 100);
   }
+
   protected lineGst(it: DraftItem): number {
-    return this.lineCgst(it) + this.lineSgst(it) + this.lineIgst(it);
+    if (it.isGSTInclusive) {
+      return round2(this.lineBase(it) - this.lineTaxable(it));
+    }
+    return round2(this.lineCgst(it) + this.lineSgst(it) + this.lineIgst(it));
   }
+
   protected lineTotal(it: DraftItem): number {
+    if (it.isGSTInclusive) {
+      return round2(this.lineBase(it) - this.lineDisc(it));
+    }
     return round2(this.lineTaxable(it) + this.lineCgst(it) + this.lineSgst(it) + this.lineIgst(it) + this.lineCess(it));
   }
 
@@ -829,9 +909,130 @@ export class PurchaseEntryPage implements OnInit {
   protected get grandTotal(): number {
     return round2(this.taxable + this.totalCgst + this.totalSgst + this.totalIgst + this.totalCess);
   }
+  protected get totalRoundOff(): number {
+    return 0;
+  }
+
+  /* =========================================================
+      Payment & Tax calculation helpers
+      ========================================================= */
+  protected onTaxModeChange(tab: PurchaseTab): void {
+    const isInclusive = tab.taxMode === 'inclusive';
+    tab.items.forEach((it) => (it.isGSTInclusive = isInclusive));
+    this.markDirty();
+    this.recalculateTotals(tab);
+    this.recalculatePayment(tab);
+  }
+
+  protected onPaymentTypeChange(tab: PurchaseTab): void {
+    this.markDirty();
+    this.recalculatePayment(tab);
+    this.paymentValidationMsg.set('');
+  }
+
+  private recalculateTotals(tab: PurchaseTab): void {
+    this.recalculatePayment(tab);
+    this.tabs.update((arr) => [...arr]);
+  }
+
+  private tabGrandTotal(tab: PurchaseTab): number {
+    let total = 0;
+    for (const it of tab.items) {
+      const base = (it.quantity || 0) * (it.purchaseRate || 0);
+      const disc = (base * (it.discountPercentage || 0)) / 100;
+      const afterDisc = base - disc;
+      const rate = it.gstRate || 0;
+      let taxable: number;
+      let gst: number;
+      if (it.isGSTInclusive && rate > 0) {
+        taxable = round2(afterDisc / (1 + rate / 100));
+        gst = round2(base - taxable);
+      } else {
+        taxable = round2(afterDisc);
+        gst = round2((taxable * (it.cgstRate || 0)) / 100)
+          + round2((taxable * (it.sgstRate || 0)) / 100)
+          + round2((taxable * (it.igstRate || 0)) / 100);
+      }
+      const cess = round2((taxable * (it.cessRate || 0)) / 100);
+      total += it.isGSTInclusive ? round2(base - disc) : round2(taxable + gst + cess);
+    }
+    return round2(total);
+  }
+
+  protected onItemChange(tab: PurchaseTab): void {
+    this.markDirty();
+    this.recalculateTotals(tab);
+  }
+
+  protected recalculatePayment(tab: PurchaseTab): void {
+    const grandTotal = this.tabGrandTotal(tab);
+
+    if (this.isPaymentTypeCash(tab)) {
+      tab.paidAmount = round2(grandTotal);
+      tab.balanceAmount = 0;
+    } else if (this.isPaymentTypeCredit(tab)) {
+      tab.paidAmount = 0;
+      tab.balanceAmount = round2(grandTotal);
+    } else {
+      // Do NOT clamp here — let validation show the error on save.
+      // Just keep balance in sync for display.
+      tab.balanceAmount = round2(grandTotal - (tab.paidAmount || 0));
+    }
+    this.tabs.update((arr) => [...arr]);
+  }
+
+  private validatePayment(tab: PurchaseTab): string | null {
+    this.paymentValidationMsg.set('');
+    const grandTotal = this.tabGrandTotal(tab);
+
+    if (this.isPaymentTypeCash(tab)) {
+      // Cash: full paid, balance 0 — then allow save. Paid must be > 0.
+      tab.paidAmount = round2(grandTotal);
+      tab.balanceAmount = 0;
+      this.tabs.update((arr) => [...arr]);
+      if (!(tab.paidAmount > 0)) {
+        this.paymentValidationMsg.set('Paid Amount must be greater than 0 for Cash payment.');
+        this.focusField('paidAmount');
+        return 'paidAmount';
+      }
+      if (round2(tab.balanceAmount) !== 0) {
+        this.paymentValidationMsg.set('Balance must be 0 for Cash payment.');
+        return 'paidAmount';
+      }
+      return null;
+    }
+
+    if (this.isPaymentTypeCredit(tab)) {
+      if (tab.paidAmount !== 0 || tab.balanceAmount !== round2(grandTotal)) {
+        tab.paidAmount = 0;
+        tab.balanceAmount = round2(grandTotal);
+        this.tabs.update((arr) => [...arr]);
+      }
+      return null;
+    }
+
+    if (tab.paidAmount < 0) {
+      this.paymentValidationMsg.set('Paid Amount cannot be negative.');
+      this.focusField('paidAmount');
+      return 'paidAmount';
+    }
+
+    if (tab.paidAmount > round2(grandTotal)) {
+      this.paymentValidationMsg.set('Paid Amount cannot exceed Total Invoice.');
+      this.focusField('paidAmount');
+      return 'paidAmount';
+    }
+
+    tab.balanceAmount = round2(grandTotal - tab.paidAmount);
+    this.tabs.update((arr) => [...arr]);
+    return null;
+  }
 
   private toItems(tab: PurchaseTab): CreatePurchaseItemInput[] {
-    return tab.items.map((it) => ({
+    // Send only rows with a product; trailing blank rows are ignored.
+    return tab.items
+      .filter((it) => it.productId != null)
+      .map((it) => ({
       productId: it.productId!,
       unitID: it.unitID!,
       quantity: it.quantity,
@@ -849,11 +1050,25 @@ export class PurchaseEntryPage implements OnInit {
       cessRate: it.cessRate || 0,
       hsnCode: it.hsnCode ?? null,
       remarks: it.remarks ?? null,
+      isGSTInclusive: it.isGSTInclusive ?? false,
     }));
   }
 
   private toRequest(tab: PurchaseTab): CreatePurchaseRequest {
-    return {
+    // Normalize Cash/Credit before building request so paid/balance are always correct.
+    this.recalculatePayment(tab);
+    const grandTotal = this.tabGrandTotal(tab);
+    const paymentObj = (tab.paymentTypeID != null && (this.isPaymentTypeCash(tab) || this.isPaymentTypeCredit(tab) || tab.paidAmount > 0))
+      ? {
+          amount: round2(tab.paidAmount),
+          paymentTypeID: tab.paymentTypeID,
+          paymentMethodID: tab.paymentMethodID,
+          referenceNo: tab.payReferenceNo || null,
+          remarks: tab.payRemarks || null,
+        }
+      : null;
+
+     return {
       branchId: tab.branchId!,
       warehouseId: tab.warehouseId!,
       supplierId: tab.supplierId!,
@@ -864,11 +1079,14 @@ export class PurchaseEntryPage implements OnInit {
       supplierInvoiceDate: tab.supplierInvoiceDate || null,
       supplierPoNumber: tab.supplierPoNo || null,
       referenceNumber: tab.referenceNo || null,
+      isGSTInclusive: tab.taxMode === 'inclusive',
       paymentTypeID: tab.paymentTypeID ?? null,
       paymentMethodID: tab.paymentMethodID ?? null,
+      paidAmount: round2(tab.paidAmount),
+      balanceAmount: round2(tab.balanceAmount),
       remarks: tab.remarks || null,
       items: this.toItems(tab),
-      payment: null,
+      payment: paymentObj,
     };
   }
 
@@ -893,29 +1111,65 @@ export class PurchaseEntryPage implements OnInit {
       this.toast.error('Warehouse is required');
       return 'warehouse';
     }
+    if (!tab.supplierInvoiceNo?.trim()) {
+      this.focusField('supplierInvoiceNo');
+      this.toast.error('Supplier Invoice No is required');
+      return 'supplierInvoiceNo';
+    }
+    if (!tab.supplierInvoiceDate) {
+      this.focusField('supplierInvoiceDate');
+      this.toast.error('Supplier Invoice Date is required');
+      return 'supplierInvoiceDate';
+    }
+    if (tab.paymentTypeID == null) {
+      this.focusField('paymentType');
+      this.toast.error('Payment Type is required');
+      return 'paymentType';
+    }
+    // Credit = pay later, so method not needed (field is disabled). Cash / others need method.
+    if (!this.isPaymentTypeCredit(tab) && tab.paymentMethodID == null) {
+      this.focusField('paymentMethod');
+      this.toast.error('Payment Method is required');
+      return 'paymentMethod';
+    }
     if (!tab.items.length) {
       this.toast.error('Add at least one item');
       this.focusGrid();
       return 'grid';
     }
-    for (let i = 0; i < tab.items.length; i++) {
-      const it = tab.items[i];
+    // Ignore fully-empty trailing rows (no product + no rate).
+    const rows = tab.items
+      .map((it, idx) => ({ it, idx }))
+      .filter(({ it }) => it.productId != null || (it.purchaseRate || 0) > 0);
+    if (!rows.length) {
+      this.focusCell(0, 0);
+      this.toast.error('Product is required on row 1');
+      return 'grid';
+    }
+    for (const { it, idx } of rows) {
       if (!it.productId) {
-        this.focusCell(i, 0);
-        this.toast.error(`Product is required on row ${i + 1}`);
+        this.focusCell(idx, 0);
+        this.toast.error(`Product is required on row ${idx + 1}`);
         return 'grid';
       }
       if (!it.unitID) {
-        this.focusCell(i, 1);
-        this.toast.error(`Unit is required on row ${i + 1}`);
+        this.focusCell(idx, 1);
+        this.toast.error(`Unit is required on row ${idx + 1}`);
+        return 'grid';
+      }
+      if (!(it.purchaseRate > 0)) {
+        this.focusCell(idx, 2);
+        this.toast.error(`P.Rate must be greater than 0 on row ${idx + 1}`);
         return 'grid';
       }
       if (!(it.quantity > 0)) {
-        this.focusCell(i, 3);
-        this.toast.error(`Quantity must be greater than 0 on row ${i + 1}`);
+        this.focusCell(idx, 3);
+        this.toast.error(`Quantity must be greater than 0 on row ${idx + 1}`);
         return 'grid';
       }
     }
+    const payValidation = this.validatePayment(tab);
+    if (payValidation !== null) return payValidation;
     return null;
   }
 
@@ -938,8 +1192,11 @@ export class PurchaseEntryPage implements OnInit {
           purchaseDate: req.purchaseDate,
           supplierInvoiceNumber: req.supplierInvoiceNumber,
           supplierInvoiceDate: req.supplierInvoiceDate,
+          isGSTInclusive: req.isGSTInclusive,
           paymentTypeID: req.paymentTypeID,
           paymentMethodID: req.paymentMethodID,
+          paidAmount: req.paidAmount,
+          balanceAmount: req.balanceAmount,
           remarks: req.remarks,
           items: req.items,
         };
@@ -1039,7 +1296,7 @@ export class PurchaseEntryPage implements OnInit {
     const tab = this.ensureTab();
     tab.items = tab.items.length ? [...tab.items, ...imported] : imported;
     this.tabs.update((arr) => [...arr]);
-    this.markDirty();
+    this.onItemChange(tab);
     if (skipped.length) {
       this.toast.error(`Imported ${imported.length}, skipped ${skipped.length}`, skipped.slice(0, 3).join('; '));
     } else {

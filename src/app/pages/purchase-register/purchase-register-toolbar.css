@@ -1,0 +1,16 @@
+/* Purchase Register Toolbar Styles */
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.toolbar-actions .btn.primary {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.toolbar-actions .btn.primary[lucide-icon] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

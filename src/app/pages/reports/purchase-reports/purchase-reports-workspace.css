@@ -1,0 +1,9 @@
+.prp {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.prp-pane.hidden {
+  display: none;
+}

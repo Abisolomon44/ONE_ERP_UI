@@ -769,3 +769,51 @@ kbd {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Validation Messages ---------- */
+.validation-msg {
+  color: #dc2626;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 2px;
+  padding: 2px 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+}
+
+/* ---------- Readonly Field ---------- */
+.readonly-field {
+  background: var(--pe-readonly, #f8fafc) !important;
+  color: var(--pe-text-2, #475569) !important;
+  caret-color: transparent;
+  cursor: default;
+}
+
+.readonly-field:focus {
+  background: var(--pe-readonly, #f8fafc) !important;
+  color: var(--pe-text-2, #475569) !important;
+  border: 1px solid var(--pe-grid-border, #64748b);
+  box-shadow: none;
+}
+
+/* ---------- Disabled Select ---------- */
+.disabled-select {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Tax Mode Select ---------- */
+.purchase-grid .info-group label select[data-field="taxMode"] {
+  font-weight: 600;
+  color: var(--pe-accent, #2563eb);
+}
+
+/* ---------- Total Row - Paid/Balance ---------- */
+.totals-row .total-item.paid-item strong {
+  color: var(--pe-accent, #2563eb);
+}
+
+.totals-row .total-item.balance-item strong {
+  color: #16a34a;
+}

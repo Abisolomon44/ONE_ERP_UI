@@ -59,7 +59,7 @@
             <input data-field="contactNo" [(ngModel)]="tab.contactNo" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
           </label>
           <label>
-            <span>Supplier Invoice No</span>
+            <span>Supplier Invoice No *</span>
             <input data-field="supplierInvoiceNo" [(ngModel)]="tab.supplierInvoiceNo" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
           </label>
           <label>
@@ -110,16 +110,29 @@
             <input data-field="referenceNo" [(ngModel)]="tab.referenceNo" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
           </label>
           <label>
-            <span>Supplier Invoice Date</span>
+            <span>Supplier Invoice Date *</span>
             <input data-field="supplierInvoiceDate" type="date" [(ngModel)]="tab.supplierInvoiceDate" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
+          </label>
+
+            <div class="info-group-title">Other</div>
+          <label class="remarks-field">
+            <span>Remarks</span>
+            <textarea data-field="remarks" rows="2" [(ngModel)]="tab.remarks" (ngModelChange)="markDirty()" [disabled]="!canManage()"></textarea>
           </label>
         </div>
 
         <div class="info-group">
           <div class="info-group-title">Payment</div>
           <label>
-            <span>Payment Type</span>
-            <select data-field="paymentType" [(ngModel)]="tab.paymentTypeID" (ngModelChange)="markDirty()" [disabled]="!canManage()">
+            <span>Tax Mode</span>
+            <select data-field="taxMode" [(ngModel)]="tab.taxMode" (ngModelChange)="onTaxModeChange(tab)" [disabled]="!canManage()">
+              <option value="exclusive">GST Exclusive</option>
+              <option value="inclusive">GST Inclusive</option>
+            </select>
+          </label>
+          <label>
+            <span>Payment Type *</span>
+            <select data-field="paymentType" [(ngModel)]="tab.paymentTypeID" (ngModelChange)="onPaymentTypeChange(tab)" [disabled]="!canManage()">
               <option [ngValue]="null">— Select —</option>
               @for (t of ($any(lookups())?.paymentTypes ?? []); track t.id) {
                 <option [ngValue]="t.id">{{ t.name }}</option>
@@ -127,23 +140,36 @@
             </select>
           </label>
           <label>
-            <span>Payment Method</span>
-            <select data-field="paymentMethod" [(ngModel)]="tab.paymentMethodID" (ngModelChange)="markDirty()" [disabled]="!canManage()">
+            <span>Payment Method *</span>
+            <select data-field="paymentMethod" [(ngModel)]="tab.paymentMethodID" (ngModelChange)="markDirty()" [disabled]="!canManage() || isPaymentTypeCredit(tab)" [class.disabled-select]="isPaymentTypeCredit(tab)">
               <option [ngValue]="null">— Select —</option>
               @for (m of ($any(lookups())?.paymentMethods ?? []); track m.id) {
                 <option [ngValue]="m.id">{{ m.name }}</option>
               }
             </select>
           </label>
+          <label>
+            <span>Grand Total</span>
+            <input type="text" [value]="grandTotal | number: '1.2-2'" readonly />
+          </label>
         </div>
 
         <div class="info-group">
-          <div class="info-group-title">Other</div>
-          <label class="remarks-field">
-            <span>Remarks</span>
-            <textarea data-field="remarks" rows="2" [(ngModel)]="tab.remarks" (ngModelChange)="markDirty()" [disabled]="!canManage()"></textarea>
+          <div class="info-group-title">Payment Amount</div>
+          <label>
+            <span>Paid Amount</span>
+            <input data-field="paidAmount" type="number" min="0" step="0.01" [(ngModel)]="tab.paidAmount" (ngModelChange)="markDirty(); recalculatePayment(tab)" [readonly]="isPaymentTypeCash(tab) || isPaymentTypeCredit(tab)" [disabled]="!canManage()" [class.readonly-field]="isPaymentTypeCash(tab) || isPaymentTypeCredit(tab)" />
           </label>
+          <label>
+            <span>Balance Amount</span>
+            <input type="text" [value]="tab.balanceAmount | number: '1.2-2'" readonly class="readonly-field" />
+          </label>
+          @if (paymentValidationMsg()) {
+            <div class="validation-msg">{{ paymentValidationMsg() }}</div>
+          }
         </div>
+
+        
       </div>
 
       <div class="items-header">
@@ -212,10 +238,10 @@
                 <td>
                   <input [attr.data-row]="$index" [attr.data-col]="1" type="text" [value]="unitName(it)" readonly [disabled]="!canManage()" />
                 </td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="2" type="number" min="0" step="0.01" [(ngModel)]="it.purchaseRate" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="3" type="number" min="0" step="0.01" [(ngModel)]="it.quantity" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="4" type="number" min="0" step="0.01" [(ngModel)]="it.freeQuantity" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="5" type="number" min="0" step="0.01" [(ngModel)]="it.discountPercentage" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="2" type="number" min="0" step="0.01" [(ngModel)]="it.purchaseRate" (ngModelChange)="onItemChange(tab)" [disabled]="!canManage()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="3" type="number" min="0" step="0.01" [(ngModel)]="it.quantity" (ngModelChange)="onItemChange(tab)" [disabled]="!canManage()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="4" type="number" min="0" step="0.01" [(ngModel)]="it.freeQuantity" (ngModelChange)="onItemChange(tab)" [disabled]="!canManage()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="5" type="number" min="0" step="0.01" [(ngModel)]="it.discountPercentage" (ngModelChange)="onItemChange(tab)" [disabled]="!canManage()" /></td>
                 <td class="num">{{ lineDisc(it) | number: '1.2-2' }}</td>
                 <td><input [attr.data-row]="$index" [attr.data-col]="6" type="text" [value]="it.hsnCode ?? ''" readonly [disabled]="!canManage()" /></td>
                 <td><input [attr.data-row]="$index" [attr.data-col]="7" type="number" min="0" step="0.01" [value]="it.gstRate" readonly [disabled]="!canManage()" /></td>
@@ -276,6 +302,9 @@
         <div class="total-item"><span>GST Amount</span><strong>{{ totalGst | number: '1.2-2' }}</strong></div>
         <div class="total-item"><span>CESS Amount</span><strong>{{ totalCess | number: '1.2-2' }}</strong></div>
         <div class="total-item"><span>Net Amount</span><strong>{{ netAmount | number: '1.2-2' }}</strong></div>
+        <div class="total-item"><span>Round Off</span><strong>{{ totalRoundOff | number: '1.2-2' }}</strong></div>
+        <div class="total-item"><span>Paid Amount</span><strong>{{ tab.paidAmount | number: '1.2-2' }}</strong></div>
+        <div class="total-item"><span>Balance Amount</span><strong>{{ tab.balanceAmount | number: '1.2-2' }}</strong></div>
         <div class="total-item grand-total"><span>Total Invoice</span><strong>{{ grandTotal | number: '1.2-2' }}</strong></div>
       </div>
     </section>
@@ -295,6 +324,10 @@
         <tr><td><kbd>Ctrl+Tab</kbd></td><td>Next tab</td></tr>
         <tr><td><kbd>Ctrl+Shift+Tab</kbd></td><td>Previous tab</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Close active purchase</td></tr>
+        <tr><td><kbd>Alt+T</kbd></td><td>Focus Tax Mode</td></tr>
+        <tr><td><kbd>Alt+P</kbd></td><td>Focus Payment Type</td></tr>
+        <tr><td><kbd>Alt+M</kbd></td><td>Focus Payment Method</td></tr>
+        <tr><td><kbd>Alt+A</kbd></td><td>Focus Paid Amount</td></tr>
         <tr><td><kbd>F3</kbd></td><td>Product search</td></tr>
         <tr><td><kbd>F6</kbd></td><td>Focus items grid</td></tr>
         <tr><td><kbd>Insert</kbd></td><td>Add item</td></tr>

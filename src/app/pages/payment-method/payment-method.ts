@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import {
   PaymentMethodService,
@@ -21,6 +22,7 @@ export class PaymentMethodPage implements OnInit {
   private readonly svc = inject(PaymentMethodService);
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
+  private readonly router = inject(Router);
 
   protected readonly canView = signal(false);
   protected readonly canManage = signal(false);
@@ -69,6 +71,10 @@ export class PaymentMethodPage implements OnInit {
       isActive: true,
     });
     this.dialogOpen.set(true);
+  }
+
+  protected openDetails(r: PaymentMethodDto): void {
+    this.router.navigate(['/payment-method-detail', r.paymentMethodId]);
   }
 
   protected openEdit(r: PaymentMethodDto): void {

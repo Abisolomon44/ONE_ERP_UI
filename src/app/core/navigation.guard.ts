@@ -25,6 +25,22 @@ async function canEnter(url: string, nav: NavigationStoreService, router: Router
 
   if (NON_SCREEN_ALLOWLIST.has(path)) return true;
 
+  // Transaction detail pages share their parent screen's authorization.
+  // Field-level / action-level security stays in the components + backend [Permission] checks.
+  if (
+    path === '/purchases' ||
+    path.startsWith('/purchases/') ||
+    path === '/purchase-returns/new' ||
+    path.startsWith('/purchase-returns/') ||
+    path === '/purchase-entry'
+  ) {
+    if (nav.isUnrestricted()) return true;
+    await nav.ensureLoaded();
+    if (nav.isRouteAuthorized('/purchase') || nav.isRouteAuthorized('/purchase-entry')) return true;
+    // Fall through to exact-match check so restricted users without purchase
+    // screens still get access-denied.
+  }
+
   if (path === '/workspace' || path.startsWith('/workspace/')) {
     await nav.ensureLoaded();
     const id = Number(path.split('/')[2]);

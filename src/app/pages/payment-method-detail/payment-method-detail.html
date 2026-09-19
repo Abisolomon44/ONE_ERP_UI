@@ -1,0 +1,115 @@
+<div class="page">
+  <header class="page-head">
+    <div>
+      <button class="back" (click)="back()">&larr; Payment Methods</button>
+      <h1>Payment Method Details</h1>
+      @if (method(); as m) {
+        <p class="muted">{{ m.code }} &middot; {{ m.name }} &middot; <span class="cat">{{ m.paymentCategory }}</span></p>
+      }
+    </div>
+    <button class="btn primary" (click)="openCreate()" [disabled]="!canManage()">
+      <lucide-icon name="plus"></lucide-icon> New
+    </button>
+  </header>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view payment method details.</div>
+  } @else if (loading()) {
+    <div class="empty">Loading…</div>
+  } @else if (!rows().length) {
+    <div class="empty">No details for this payment method yet.</div>
+  } @else {
+    <table class="grid">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Payment Method</th>
+          <th>Category</th>
+          <th>UPI ID</th>
+          <th>Bank Name</th>
+          <th>Account/Reference</th>
+          <th>Default</th>
+          <th>Display Order</th>
+          <th>Active</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of rows(); track r.paymentMethodDetailId) {
+          <tr>
+            <td>{{ r.code }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.paymentMethodName }}</td>
+            <td>{{ r.paymentCategory }}</td>
+            <td>{{ r.upiId ?? '—' }}</td>
+            <td>{{ r.bankName ?? '—' }}</td>
+            <td>{{ accountOrRef(r) }}</td>
+            <td>
+              @if (r.isDefault) { <span class="badge default">Default</span> }
+              @else { — }
+            </td>
+            <td>{{ r.displayOrder }}</td>
+            <td>
+              @if (r.isActive) { <span class="badge ok">Active</span> }
+              @else { <span class="badge off">Inactive</span> }
+            </td>
+            <td class="row-actions">
+              <button class="icon" (click)="openEdit(r)" [disabled]="!canManage()"><lucide-icon name="pencil"></lucide-icon></button>
+              <button class="icon danger" (click)="remove(r)" [disabled]="!canManage()"><lucide-icon name="trash-2"></lucide-icon></button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+@if (dialogOpen()) {
+  <div class="overlay" (click)="dialogOpen.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>{{ editing() ? 'Edit Payment Method Detail' : 'New Payment Method Detail' }}</h2>
+
+      @if (method(); as m) {
+        <label><span>Payment Method *</span>
+          <input [value]="m.code + ' — ' + m.name + ' (' + m.paymentCategory + ')'" disabled />
+        </label>
+      }
+
+      <label><span>Code *</span><input [(ngModel)]="form().code" /></label>
+      <label><span>Name *</span><input [(ngModel)]="form().name" /></label>
+      <label><span>Display Name</span><input [(ngModel)]="form().displayName" /></label>
+
+      @if (showUpi()) {
+        <label><span>UPI ID</span><input [(ngModel)]="form().upiId" placeholder="abc@bank" /></label>
+      }
+      @if (showBankName()) {
+        <label><span>Bank Name</span><input [(ngModel)]="form().bankName" /></label>
+      }
+      @if (showBank()) {
+        <label><span>Account Number</span><input [(ngModel)]="form().accountNumber" /></label>
+        <label><span>IFSC Code</span><input [(ngModel)]="form().ifscCode" /></label>
+      }
+      @if (showCard()) {
+        <label><span>Terminal Name</span><input [(ngModel)]="form().terminalName" /></label>
+      }
+      @if (showCash()) {
+        <label><span>Cash Counter Name</span><input [(ngModel)]="form().cashCounterName" /></label>
+      }
+      @if (showRef()) {
+        <label><span>Reference Value</span><input [(ngModel)]="form().referenceValue" /></label>
+      }
+
+      <div class="row">
+        <label class="check"><input type="checkbox" [(ngModel)]="form().isDefault" /> Default</label>
+        <label class="check"><input type="checkbox" [(ngModel)]="form().isActive" /> Active</label>
+      </div>
+      <label><span>Display Order</span><input type="number" [(ngModel)]="form().displayOrder" /></label>
+
+      <div class="actions">
+        <button class="btn primary" (click)="save()">Save</button>
+        <button class="btn ghost" (click)="dialogOpen.set(false)">Cancel</button>
+      </div>
+    </div>
+  </div>
+}

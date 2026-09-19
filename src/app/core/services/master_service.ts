@@ -470,6 +470,7 @@ export interface HsnSacDto {
   hsnSacId: number;
   companyId: number;
   code: string;
+  governmentCode: string;
   name: string;
   hsnSacType: string;
   description?: string | null;
@@ -480,6 +481,7 @@ export interface HsnSacDto {
 }
 export type CreateHsnSacRequest = {
   code: string;
+  governmentCode: string;
   name: string;
   hsnSacType: 'HSN' | 'SAC';
   taxId?: number | null;
@@ -1397,6 +1399,8 @@ export interface CreatePurchaseRequest {
   isGSTInclusive?: boolean | null;
   paymentTypeID?: number | null;
   paymentMethodID?: number | null;
+  paidAmount?: number;
+  balanceAmount?: number;
   remarks?: string | null;
   items: CreatePurchaseItemInput[];
   payment?: CreatePurchasePaymentInput | null;
@@ -1413,6 +1417,8 @@ export interface UpdatePurchaseRequest {
   supplierInvoiceDate?: string | null;
   paymentTypeID?: number | null;
   paymentMethodID?: number | null;
+  paidAmount?: number;
+  balanceAmount?: number;
   remarks?: string | null;
   items: CreatePurchaseItemInput[];
   companyId: number;
@@ -1467,9 +1473,26 @@ export class PurchaseService {
     return firstValueFrom(this.http.put<PurchaseDto>(`/api/purchases/${id}`, request));
   }
 
+  cancel(id: number, reason: string): Promise<PurchaseDto> {
+    return firstValueFrom(this.http.post<PurchaseDto>(`/api/purchases/${id}/cancel`, { reason }));
+  }
+
+  deleteCheck(id: number): Promise<DeleteCheckDto> {
+    return firstValueFrom(this.http.get<DeleteCheckDto>(`/api/purchases/${id}/delete-check`));
+  }
+
   delete(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`/api/purchases/${id}`)).then(() => undefined);
   }
+}
+
+export interface DeleteCheckDto {
+  allowed: boolean;
+  reasons: string[];
+  statusCode?: string | null;
+  paymentCount: number;
+  stockTransactionCount: number;
+  returnCount: number;
 }
 
 // ============================================================
@@ -1579,7 +1602,21 @@ export interface PurchaseReturnDto {
   statusID: number;
   reason?: string | null;
   remarks?: string | null;
+  createdByUserID: number;
+  createdAt: string;
+  updatedByUserID?: number | null;
+  updatedAt?: string | null;
+  cancelledByUserID?: number | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
   items: PurchaseReturnItemDto[];
+}
+
+export interface UpdatePurchaseReturnRequest {
+  returnDate: string;
+  reason?: string | null;
+  remarks?: string | null;
+  items: CreatePurchaseReturnItemInput[];
 }
 
 export interface CreatePurchaseReturnItemInput {
@@ -1630,6 +1667,22 @@ export class PurchaseReturnService {
 
   create(request: CreatePurchaseReturnRequest): Promise<PurchaseReturnDto> {
     return firstValueFrom(this.http.post<PurchaseReturnDto>('/api/purchase-returns', request));
+  }
+
+  update(id: number, request: UpdatePurchaseReturnRequest): Promise<PurchaseReturnDto> {
+    return firstValueFrom(this.http.put<PurchaseReturnDto>(`/api/purchase-returns/${id}`, request));
+  }
+
+  cancel(id: number, reason: string): Promise<PurchaseReturnDto> {
+    return firstValueFrom(this.http.post<PurchaseReturnDto>(`/api/purchase-returns/${id}/cancel`, { reason }));
+  }
+
+  deleteCheck(id: number): Promise<DeleteCheckDto> {
+    return firstValueFrom(this.http.get<DeleteCheckDto>(`/api/purchase-returns/${id}/delete-check`));
+  }
+
+  delete(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/purchase-returns/${id}`)).then(() => undefined);
   }
 }
 
@@ -1757,6 +1810,91 @@ export class PaymentMethodService {
 
   delete(id: number): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`/api/payment-methods/${id}`)).then(() => undefined);
+  }
+}
+
+// ============================================================
+// Payment Method Details (child master)
+// ============================================================
+
+export interface PaymentMethodDetailDto {
+  paymentMethodDetailId: number;
+  paymentMethodId: number;
+  paymentMethodCode: string;
+  paymentMethodName: string;
+  paymentCategory: string;
+  code: string;
+  name: string;
+  displayName?: string | null;
+  upiId?: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  ifscCode?: string | null;
+  terminalName?: string | null;
+  cashCounterName?: string | null;
+  referenceValue?: string | null;
+  isDefault: boolean;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+export interface CreatePaymentMethodDetailRequest {
+  paymentMethodId: number;
+  code: string;
+  name: string;
+  displayName?: string | null;
+  upiId?: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  ifscCode?: string | null;
+  terminalName?: string | null;
+  cashCounterName?: string | null;
+  referenceValue?: string | null;
+  isDefault: boolean;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdatePaymentMethodDetailRequest {
+  code: string;
+  name: string;
+  displayName?: string | null;
+  upiId?: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  ifscCode?: string | null;
+  terminalName?: string | null;
+  cashCounterName?: string | null;
+  referenceValue?: string | null;
+  isDefault: boolean;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+@Injectable({ providedIn: 'root' })
+export class PaymentMethodDetailService {
+  constructor(private readonly http: HttpClient) {}
+
+  getByPaymentMethod(paymentMethodId: number, includeInactive: boolean = true): Promise<PaymentMethodDetailDto[]> {
+    let params = new HttpParams().set('paymentMethodId', String(paymentMethodId));
+    if (includeInactive) params = params.set('includeInactive', 'true');
+    return firstValueFrom(this.http.get<PaymentMethodDetailDto[]>('/api/payment-method-details', { params }));
+  }
+
+  getById(id: number): Promise<PaymentMethodDetailDto> {
+    return firstValueFrom(this.http.get<PaymentMethodDetailDto>(`/api/payment-method-details/${id}`));
+  }
+
+  create(request: CreatePaymentMethodDetailRequest): Promise<PaymentMethodDetailDto> {
+    return firstValueFrom(this.http.post<PaymentMethodDetailDto>('/api/payment-method-details', request));
+  }
+
+  update(id: number, request: UpdatePaymentMethodDetailRequest): Promise<PaymentMethodDetailDto> {
+    return firstValueFrom(this.http.put<PaymentMethodDetailDto>(`/api/payment-method-details/${id}`, request));
+  }
+
+  delete(id: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/payment-method-details/${id}`)).then(() => undefined);
   }
 }
 

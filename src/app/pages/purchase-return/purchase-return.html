@@ -4,8 +4,8 @@
       <h1>Purchase Returns</h1>
       <p class="muted">Return goods to suppliers and reverse stock.</p>
     </div>
-    @if (canManage()) {
-      <button class="btn primary" (click)="openForm()"><lucide-icon name="plus"></lucide-icon> New Return</button>
+    @if (canCreate()) {
+      <button class="btn primary" (click)="newReturn()"><lucide-icon name="plus"></lucide-icon> New Return</button>
     }
   </header>
 
@@ -86,6 +86,7 @@
             <th>Purchase</th>
             <th>Supplier</th>
             <th class="num">Total</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -96,6 +97,12 @@
               <td>{{ r.purchaseId }}</td>
               <td>{{ r.supplierNameSnapshot || r.supplierId }}</td>
               <td class="num">{{ r.grandTotal | number: '1.2-2' }}</td>
+              <td>
+                <button type="button" (click)="open(r, 'view')" [disabled]="!canView()">View</button>
+                <button type="button" (click)="open(r, 'edit')" [disabled]="!canEdit()">Edit</button>
+                <button type="button" (click)="open(r, 'cancel')" [disabled]="!canCancel()">Cancel</button>
+                <button type="button" (click)="open(r, 'delete')" [disabled]="!canDelete()">Delete</button>
+              </td>
             </tr>
           }
         </tbody>

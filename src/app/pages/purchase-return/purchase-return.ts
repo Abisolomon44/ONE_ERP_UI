@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe, SlicePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import {
   PurchaseService,
@@ -48,9 +49,14 @@ export class PurchaseReturnPage implements OnInit {
   private readonly purchaseSvc = inject(PurchaseService);
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
+  private readonly router = inject(Router);
 
   protected readonly canView = signal(false);
   protected readonly canManage = signal(false);
+  protected readonly canCreate = signal(false);
+  protected readonly canEdit = signal(false);
+  protected readonly canCancel = signal(false);
+  protected readonly canDelete = signal(false);
   protected readonly loading = signal(false);
   protected readonly returns = signal<PurchaseReturnDto[]>([]);
 
@@ -63,9 +69,21 @@ export class PurchaseReturnPage implements OnInit {
   protected readonly draft = signal<ReturnDraft[]>([]);
 
   async ngOnInit(): Promise<void> {
-    this.canView.set(this.perm.has('purchases.return.view'));
+    this.canView.set(this.perm.has(['purchases-return.view', 'purchases.return.view', 'purchases.return.manage']));
     this.canManage.set(this.perm.has('purchases.return.manage'));
+    this.canCreate.set(this.perm.has(['purchases-return.create', 'purchases.return.manage']));
+    this.canEdit.set(this.perm.has(['purchases-return.edit', 'purchases.return.manage']));
+    this.canCancel.set(this.perm.has(['purchases-return.cancel', 'purchases.return.manage']));
+    this.canDelete.set(this.perm.has(['purchases-return.delete', 'purchases.return.manage']));
     if (this.canView()) await this.load();
+  }
+
+  protected open(r: PurchaseReturnDto, mode: 'view' | 'edit' | 'cancel' | 'delete'): void {
+    this.router.navigate(['/purchase-returns', r.purchaseReturnId], { queryParams: { mode } });
+  }
+
+  protected newReturn(): void {
+    this.router.navigate(['/purchase-returns/new']);
   }
 
   private async load(): Promise<void> {

@@ -1,0 +1,182 @@
+<div class="page">
+  <header class="page-head">
+    <div>
+      <h1>{{ title }}</h1>
+      @if (purchase()) {
+        <p class="muted">{{ purchase()!.purchaseNumber }} &middot; {{ purchase()!.purchaseDate | slice: 0 : 10 }} &middot; {{ purchase()!.supplierNameSnapshot || purchase()!.supplierId }}</p>
+      }
+    </div>
+    <div class="head-actions">
+      <a class="btn ghost" routerLink="/purchase" [queryParams]="{ tab: 'list' }">Back</a>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="empty">Loading…</div>
+  } @else if (!purchase()) {
+    <div class="empty">Purchase not found.</div>
+  } @else {
+    <section class="card">
+      <h2>Purchase Header</h2>
+      <div class="grid">
+        <label><span>Purchase Number</span><input [ngModel]="purchase()!.purchaseNumber" disabled /></label>
+        <label><span>Purchase Date</span>
+          @if (mode() === 'edit' && editModel) {
+            <input type="date" [ngModel]="editModel.purchaseDate | slice: 0 : 10" (ngModelChange)="editModel.purchaseDate = $event" />
+          } @else {
+            <input [ngModel]="purchase()!.purchaseDate | slice: 0 : 10" disabled />
+          }
+        </label>
+        <label><span>Company</span><input [ngModel]="purchase()!.companyNameSnapshot || purchase()!.companyId" disabled /></label>
+        <label><span>Branch Id</span><input [ngModel]="purchase()!.branchId" disabled /></label>
+        <label><span>Warehouse Id</span><input [ngModel]="purchase()!.warehouseId" disabled /></label>
+        <label><span>Supplier</span><input [ngModel]="purchase()!.supplierNameSnapshot || purchase()!.supplierId" disabled /></label>
+        <label><span>Payment Type Id</span><input [ngModel]="purchase()!.paymentTypeID" disabled /></label>
+        <label><span>Payment Method Id</span><input [ngModel]="purchase()!.paymentMethodID" disabled /></label>
+        <label><span>Currency Id</span><input [ngModel]="($any(purchase()).currencyId)" disabled /></label>
+        <label><span>Purchase Type Id</span><input [ngModel]="($any(purchase()).purchaseTypeId)" disabled /></label>
+        <label><span>Tax Id</span><input [ngModel]="($any(purchase()).taxId)" disabled /></label>
+        <label><span>GST Inclusive</span><input [ngModel]="($any(purchase()).isGSTInclusive)" disabled /></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Document</h2>
+      <div class="grid">
+        <label><span>Supplier Invoice Number</span>
+          @if (mode() === 'edit' && editModel) {
+            <input [(ngModel)]="editModel.supplierInvoiceNumber" />
+          } @else {
+            <input [ngModel]="purchase()!.supplierInvoiceNumber" disabled />
+          }
+        </label>
+        <label><span>Supplier Invoice Date</span>
+          @if (mode() === 'edit' && editModel) {
+            <input type="date" [ngModel]="(editModel.supplierInvoiceDate | slice: 0 : 10)" (ngModelChange)="editModel.supplierInvoiceDate = $event" />
+          } @else {
+            <input [ngModel]="(purchase()!.supplierInvoiceDate | slice: 0 : 10)" disabled />
+          }
+        </label>
+        <label><span>Supplier PO Number</span>
+          @if (mode() === 'edit' && editModel) {
+            <input [(ngModel)]="supplierPONumber" />
+          } @else {
+            <input [ngModel]="supplierPONumber" disabled />
+          }
+        </label>
+        <label><span>Reference Number</span>
+          @if (mode() === 'edit' && editModel) {
+            <input [(ngModel)]="referenceNumber" />
+          } @else {
+            <input [ngModel]="referenceNumber" disabled />
+          }
+        </label>
+      </div>
+      <label class="remarks"><span>Remarks</span>
+        @if (mode() === 'edit' && editModel) {
+          <input [(ngModel)]="editModel.remarks" />
+        } @else {
+          <input [ngModel]="purchase()!.remarks" disabled />
+        }
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Totals</h2>
+      <div class="grid">
+        <label><span>Gross</span><input [ngModel]="purchase()!.totalGrossAmount" disabled /></label>
+        <label><span>Discount</span><input [ngModel]="purchase()!.totalDiscountAmount" disabled /></label>
+        <label><span>Taxable</span><input [ngModel]="purchase()!.totalTaxableAmount" disabled /></label>
+        <label><span>GST / Tax</span><input [ngModel]="purchase()!.totalTaxAmount" disabled /></label>
+        <label><span>CESS</span><input [ngModel]="purchase()!.totalCessAmount" disabled /></label>
+        <label><span>Round Off</span><input [ngModel]="purchase()!.totalRoundOff" disabled /></label>
+        <label><span>Grand Total</span><input [ngModel]="purchase()!.grandTotal" disabled /></label>
+        <label><span>Paid Amount</span><input [ngModel]="purchase()!.paidAmount" disabled /></label>
+        <label><span>Balance Amount</span><input [ngModel]="purchase()!.balanceAmount" disabled /></label>
+        <label><span>Status Id</span><input [ngModel]="purchase()!.statusID" disabled /></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Items ({{ purchase()!.items.length }})</h2>
+      <div class="table-scroll">
+        <table class="list">
+          <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Discount</th><th class="num">Taxable</th><th class="num">GST</th><th class="num">CESS</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            @for (i of purchase()!.items; track i.purchaseItemId) {
+              <tr>
+                <td>{{ i.productNameSnapshot || i.productId }}</td>
+                <td class="num">{{ i.quantity }}</td>
+                <td class="num">{{ i.purchaseRate }}</td>
+                <td class="num">{{ i.discountAmount }}</td>
+                <td class="num">{{ i.taxableValue }}</td>
+                <td class="num">{{ i.gstAmount }}</td>
+                <td class="num">{{ i.cessAmount }}</td>
+                <td class="num">{{ i.lineTotal }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Items are read-only here. Totals, tax, stock, payments and outstanding are recalculated and adjusted by the backend on update. Payments linked: {{ payments().length }}, stock entries: {{ stockTx().length }}.</p>
+    </section>
+
+    <section class="card">
+      <h2>Audit</h2>
+      <div class="grid">
+        <label><span>Created By</span><input [ngModel]="purchase()!.createdByUserID" disabled /></label>
+        <label><span>Created At</span><input [ngModel]="purchase()!.createdAt" disabled /></label>
+        <label><span>Updated By</span><input [ngModel]="($any(purchase()).updatedByUserID)" disabled /></label>
+        <label><span>Updated At</span><input [ngModel]="($any(purchase()).updatedAt)" disabled /></label>
+        <label><span>Cancelled By</span><input [ngModel]="purchase()!.cancelledByUserID" disabled /></label>
+        <label><span>Cancelled At</span><input [ngModel]="purchase()!.cancelledAt" disabled /></label>
+        <label><span>Cancellation Reason</span><input [ngModel]="purchase()!.cancellationReason" disabled /></label>
+      </div>
+    </section>
+
+    @if (mode() === 'edit') {
+      <section class="card">
+        <h2>Update</h2>
+        <p class="muted">Editable: purchase date, supplier invoice number/date, supplier PO, reference, remarks. Structure (company, branch, warehouse, supplier, items, payments) is backend-governed. Posted purchases with payments or returns cannot be edited.</p>
+        <div class="actions">
+          <button class="btn ghost" (click)="back()">Back</button>
+          <button class="btn primary" (click)="saveEdit()" [disabled]="saving()">Update Purchase</button>
+        </div>
+      </section>
+    }
+
+    @if (mode() === 'cancel') {
+      <section class="card danger">
+        <h2>Cancel Purchase</h2>
+        <label><span>Cancellation Reason *</span><input [(ngModel)]="cancelReason" placeholder="Enter reason" /></label>
+        <div class="actions">
+          <button class="btn ghost" (click)="back()">Back</button>
+          <button class="btn danger" (click)="confirmCancel()" [disabled]="saving()">Cancel Purchase</button>
+        </div>
+      </section>
+    }
+
+    @if (mode() === 'delete') {
+      <section class="card danger">
+        <h2>Are you sure you want to delete this Purchase?</h2>
+        <ul>
+          <li>Purchase Number: <strong>{{ purchase()!.purchaseNumber }}</strong></li>
+          <li>Supplier: <strong>{{ purchase()!.supplierNameSnapshot || purchase()!.supplierId }}</strong></li>
+          <li>Purchase Date: <strong>{{ purchase()!.purchaseDate | slice: 0 : 10 }}</strong></li>
+          <li>Grand Total: <strong>{{ purchase()!.grandTotal }}</strong></li>
+          <li>Status: <strong>{{ purchase()!.statusID }}</strong></li>
+        </ul>
+        @if (deleteCheck() && !deleteCheck()!.allowed) {
+          <div class="blocked">
+            <p><strong>Deletion is not allowed:</strong></p>
+            <ul>@for (r of deleteCheck()!.reasons; track r) { <li>{{ r }}</li> }</ul>
+          </div>
+        }
+        <div class="actions">
+          <button class="btn ghost" (click)="back()">Back</button>
+          <button class="btn danger" (click)="confirmDelete()" [disabled]="saving() || (deleteCheck() !== null && !deleteCheck()!.allowed)">Delete Purchase</button>
+        </div>
+      </section>
+    }
+  }
+</div>

@@ -48,6 +48,7 @@
               <th class="num">Grand Total</th>
               <th class="num">Paid</th>
               <th class="num">Balance</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -64,6 +65,13 @@
                 <td class="num">{{ p.grandTotal | number: '1.2-2' }}</td>
                 <td class="num">{{ p.paidAmount | number: '1.2-2' }}</td>
                 <td class="num">{{ p.balanceAmount | number: '1.2-2' }}</td>
+                <td>
+                  <button type="button" (click)="open(p, 'view')" [disabled]="!canView()">View</button>
+                  <button type="button" (click)="open(p, 'edit')" [disabled]="!canEdit()">Edit</button>
+                  <button type="button" (click)="open(p, 'cancel')" [disabled]="!canCancel()">Cancel</button>
+                  <button type="button" (click)="open(p, 'delete')" [disabled]="!canDelete()">Delete</button>
+                  <button type="button" (click)="returnPurchase(p)" [disabled]="!canReturn()">Return</button>
+                </td>
               </tr>
             }
           </tbody>

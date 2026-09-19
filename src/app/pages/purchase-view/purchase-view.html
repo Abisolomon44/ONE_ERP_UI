@@ -1,0 +1,135 @@
+@if (purchase) {
+  <div class="card">
+    <div class="card-header">
+      <h2>Purchase Details</h2>
+      <button class="btn secondary float-right" type="button" (click)="goBack()">Back</button>
+    </div>
+
+    <div class="card-body">
+      <div class="detail-row">
+        <label>Purchase Number</label>
+        <span>{{ purchase.purchaseNumber }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Purchase Date</label>
+        <span>{{ purchase.purchaseDate ? (purchase.purchaseDate | slice: 0 : 10) : '' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Supplier</label>
+        <span>{{ purchase.supplierNameSnapshot || purchase.supplierId }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Supplier Invoice No</label>
+        <span>{{ purchase.supplierInvoiceNumber || 'N/A' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Supplier Invoice Date</label>
+        <span>{{ purchase.supplierInvoiceDate || 'N/A' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Company</label>
+        <span>{{ purchase.companyNameSnapshot || purchase.companyId }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Branch</label>
+        <span>{{ purchase.branchId }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Warehouse</label>
+        <span>{{ purchase.warehouseId }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Payment Type</label>
+        <span>{{ purchase.paymentTypeID ? 'Card' : 'Cash' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Payment Method</label>
+        <span>{{ purchase.paymentMethodID ? 'Credit Card' : 'Cash' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Grand Total</label>
+        <span class="num">{{ purchase.grandTotal | number: '1.2-2' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Paid Amount</label>
+        <span class="num">{{ purchase.paidAmount | number: '1.2-2' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Balance Amount</label>
+        <span class="num">{{ (purchase.grandTotal - purchase.paidAmount) | number: '1.2-2' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Purchase Status</label>
+        <span><span class="badge">{{ purchase.statusID || 'Open' }}</span></span>
+      </div>
+      <div class="detail-row">
+        <label>Tax Mode</label>
+        <span>{{ purchase.isGSTInclusive ? 'Inclusive' : 'Exclusive' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Reference No</label>
+        <span>{{ purchase.referenceNumber || 'N/A' }}</span>
+      </div>
+      <div class="detail-row">
+        <label>Remarks</label>
+        <span>{{ purchase.remarks || 'N/A' }}</span>
+      </div>
+    </div>
+
+    @if (purchase.items && purchase.items.length > 0) {
+      <div class="items-section">
+        <h3>Purchase Items</h3>
+        <table class="list items-table">
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Product</th>
+              <th>Qty</th>
+              <th>Rate</th>
+              <th>Disc %</th>
+              <th>Disc Amt</th>
+              <th>Taxable</th>
+              <th>GST</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of purchase.items; track item.purchaseItemId; let i = $index) {
+              <tr>
+                <td>{{ $index + 1 }}</td>
+                <td>{{ item.productNameSnapshot || item.productCodeSnapshot || 'N/A' }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.purchaseRate | number: '1.2-2' }}</td>
+                <td>{{ item.discountPercentage | number: '0.0-0' }}</td>
+                <td>{{ item.discountAmount | number: '1.2-2' }}</td>
+                <td>{{ item.taxableValue | number: '1.2-2' }}</td>
+                <td>{{ item.gstAmount | number: '1.2-2' }}</td>
+                <td>{{ item.lineTotal | number: '1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="empty">No items found.</div>
+    }
+
+    <div class="card-footer">
+      <button class="btn secondary" (click)="goBack()">Close</button>
+      @if (canEdit()) {
+        <button class="btn primary" (click)="editPurchase()">Edit</button>
+      }
+      @if (canCancel() && purchase.statusID !== 2) {
+        <button class="icon danger" title="Cancel" (click)="cancelPurchase()">Cancel</button>
+      }
+      @if (canReturn()) {
+        <button class="icon" title="Return" (click)="returnPurchase()">Return</button>
+      }
+      @if (canDelete()) {
+        <button class="icon danger" title="Delete" (click)="deletePurchase()">Delete</button>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="empty">Loading purchase details…</div>
+}

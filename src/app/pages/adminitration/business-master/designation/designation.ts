@@ -57,7 +57,7 @@ export class Designation implements OnInit {
 
     fields: [
       { name: 'companyId', label: 'Company', type: 'dropdown', required: true, options: [] },
-      { name: 'designationCode', label: 'Designation Code', type: 'text', required: true, maxLength: 20 },
+      { name: 'designationCode', label: 'Designation Code', type: 'text', required: true, maxLength: 20, readonly: true },
       { name: 'designationName', label: 'Designation Name', type: 'text', required: true, maxLength: 200 },
       { name: 'level', label: 'Level', type: 'number' },
       { name: 'isActive', label: 'Active', type: 'checkbox' },
@@ -113,11 +113,19 @@ export class Designation implements OnInit {
     };
   }
 
-  protected createDesignation(): void {
+  protected async createDesignation(): Promise<void> {
     this.editing.set(null);
+    let nextCode = '';
+    if (this.defaultCompanyId) {
+      try {
+        nextCode = await this.org.designations.getNextCode(this.defaultCompanyId);
+      } catch {
+        nextCode = '';
+      }
+    }
     this.userModel = {
       companyId: this.defaultCompanyId || null,
-      designationCode: '',
+      designationCode: nextCode,
       designationName: '',
       level: 0,
       isActive: true,

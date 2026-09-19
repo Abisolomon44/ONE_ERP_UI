@@ -1,0 +1,32 @@
+<div class="summary-cards">
+  @if (loading()) {
+    <div class="card summary-item">
+      <span>Loading…</span>
+    </div>
+  } @else {
+    <div class="card summary-item">
+      <div class="label">Total Purchases</div>
+      <div class="value">{{ totalPurchases() }}</div>
+    </div>
+    <div class="card summary-item">
+      <div class="label">Posted Purchases</div>
+      <div class="value">{{ postedPurchases() }}</div>
+    </div>
+    <div class="card summary-item">
+      <div class="label">Credit Purchases</div>
+      <div class="value">{{ creditPurchases() }}</div>
+    </div>
+    <div class="card summary-item">
+      <div class="label">Paid Amount</div>
+      <div class="value">{{ paidAmount() | number: '1.2-2' }}</div>
+    </div>
+    <div class="card summary-item">
+      <div class="label">Outstanding Amount</div>
+      <div class="value">{{ (grandTotal() - paidAmount()) | number: '1.2-2' }}</div>
+    </div>
+    <div class="card summary-item">
+      <div class="label">Purchase Returns</div>
+      <div class="value">{{ purchaseReturns() }}</div>
+    </div>
+  }
+</div>

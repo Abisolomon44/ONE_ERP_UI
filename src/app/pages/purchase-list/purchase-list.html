@@ -1,7 +1,7 @@
 <div class="card">
   <div class="ledger-head">
     <h2>Purchase Ledger</h2>
-    <button class="btn primary" type="button" (click)="newPurchase()" [disabled]="!canManage()">
+    <button class="btn primary" type="button" (click)="newPurchase()" [disabled]="!canCreate()">
       <lucide-icon name="plus"></lucide-icon> New Purchase
     </button>
   </div>
@@ -32,8 +32,11 @@
             <td><span class="badge">{{ p.statusID }}</span></td>
             <td class="num">{{ p.grandTotal | number: '1.2-2' }}</td>
             <td class="row-actions">
-              <button class="icon" (click)="edit(p)" [disabled]="!canManage()"><lucide-icon name="pencil"></lucide-icon></button>
-              <button class="icon danger" (click)="remove(p)" [disabled]="!canManage()"><lucide-icon name="trash-2"></lucide-icon></button>
+              <button class="icon" title="View" (click)="open(p, 'view')" [disabled]="!canView()"><lucide-icon name="eye"></lucide-icon></button>
+              <button class="icon" title="Edit" (click)="open(p, 'edit')" [disabled]="!canEdit()"><lucide-icon name="pencil"></lucide-icon></button>
+              <button class="icon" title="Cancel" (click)="open(p, 'cancel')" [disabled]="!canCancel()"><lucide-icon name="ban"></lucide-icon></button>
+              <button class="icon danger" title="Delete" (click)="open(p, 'delete')" [disabled]="!canDelete()"><lucide-icon name="trash-2"></lucide-icon></button>
+              <button class="icon" title="Return" (click)="returnPurchase(p)" [disabled]="!canReturn()"><lucide-icon name="undo-2"></lucide-icon></button>
             </td>
           </tr>
         }

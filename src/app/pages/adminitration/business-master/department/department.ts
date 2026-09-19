@@ -59,7 +59,7 @@ export class Department implements OnInit {
     fields: [
       { name: 'companyId', label: 'Company', type: 'dropdown', required: true, options: [] },
       { name: 'branchId', label: 'Branch', type: 'dropdown', options: [] },
-      { name: 'departmentCode', label: 'Department Code', type: 'text', required: true, maxLength: 20 },
+      { name: 'departmentCode', label: 'Department Code', type: 'text', required: true, maxLength: 20, readonly: true },
       { name: 'departmentName', label: 'Department Name', type: 'text', required: true, maxLength: 200 },
       { name: 'parentDepartmentId', label: 'Parent Department', type: 'dropdown', options: [] },
       { name: 'headEmployeeId', label: 'Head Employee', type: 'dropdown', options: [] },
@@ -151,7 +151,7 @@ export class Department implements OnInit {
     };
   }
 
-  protected createDepartment(): void {
+  protected async createDepartment(): Promise<void> {
     this.editing.set(null);
     this.userModel = {
       companyId: this.defaultCompanyId || null,
@@ -163,6 +163,36 @@ export class Department implements OnInit {
       isActive: true,
     };
     this.showEntry.set(true);
+  }
+
+  protected async onBranchChange(): Promise<void> {
+    if (!this.editing() && this.userModel['branchId']) {
+      await this.generateDepartmentCode();
+    }
+  }
+
+  private async generateDepartmentCode(): Promise<void> {
+    this.generatedCode = '';
+    if (this.defaultCompanyId && this.userModel['branchId']) {
+      try {
+        this.generatedCode = await this.org.departments.getNextCode(this.defaultCompanyId, this.userModel['branchId']);
+        this.userModel['departmentCode'] = this.generatedCode;
+      } catch {
+        this.generatedCode = '';
+        this.userModel['departmentCode'] = '';
+      }
+    } else {
+      this.userModel['departmentCode'] = '';
+    }
+  }
+
+  protected generatedCode = '';
+
+  protected onFieldChange(event: { name: string; value: any }): void {
+    this.userModel[event.name] = event.value;
+    if (event.name === 'branchId' && !this.editing()) {
+      this.generateDepartmentCode();
+    }
   }
 
   protected editDepartment(row: Record<string, any>): void {

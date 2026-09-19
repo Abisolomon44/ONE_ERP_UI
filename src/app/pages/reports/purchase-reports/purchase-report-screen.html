@@ -1,0 +1,267 @@
+@if (config(); as cfg) {
+  <div class="report">
+    <div class="prs-head">
+      <div>
+        <h2>
+          <lucide-icon [name]="cfg.icon" [size]="15"></lucide-icon>
+          {{ cfg.label }}
+        </h2>
+        <p class="muted">{{ cfg.description }}</p>
+      </div>
+      @if (canView()) {
+        <div class="prs-head-actions">
+          <button class="btn" type="button" (click)="exportCsv()" [disabled]="!hasTableData">
+            <lucide-icon name="download" [size]="14"></lucide-icon>
+            Export CSV
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (!canView()) {
+      <p class="empty">You do not have permission to view this report.</p>
+    } @else {
+      <form class="filters" (ngSubmit)="resetAndLoad()">
+        <label>
+          From
+          <input type="date" [(ngModel)]="dateFrom" name="dateFrom" />
+        </label>
+        <label>
+          To
+          <input type="date" [(ngModel)]="dateTo" name="dateTo" />
+        </label>
+
+        @if (cfg.filters.includes('search')) {
+          <label class="prs-grow">
+            Search
+            <input type="search" [(ngModel)]="search" name="search" placeholder="Number, supplier, product…" />
+          </label>
+        }
+
+        @if (cfg.filters.includes('supplier') && (lookups()?.suppliers?.length ?? 0) > 0) {
+          <label>
+            Supplier
+            <select [(ngModel)]="supplierId" name="supplierId" (ngModelChange)="resetAndLoad()">
+              <option [ngValue]="null">All</option>
+              @for (o of lookups()!.suppliers; track o.id) {
+                <option [ngValue]="o.id">{{ o.name }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (cfg.filters.includes('branch') && (lookups()?.branches?.length ?? 0) > 0) {
+          <label>
+            Branch
+            <select [(ngModel)]="branchId" name="branchId" (ngModelChange)="resetAndLoad()">
+              <option [ngValue]="null">All</option>
+              @for (o of lookups()!.branches; track o.id) {
+                <option [ngValue]="o.id">{{ o.name }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (cfg.filters.includes('warehouse') && (lookups()?.warehouses?.length ?? 0) > 0) {
+          <label>
+            Warehouse
+            <select [(ngModel)]="warehouseId" name="warehouseId" (ngModelChange)="resetAndLoad()">
+              <option [ngValue]="null">All</option>
+              @for (o of lookups()!.warehouses; track o.id) {
+                <option [ngValue]="o.id">{{ o.name }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (cfg.filters.includes('product') && (lookups()?.products?.length ?? 0) > 0) {
+          <label class="prs-grow">
+            Product
+            <select [(ngModel)]="productId" name="productId" (ngModelChange)="resetAndLoad()">
+              <option [ngValue]="null">All</option>
+              @for (o of lookups()!.products; track o.id) {
+                <option [ngValue]="o.id">{{ o.name }} ({{ o.code }})</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (cfg.filters.includes('unit') && (lookups()?.units?.length ?? 0) > 0) {
+          <label>
+            UOM
+            <select [(ngModel)]="unitId" name="unitId" (ngModelChange)="resetAndLoad()">
+              <option [ngValue]="null">All</option>
+              @for (o of lookups()!.units; track o.id) {
+                <option [ngValue]="o.id">{{ o.name }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (modeOptions().length > 0) {
+          <label>
+            Mode
+            <select [ngModel]="mode()" (ngModelChange)="mode.set($event); onModeChange()" name="mode">
+              @for (o of modeOptions(); track o.value) {
+                <option [ngValue]="o.value">{{ o.label }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (groupOptions().length > 0) {
+          <label>
+            Group By
+            <select [ngModel]="groupBy()" (ngModelChange)="groupBy.set($event); onGroupChange()" name="groupBy">
+              <option [ngValue]="null">No Grouping</option>
+              @for (o of groupOptions(); track o.value) {
+                <option [ngValue]="o.value">{{ o.label }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        <button class="btn btn-primary" type="submit">
+          <lucide-icon name="list-filter" [size]="14"></lucide-icon>
+          Apply
+        </button>
+      </form>
+
+      @if (loading()) {
+        <p class="empty">Loading…</p>
+      } @else if (result(); as r) {
+        @if (cfg.kpiCards && kpis().length > 0) {
+          <div class="prs-kpis">
+            @for (k of kpis(); track k.key) {
+              <div class="prs-kpi">
+                <span class="prs-kpi-label">{{ k.label }}</span>
+                <span class="prs-kpi-value">{{ k.display || fmtKpiValue(k.value) }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (cfg.charts) {
+          <div class="prs-charts">
+            @if (chart(r, 'trend').length > 0) {
+              <div class="prs-chart">
+                <h3>Purchase Trend</h3>
+                <prs-bars [points]="chart(r, 'trend')"></prs-bars>
+              </div>
+            }
+            @if (chart(r, 'supplierRanking').length > 0) {
+              <div class="prs-chart">
+                <h3>Top Suppliers</h3>
+                <prs-bars [points]="chart(r, 'supplierRanking')"></prs-bars>
+              </div>
+            }
+            @if (chart(r, 'productRanking').length > 0) {
+              <div class="prs-chart">
+                <h3>Top Products</h3>
+                <prs-bars [points]="chart(r, 'productRanking')"></prs-bars>
+              </div>
+            }
+            @if (chart(r, 'categoryBreakdown').length > 0) {
+              <div class="prs-chart">
+                <h3>By Category</h3>
+                <prs-bars [points]="chart(r, 'categoryBreakdown')"></prs-bars>
+              </div>
+            }
+            @if (chart(r, 'branchBreakdown').length > 0) {
+              <div class="prs-chart">
+                <h3>By Branch</h3>
+                <prs-bars [points]="chart(r, 'branchBreakdown')"></prs-bars>
+              </div>
+            }
+            @if (chart(r, 'warehouseBreakdown').length > 0) {
+              <div class="prs-chart">
+                <h3>By Warehouse</h3>
+                <prs-bars [points]="chart(r, 'warehouseBreakdown')"></prs-bars>
+              </div>
+            }
+            @if (chart(r, 'paymentStatus').length > 0) {
+              <div class="prs-chart">
+                <h3>Payment Status</h3>
+                <prs-bars [points]="chart(r, 'paymentStatus')"></prs-bars>
+              </div>
+            }
+            @if (chart(r, 'gstSummary').length > 0) {
+              <div class="prs-chart">
+                <h3>GST Summary</h3>
+                <prs-bars [points]="chart(r, 'gstSummary')"></prs-bars>
+              </div>
+            }
+            @if (chart(r, 'returnsBreakdown').length > 0) {
+              <div class="prs-chart">
+                <h3>Returns</h3>
+                <prs-bars [points]="chart(r, 'returnsBreakdown')"></prs-bars>
+              </div>
+            }
+          </div>
+        }
+
+        @if (columns().length > 0) {
+          <div class="table-scroll">
+            @if (r.rows.length === 0) {
+              <p class="empty">No records found for the selected criteria.</p>
+            } @else {
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    @for (c of columns(); track c.key) {
+                      <th [class.num]="isNum(c.type)">{{ c.label }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of r.rows; track $index) {
+                    <tr
+                      [class.prs-clickable]="cfg.drill && isDrillable(row)"
+                      (click)="openPurchase(row)"
+                    >
+                      @for (c of columns(); track c.key) {
+                        <td [class.num]="isNum(c.type)">{{ cell(row, c) }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+                @if (hasTotals()) {
+                  <tfoot>
+                    <tr>
+                      @for (c of columns(); track c.key) {
+                        <td [class.num]="isNum(c.type)">{{ c.total ? totals(c) : '' }}</td>
+                      }
+                    </tr>
+                  </tfoot>
+                }
+              </table>
+            }
+          </div>
+
+          @if (r.totalCount > size()) {
+            <div class="prs-pager">
+              <span class="muted">Page {{ page() }} of {{ totalPages }} ({{ r.totalCount }} records)</span>
+              <button class="btn" type="button" [disabled]="page() <= 1" (click)="setPage(page() - 1)">Prev</button>
+              @for (p of pageList(); track p) {
+                <button class="btn" type="button" [class.btn-primary]="p === page()" (click)="setPage(p)">{{ p }}</button>
+              }
+              <button class="btn" type="button" [disabled]="page() >= totalPages" (click)="setPage(page() + 1)">Next</button>
+              <label class="prs-size">
+                Rows
+                <select [(ngModel)]="size" name="size" (ngModelChange)="onSizeChange()">
+                  <option [ngValue]="10">10</option>
+                  <option [ngValue]="25">25</option>
+                  <option [ngValue]="50">50</option>
+                  <option [ngValue]="100">100</option>
+                  <option [ngValue]="500">500</option>
+                </select>
+              </label>
+            </div>
+          }
+        }
+      } @else {
+        <p class="empty">No data.</p>
+      }
+    }
+  </div>
+}
