@@ -1,81 +1,261 @@
-<div class="page">
-  <header class="page-head">
-    <div>
-      <h1>Stock</h1>
-      <p class="muted">Inventory on hand and stock movements.</p>
+<div class="stock-page">
+  <!-- ===================== PAGE HEADER ===================== -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-icon" aria-hidden="true">
+        <lucide-icon name="package-2"></lucide-icon>
+      </div>
+      <div class="header-text">
+        <h1>Stock Management</h1>
+        <p class="page-sub">Monitor inventory balances and stock movements.</p>
+      </div>
     </div>
-    <div class="seg">
-      <button class="btn" [class.active]="mode() === 'onhand'" (click)="setMode('onhand')">On Hand</button>
-      <button class="btn" [class.active]="mode() === 'transactions'" (click)="setMode('transactions')">Transactions</button>
+    <div class="header-right">
+      <div class="mode-toggle" role="tablist" aria-label="Stock view mode">
+        <button
+          class="mode-btn"
+          role="tab"
+          [class.active]="mode() === 'onhand'"
+          (click)="setMode('onhand')"
+          [attr.aria-selected]="mode() === 'onhand'"
+        >
+          <lucide-icon name="package"></lucide-icon>
+          <span>On Hand</span>
+        </button>
+        <button
+          class="mode-btn"
+          role="tab"
+          [class.active]="mode() === 'transactions'"
+          (click)="setMode('transactions')"
+          [attr.aria-selected]="mode() === 'transactions'"
+        >
+          <lucide-icon name="git-branch"></lucide-icon>
+          <span>Transactions</span>
+        </button>
+      </div>
     </div>
   </header>
 
+  <!-- ===================== PERMISSION GUARD ===================== -->
   @if (!canView()) {
-    <div class="empty">You do not have permission to view stock.</div>
+    <div class="access-denied">
+      <div class="access-icon">
+        <lucide-icon name="shield-alert"></lucide-icon>
+      </div>
+      <h2>Access Denied</h2>
+      <p>You do not have permission to view Stock.</p>
+      <p class="access-hint">Required permission: <code>stock.view</code></p>
+    </div>
   } @else {
-    <div class="toolbar">
+
+    <!-- ===================== SUMMARY CARDS (On Hand mode) ===================== -->
+    @if (mode() === 'onhand' && !loading() && rows().length > 0) {
+      <section class="summary-cards" aria-label="Stock summary">
+        <article class="card stat-card">
+          <div class="stat-icon accent">
+            <lucide-icon name="package-2"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Total Products</div>
+            <div class="stat-value">{{ uniqueProducts() }}</div>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon success">
+            <lucide-icon name="box"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Total Stock Qty</div>
+            <div class="stat-value">{{ totalQuantity() | number:'1.0-2' }}</div>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon info">
+            <lucide-icon name="check-circle-2"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Available Stock</div>
+            <div class="stat-value">{{ totalAvailable() | number:'1.0-2' }}</div>
+          </div>
+        </article>
+        <article class="card stat-card">
+          <div class="stat-icon warning">
+            <lucide-icon name="alert-triangle"></lucide-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label">Low Stock Items</div>
+            <div class="stat-value">{{ lowStockCount() }}</div>
+          </div>
+        </article>
+      </section>
+    }
+
+    <!-- ===================== TOOLBAR ===================== -->
+    <div class="toolbar card">
       @if (mode() === 'onhand') {
-        <input placeholder="Search product…" [(ngModel)]="search" (keyup.enter)="searchNow()" />
+        <div class="search-group">
+          <label for="stock-search" class="visually-hidden">Search products</label>
+          <div class="input-wrap">
+            <lucide-icon name="search" class="input-prefix"></lucide-icon>
+            <input
+              id="stock-search"
+              type="search"
+              class="input has-prefix"
+              placeholder="Search by product, warehouse, or unit…"
+              [(ngModel)]="search"
+              (keyup.enter)="searchNow()"
+              [disabled]="loading()"
+              aria-describedby="search-hint"
+            />
+          </div>
+          <span id="search-hint" class="field-hint">Press Enter to search</span>
+        </div>
       }
-      <button class="btn ghost" (click)="searchNow()">Search</button>
+      <div class="toolbar-actions">
+        <button
+          class="btn btn-primary"
+          type="button"
+          (click)="searchNow()"
+          [disabled]="loading()"
+        >
+          @if (loading()) {
+            <span class="spinner"></span>
+          } @else {
+            <lucide-icon name="search"></lucide-icon>
+          }
+          <span>{{ loading() ? 'Searching…' : 'Search' }}</span>
+        </button>
+      </div>
     </div>
 
-    @if (loading()) {
-      <div class="empty">Loading…</div>
-    } @else if (mode() === 'onhand') {
-      <table class="list">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Warehouse</th>
-            <th>Unit</th>
-            <th class="num">Qty</th>
-            <th class="num">Available</th>
-            <th class="num">Avg Cost</th>
-            <th class="num">Last Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (r of rows(); track r.stockId) {
-            <tr>
-              <td>{{ r.productId }}</td>
-              <td>{{ r.warehouseId }}</td>
-              <td>{{ r.unitId }}</td>
-              <td class="num">{{ r.quantity | number: '1.3-3' }}</td>
-              <td class="num">{{ r.availableQuantity | number: '1.3-3' }}</td>
-              <td class="num">{{ r.averageCost | number: '1.2-2' }}</td>
-              <td class="num">{{ r.lastPurchaseRate | number: '1.2-2' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    } @else {
-      <table class="list">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Reference</th>
-            <th class="num">In</th>
-            <th class="num">Out</th>
-            <th class="num">Rate</th>
-            <th class="num">Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (r of rows(); track r.stockTransactionId) {
-            <tr>
-              <td>{{ r.transactionDate ? (r.transactionDate | slice: 0 : 10) : '' }}</td>
-              <td><span class="badge">{{ r.transactionType }}</span></td>
-              <td>{{ r.referenceType }} #{{ r.referenceId }}</td>
-              <td class="num">{{ r.quantityIn | number: '1.3-3' }}</td>
-              <td class="num">{{ r.quantityOut | number: '1.3-3' }}</td>
-              <td class="num">{{ r.rate | number: '1.2-2' }}</td>
-              <td class="num">{{ r.balanceQuantity | number: '1.3-3' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <section class="content-section card">
+      <!-- Loading State -->
+      @if (loading()) {
+        <div class="loading-state" role="status" aria-live="polite">
+          <div class="spinner-lg"></div>
+          <p>Loading stock data…</p>
+        </div>
+      }
+
+      <!-- On Hand View -->
+      @else if (mode() === 'onhand') {
+        @if (rows().length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon">
+              <lucide-icon name="package-search"></lucide-icon>
+            </div>
+            <h3>No Stock Records Found</h3>
+            <p>No on-hand inventory data available for the current criteria.</p>
+            @if (search) {
+              <p class="empty-hint">Try clearing the search or adjusting your filters.</p>
+            }
+          </div>
+        } @else {
+          <div class="table-wrap">
+            <table class="btable" role="grid">
+              <thead>
+                <tr>
+                  <th scope="col">Product</th>
+                  <th scope="col">Warehouse</th>
+                  <th scope="col">Unit</th>
+                  <th scope="col" class="num">Qty</th>
+                  <th scope="col" class="num">Available</th>
+                  <th scope="col" class="num">Avg Cost</th>
+                  <th scope="col" class="num">Last Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of rows(); track r.stockId) {
+                  <tr>
+                    <td class="col-product">
+                      <span class="id-badge">#{{ r.productId }}</span>
+                    </td>
+                    <td class="col-warehouse">
+                      <span class="id-badge">#{{ r.warehouseId }}</span>
+                    </td>
+                    <td class="col-unit">
+                      <span class="id-badge">#{{ r.unitId }}</span>
+                    </td>
+                    <td class="num">{{ r.quantity | number: '1.3-3' }}</td>
+                    <td class="num available">
+                      <span [class.low]="(r.availableQuantity ?? 0) <= 0" [class.critical]="(r.availableQuantity ?? 0) < 0">
+                        {{ r.availableQuantity | number: '1.3-3' }}
+                      </span>
+                    </td>
+                    <td class="num currency">{{ r.averageCost | number: '1.2-2' }}</td>
+                    <td class="num currency">{{ r.lastPurchaseRate | number: '1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="row-count">{{ rows().length }} record{{ rows().length !== 1 ? 's' : '' }}</span>
+          </div>
+        }
+      }
+
+      <!-- Transactions View -->
+      @else {
+        @if (rows().length === 0) {
+          <div class="empty-state">
+            <div class="empty-icon">
+              <lucide-icon name="git-branch"></lucide-icon>
+            </div>
+            <h3>No Transactions Found</h3>
+            <p>No stock movements recorded for the current period.</p>
+          </div>
+        } @else {
+          <div class="table-wrap">
+            <table class="btable" role="grid">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Reference</th>
+                  <th scope="col" class="num">In</th>
+                  <th scope="col" class="num">Out</th>
+                  <th scope="col" class="num">Rate</th>
+                  <th scope="col" class="num">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of rows(); track r.stockTransactionId) {
+                  <tr>
+                    <td class="col-date">{{ r.transactionDate ? (r.transactionDate | slice: 0 : 10) : '—' }}</td>
+                    <td class="col-type">
+                      <span class="txn-badge" [class]="'txn-' + (r.transactionType?.toLowerCase() || 'unknown')">
+                        {{ r.transactionType || '—' }}
+                      </span>
+                    </td>
+                    <td class="col-ref">
+                      <span class="ref-type">{{ r.referenceType }}</span>
+                      <span class="ref-id">#{{ r.referenceId }}</span>
+                    </td>
+                    <td class="num qty-in">{{ r.quantityIn | number: '1.3-3' }}</td>
+                    <td class="num qty-out">{{ r.quantityOut | number: '1.3-3' }}</td>
+                    <td class="num currency">{{ r.rate | number: '1.2-2' }}</td>
+                    <td class="num currency">{{ r.balanceQuantity | number: '1.3-3' }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="totals-label">Totals ({{ rows().length }})</td>
+                  <td class="num qty-in">{{ totalIn() | number: '1.3-3' }}</td>
+                  <td class="num qty-out">{{ totalOut() | number: '1.3-3' }}</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="row-count">{{ rows().length }} transaction{{ rows().length !== 1 ? 's' : '' }}</span>
+          </div>
+        }
+      }
+    </section>
   }
 </div>

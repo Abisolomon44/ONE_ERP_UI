@@ -15,6 +15,7 @@ import { MasterRow } from '../master.model';
 import { LucideAngularModule } from "lucide-angular";
 import { PermissionService } from '../../../core/services/permission.service';
 import { EntityEditorComponent } from '../entity-editor/entity-editor';
+import { MultiSelectComponent } from '../multi-select/multi-select';
 
 export interface DropdownOption {
   value: any;
@@ -36,6 +37,7 @@ export interface MasterField {
     | 'number'
     | 'textarea'
     | 'dropdown'
+    | 'multiselect'
     | 'checkbox'
     | 'date'
     | 'email'
@@ -117,7 +119,8 @@ export interface MasterConfig {
     CommonModule,
     FormsModule,
     LucideAngularModule,
-    EntityEditorComponent
+    EntityEditorComponent,
+    MultiSelectComponent
   ],
   templateUrl: './master-page.html',
   styleUrl: './master-page.css'

@@ -1,15 +1,28 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { DecimalPipe, SlicePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
-import { StockService, StockDto, StockTransactionDto } from '../../core/services/master_service';
+
+import {
+  StockService,
+  StockDto,
+  StockTransactionDto,
+} from '../../core/services/master_service';
+
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-stock',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, SlicePipe, LucideAngularModule],
+
+  imports: [
+    DecimalPipe,
+    SlicePipe,
+    FormsModule,
+    LucideAngularModule,
+  ],
+
   templateUrl: './stock.html',
   styleUrl: './stock.css',
 })
@@ -26,34 +39,131 @@ export class StockPage implements OnInit {
   protected page = 1;
   protected search = '';
 
+  // ===================== Computed: On Hand =====================
+
+  protected readonly uniqueProducts = computed(() => {
+    const seen = new Set<number>();
+
+    for (const row of this.rows()) {
+      if (row.productId != null) {
+        seen.add(Number(row.productId));
+      }
+    }
+
+    return seen.size;
+  });
+
+  protected readonly totalQuantity = computed(() =>
+    this.rows().reduce(
+      (sum, row) => sum + (Number(row.quantity) || 0),
+      0
+    )
+  );
+
+  protected readonly totalAvailable = computed(() =>
+    this.rows().reduce(
+      (sum, row) => sum + (Number(row.availableQuantity) || 0),
+      0
+    )
+  );
+
+  protected readonly lowStockCount = computed(() =>
+    this.rows().filter(
+      row => (Number(row.availableQuantity) || 0) <= 0
+    ).length
+  );
+
+  // ===================== Computed: Transactions =====================
+
+  protected readonly totalIn = computed(() =>
+    this.rows().reduce(
+      (sum, row) => sum + (Number(row.quantityIn) || 0),
+      0
+    )
+  );
+
+  protected readonly totalOut = computed(() =>
+    this.rows().reduce(
+      (sum, row) => sum + (Number(row.quantityOut) || 0),
+      0
+    )
+  );
+
+  // ===================== Lifecycle =====================
+
   async ngOnInit(): Promise<void> {
     this.canView.set(this.perm.has('stock.view'));
-    if (this.canView()) await this.load();
+
+    if (this.canView()) {
+      await this.load();
+    }
   }
 
-  protected async setMode(m: 'onhand' | 'transactions'): Promise<void> {
-    this.mode.set(m);
+  // ===================== Mode =====================
+
+  protected async setMode(
+    selectedMode: 'onhand' | 'transactions'
+  ): Promise<void> {
+    if (this.mode() === selectedMode) {
+      return;
+    }
+
+    this.mode.set(selectedMode);
     this.page = 1;
+    this.search = '';
+
     await this.load();
   }
 
+  // ===================== Load =====================
+
   protected async load(): Promise<void> {
-    if (!this.canView()) return;
+    if (!this.canView() || this.loading()) {
+      return;
+    }
+
+    this.loading.set(true);
+
     try {
-      this.loading.set(true);
       if (this.mode() === 'onhand') {
-        const p = await this.svc.getPaged(this.page, 20, this.search);
-        this.rows.set(p.items ?? []);
+        const response = await this.svc.getPaged(
+          this.page,
+          20,
+          this.search.trim()
+        );
+
+        console.log('[Stock] OnHand API response:', response);
+        console.log('[Stock] OnHand items:', response?.items);
+
+        this.rows.set(response?.items ?? []);
       } else {
-        const p = await this.svc.getTransactions(this.page, 20);
-        this.rows.set(p.items ?? []);
+        const response = await this.svc.getTransactions(
+          this.page,
+          20
+        );
+
+        console.log('[Stock] Transactions API response:', response);
+        console.log('[Stock] Transaction items:', response?.items);
+
+        this.rows.set(response?.items ?? []);
       }
-    } catch (e: any) {
-      this.toast.error('Failed to load stock', e?.error?.message ?? e?.message ?? '');
+    } catch (error: any) {
+      console.error('[Stock] Load error:', error);
+
+      this.rows.set([]);
+
+      this.toast.error(
+        'Failed to load stock',
+        error?.error?.message ??
+          error?.message ??
+          'Unable to retrieve stock data.'
+      );
     } finally {
       this.loading.set(false);
     }
   }
+
+  // ===================== Search =====================
 
   protected async searchNow(): Promise<void> {
     this.page = 1;

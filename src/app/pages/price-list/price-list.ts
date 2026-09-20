@@ -11,6 +11,10 @@ import {
   CreatePriceListRequest,
   UpdatePriceListRequest,
   CreatePriceListDetailRequest,
+  PriceTypeDto,
+  PriceListPriceTypeDto,
+  CreatePriceListPriceTypeRequest,
+  UpdatePriceListPriceTypeRequest,
 } from '../../core/services/master_service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -52,8 +56,14 @@ export class PriceListPage implements OnInit {
   protected readonly detailRows = signal<PriceListDetailRow[]>([]);
   protected readonly detailSaving = signal(false);
 
+  // Price List Price Types (junction table)
+  protected readonly priceTypeRows = signal<PriceListPriceTypeDto[]>([]);
+  protected readonly priceTypeLoading = signal(false);
+  protected readonly priceTypeSaving = signal(false);
+
   protected productOptions: DropdownOption[] = [];
   protected unitOptions: DropdownOption[] = [];
+  protected availablePriceTypes: DropdownOption[] = [];
 
   protected userModel: Record<string, any> = {};
 
@@ -71,13 +81,13 @@ export class PriceListPage implements OnInit {
     allowExport: false,
     allowRefresh: true,
     tabs: [
-      { name: 'General', fields: ['code', 'name', 'priceTypeId', 'currencyId', 'effectiveFrom', 'effectiveTo', 'isDefault'] },
+      { name: 'General', fields: ['code', 'name', 'priceTypeIds', 'currencyId', 'effectiveFrom', 'effectiveTo', 'isDefault'] },
       { name: 'Status', fields: ['description', 'isActive'] },
     ],
     columns: [
       { field: 'code', header: 'Code', width: '110px' },
       { field: 'name', header: 'Name' },
-      { field: 'priceTypeName', header: 'Price Type' },
+      { field: 'priceTypeNames', header: 'Price Types' },
       { field: 'currencyName', header: 'Currency' },
       { field: 'effectiveFrom', header: 'Valid From', type: 'date', width: '120px' },
       { field: 'isDefault', header: 'Default', type: 'checkbox', width: '90px' },
@@ -86,7 +96,7 @@ export class PriceListPage implements OnInit {
     fields: [
       { name: 'code', label: 'Price List Code', type: 'text', required: true, maxLength: 30, readonly: true },
       { name: 'name', label: 'Price List Name', type: 'text', required: true, maxLength: 100 },
-      { name: 'priceTypeId', label: 'Price Type', type: 'dropdown', required: true, options: [] },
+      { name: 'priceTypeIds', label: 'Price Types', type: 'multiselect', required: true, options: [] },
       { name: 'currencyId', label: 'Currency', type: 'dropdown', required: true, options: [] },
       { name: 'effectiveFrom', label: 'Valid From', type: 'date' },
       { name: 'effectiveTo', label: 'Valid To', type: 'date' },
@@ -127,26 +137,33 @@ export class PriceListPage implements OnInit {
         this.admin.products.getPaged(1, 1000, ''),
         this.admin.productUnits.getPaged(1, 1000, ''),
       ]);
-      this.setOptions('priceTypeId', (priceTypes ?? []).map((p) => ({ value: p.priceTypeId, label: p.name })));
+      const ptOptions = (priceTypes ?? []).map((p) => ({ value: p.priceTypeId, label: p.name }));
+      this.setOptions('priceTypeIds', ptOptions);
       this.productOptions = (products.items ?? []).map((p) => ({ value: p.id, label: p.productName }));
       this.unitOptions = (units.items ?? []).map((u) => ({ value: u.id, label: u.unitName }));
-    } catch {
+    } catch (e) {
+      console.error('[PriceList] loadDropdowns error:', e);
     }
     try {
       const currencies = await this.admin.currency.getAll(false);
       this.setOptions('currencyId', (currencies ?? []).map((c: any) => ({ value: c.id, label: c.currencyName || c.currencyCode })));
-    } catch {
+    } catch (e) {
+      console.error('[PriceList] currency load error:', e);
     }
   }
 
   private setOptions(fieldName: string, options: DropdownOption[]): void {
     const field = this.config.fields.find((f) => f.name === fieldName);
-    if (field) field.options = options;
+    if (field) {
+      // Create new array reference for Angular change detection
+      field.options = [...options];
+    }
   }
 
   protected async createRow(): Promise<void> {
     this.editing.set(null);
     this.detailRows.set([]);
+    this.priceTypeRows.set([]);
     let nextCode = '';
     try {
       nextCode = await this.billing.priceLists.getNextCode();
@@ -156,7 +173,7 @@ export class PriceListPage implements OnInit {
     this.userModel = {
       code: nextCode,
       name: '',
-      priceTypeId: null,
+      priceTypeIds: [],
       currencyId: null,
       description: '',
       effectiveFrom: '',
@@ -169,9 +186,27 @@ export class PriceListPage implements OnInit {
 
   protected async editRow(row: Record<string, any>): Promise<void> {
     this.editing.set(row as PriceListDto);
-    this.userModel = { ...row };
+    // Convert CSV string to array for multiselect (fallback)
+    const csv = row['priceTypeIds'] as string | undefined;
+    const priceTypeIdsArray = csv ? csv.split(',').map(v => parseInt(v.trim(), 10)).filter(v => !isNaN(v)) : 
+                              (row['priceTypeId'] ? [row['priceTypeId']] : []);
+    this.userModel = { 
+      ...row,
+      priceTypeIds: priceTypeIdsArray,
+    };
     this.showEntry.set(true);
     await this.loadDetails(row['priceListId']);
+    await this.loadPriceTypes(row['priceListId']);
+    // Sync multiselect from junction table (authoritative source)
+    const junctionPriceTypeIds = this.priceTypeRows().map(pt => pt.priceTypeId);
+    if (junctionPriceTypeIds.length > 0) {
+      this.userModel['priceTypeIds'] = junctionPriceTypeIds;
+    }
+  }
+
+  protected onFieldChange(event: { name: string; value: any }): void {
+    this.userModel[event.name] = event.value;
+    console.log('[PriceList] fieldChange:', event.name, event.value);
   }
 
   protected async loadDetails(priceListId: number): Promise<void> {
@@ -190,6 +225,58 @@ export class PriceListPage implements OnInit {
       );
     } catch {
       this.detailRows.set([]);
+    }
+  }
+
+  protected async loadPriceTypes(priceListId: number): Promise<void> {
+    this.priceTypeLoading.set(true);
+    try {
+      const priceTypes = await this.billing.priceLists.getPriceTypes(priceListId);
+      this.priceTypeRows.set(priceTypes ?? []);
+    } catch {
+      this.priceTypeRows.set([]);
+    } finally {
+      this.priceTypeLoading.set(false);
+    }
+  }
+
+  protected async addPriceType(): Promise<void> {
+    const editing = this.editing();
+    if (!editing) return;
+    this.priceTypeSaving.set(true);
+    try {
+      const selectedPriceTypeIds = this.userModel['priceTypeIds'] as number[] || [];
+      if (selectedPriceTypeIds.length === 0) {
+        this.toast.warning('Validation', 'Select at least one Price Type from the multiselect');
+        return;
+      }
+      for (const priceTypeId of selectedPriceTypeIds) {
+        const exists = this.priceTypeRows().some(pt => pt.priceTypeId === priceTypeId);
+        if (!exists) {
+          await this.billing.priceLists.addPriceType(editing.priceListId, { priceListId: editing.priceListId, priceTypeId });
+        }
+      }
+      await this.loadPriceTypes(editing.priceListId);
+      this.toast.success('Price types added to price list');
+    } catch (e: any) {
+      this.toast.error('Failed to add price types', e?.error?.message ?? e?.message ?? '');
+    } finally {
+      this.priceTypeSaving.set(false);
+    }
+  }
+
+  protected async removePriceType(priceTypeId: number): Promise<void> {
+    const editing = this.editing();
+    if (!editing) return;
+    this.priceTypeSaving.set(true);
+    try {
+      await this.billing.priceLists.deletePriceType(editing.priceListId, priceTypeId);
+      await this.loadPriceTypes(editing.priceListId);
+      this.toast.success('Price type removed from price list');
+    } catch (e: any) {
+      this.toast.error('Failed to remove price type', e?.error?.message ?? e?.message ?? '');
+    } finally {
+      this.priceTypeSaving.set(false);
     }
   }
 
@@ -219,6 +306,7 @@ export class PriceListPage implements OnInit {
           price: r.price ?? 0,
           minimumQuantity: r.minimumQuantity ?? 1,
           maximumQuantity: r.maximumQuantity ?? null,
+          priceTypeId: editing.priceTypeId, // Use the price list's primary price type
         }));
       await this.billing.priceLists.replaceDetails(editing.priceListId, items);
       this.toast.success(`Saved ${items.length} detail line${items.length === 1 ? '' : 's'}`);
@@ -232,19 +320,30 @@ export class PriceListPage implements OnInit {
 
   protected async save(): Promise<void> {
     if (this.saving()) return;
+    const priceTypeIds = this.userModel['priceTypeIds'] as number[];
+    if (!priceTypeIds?.length) {
+      this.toast.warning('Validation', 'Select at least one Price Type');
+      return;
+    }
+
+    const primaryPriceTypeId = priceTypeIds[0];
+    const priceTypeIdsCsv = priceTypeIds.join(',');
+
     this.saving.set(true);
     try {
       const editing = this.editing();
       const payload: CreatePriceListRequest = {
         code: this.userModel['code']?.trim().toUpperCase(),
         name: this.userModel['name']?.trim(),
-        priceTypeId: this.userModel['priceTypeId'],
+        priceTypeId: primaryPriceTypeId,
+        priceTypeIds: priceTypeIdsCsv,
         currencyId: this.userModel['currencyId'],
         description: this.userModel['description'] || null,
         effectiveFrom: this.userModel['effectiveFrom'] || null,
         effectiveTo: this.userModel['effectiveTo'] || null,
         isDefault: this.userModel['isDefault'] ?? false,
       };
+      let savedPriceList: PriceListDto;
       if (editing) {
         const updatePayload: UpdatePriceListRequest = {
           ...payload,
@@ -253,13 +352,25 @@ export class PriceListPage implements OnInit {
           isDefault: this.userModel['isDefault'] ?? false,
           isActive: this.userModel['isActive'],
         };
-        await this.billing.priceLists.update(editing.priceListId, updatePayload);
+        savedPriceList = await this.billing.priceLists.update(editing.priceListId, updatePayload);
       } else {
-        await this.billing.priceLists.create(payload);
+        savedPriceList = await this.billing.priceLists.create(payload);
       }
+
+      // Auto-sync selected price types to junction table
+      const savedId = savedPriceList.priceListId;
+      for (const priceTypeId of priceTypeIds) {
+        try {
+          await this.billing.priceLists.addPriceType(savedId, { priceListId: savedId, priceTypeId });
+        } catch {
+          // Ignore duplicates (already exists)
+        }
+      }
+
       this.showEntry.set(false);
       await this.load();
-    } catch {
+    } catch (e: any) {
+      this.toast.error('Failed to save price list', e?.error?.message ?? e?.message ?? '');
     } finally {
       this.saving.set(false);
     }
@@ -277,6 +388,7 @@ export class PriceListPage implements OnInit {
   protected cancel(): void {
     this.showEntry.set(false);
     this.detailRows.set([]);
+    this.priceTypeRows.set([]);
   }
 
   protected refresh(): void {

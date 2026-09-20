@@ -58,7 +58,7 @@ export class ProductPage implements OnInit {
     allowExport: true,
     allowRefresh: true,
     tabs: [
-      { name: 'General', fields: ['productCode', 'productName', 'categoryId', 'subCategoryId', 'brandId', 'uomId', 'companyId', 'branchId', 'sku', 'barcode', 'hsnSacId'] },
+      { name: 'General', fields: ['productCode', 'productName', 'categoryId', 'subCategoryId', 'brandId', 'uomId', 'companyId', 'branchId', 'warehouseId', 'sku', 'barcode', 'hsnSacId'] },
       { name: 'Pricing', fields: ['mrp', 'purchasePrice', 'salesPrice', 'taxId'] },
       { name: 'Classification', fields: ['isStockItem', 'isSaleable', 'isPurchaseable'] },
       { name: 'Status', fields: ['description', 'isActive'] },
@@ -70,6 +70,7 @@ export class ProductPage implements OnInit {
       { field: 'subCategoryName', header: 'Sub Category' },
       { field: 'brandName', header: 'Brand' },
       { field: 'uomName', header: 'UOM' },
+      { field: 'warehouseName', header: 'Warehouse' },
       { field: 'salesPrice', header: 'Sales Price', width: '110px' },
       { field: 'isActive', header: 'Active', type: 'checkbox', width: '90px' },
     ],
@@ -82,6 +83,7 @@ export class ProductPage implements OnInit {
       { name: 'uomId', label: 'UOM', type: 'dropdown', required: true, options: [] },
       { name: 'companyId', label: 'Company', type: 'dropdown', required: true, options: [] },
       { name: 'branchId', label: 'Branch', type: 'dropdown', options: [] },
+      { name: 'warehouseId', label: 'Warehouse', type: 'dropdown', options: [] },
       { name: 'sku', label: 'SKU', type: 'text', maxLength: 50 },
       { name: 'barcode', label: 'Barcode', type: 'text', maxLength: 100 },
       { name: 'hsnSacId', label: 'HSN/SAC', type: 'dropdown', options: [] },
@@ -138,7 +140,7 @@ export class ProductPage implements OnInit {
       this.toast.info('No records to export');
       return;
     }
-    const headers = ['productCode', 'productName', 'categoryName', 'subCategoryName', 'brandName', 'uomName', 'salesPrice', 'isActive'];
+    const headers = ['productCode', 'productName', 'categoryName', 'subCategoryName', 'brandName', 'uomName', 'warehouseName', 'salesPrice', 'isActive'];
     const lines = [headers.join(',')];
     for (const r of rows) {
       lines.push(
@@ -186,17 +188,19 @@ export class ProductPage implements OnInit {
 
   private async loadDropdowns(): Promise<void> {
     try {
-      const [cats, subs, brands, units, hsns] = await Promise.all([
+      const [cats, subs, brands, units, hsns, whs] = await Promise.all([
         this.admin.productCategories.getPaged(1, 1000, ''),
         this.admin.productSubCategories.getPaged(1, 1000, ''),
         this.admin.productBrands.getPaged(1, 1000, ''),
         this.admin.productUnits.getPaged(1, 1000, ''),
         this.billing.hsnSacs.getPaged(1, 1000, ''),
+        this.admin.warehouses.getAll(),
       ]);
       this.setOptions('categoryId', (cats.items ?? []).map((c: any) => ({ value: c.id, label: c.categoryName })));
       this.setOptions('subCategoryId', (subs.items ?? []).map((s: any) => ({ value: s.id, label: s.subCategoryName })));
       this.setOptions('brandId', (brands.items ?? []).map((b: any) => ({ value: b.id, label: b.brandName })));
       this.setOptions('uomId', (units.items ?? []).map((u: any) => ({ value: u.id, label: u.unitName })));
+      this.setOptions('warehouseId', (whs ?? []).map((w: any) => ({ value: w.id, label: w.warehouseName })));
       this.hsnMap.clear();
       (hsns.items ?? []).forEach((h: any) => this.hsnMap.set(h.hsnSacId, h));
       this.setOptions('hsnSacId', (hsns.items ?? []).map((h: any) => ({ value: h.hsnSacId, label: h.code })));
@@ -272,6 +276,7 @@ export class ProductPage implements OnInit {
       uomId: null,
       companyId,
       branchId: null,
+      warehouseId: null,
       sku: '',
       barcode: '',
       mrp: null,
@@ -359,6 +364,7 @@ export class ProductPage implements OnInit {
         brandId: this.userModel['brandId'] || null,
         uomId: this.userModel['uomId'],
         branchId: this.userModel['branchId'] || null,
+        warehouseId: this.userModel['warehouseId'] || null,
         sku: this.userModel['sku'] || null,
         barcode: this.userModel['barcode'] || null,
         mrp: this.userModel['mrp'] ?? null,

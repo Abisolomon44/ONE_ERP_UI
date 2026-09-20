@@ -1,0 +1,38 @@
+<div class="multi-select" [class.open]="isOpen()" [class.disabled]="disabled" [class.required]="required">
+  <label *ngIf="label" class="ms-label">{{ label }}<span *ngIf="required" class="req">*</span></label>
+
+  <div class="ms-trigger" (click)="toggleOpen()" [attr.aria-expanded]="isOpen()" [attr.aria-haspopup]="true" tabindex="0" (keydown.enter)="toggleOpen()" (keydown.space)="$event.preventDefault(); toggleOpen()">
+    <span class="ms-display" [class.placeholder]="selectedValues.length === 0">{{ displayText() }}</span>
+    <i-lucide name="ChevronDown" [size]="16" class="ms-caret" [class.rotated]="isOpen()"></i-lucide>
+    <i-lucide *ngIf="selectedValues.length > 0 && !disabled" name="X" [size]="14" class="ms-clear" (click)="selectedValuesChange.emit([]); $event.stopPropagation()" title="Clear all"></i-lucide>
+  </div>
+
+  <div class="ms-dropdown" *ngIf="isOpen()">
+    <div class="ms-search" *ngIf="searchable">
+      <i-lucide name="Search" [size]="14"></i-lucide>
+      <input type="text" class="ms-search-input" placeholder="Search..." (input)="onSearchChange($event)" (click)="$event.stopPropagation()" autofocus />
+    </div>
+
+    <div class="ms-options">
+      @if (filteredOptions().length === 0) {
+        <div class="ms-empty">No options found</div>
+      } @else {
+        @for (opt of filteredOptions(); track opt.value) {
+          <div class="ms-option" [class.selected]="isSelected(opt.value)" [class.disabled]="opt.disabled" (click)="!opt.disabled && toggleOption(opt.value)">
+            <input type="checkbox" [checked]="isSelected(opt.value)" [disabled]="opt.disabled" tabindex="-1" />
+            <span class="ms-option-label">{{ opt.label }}</span>
+          </div>
+        }
+      }
+    </div>
+
+    @if (selectedValues.length > 0) {
+      <div class="ms-footer">
+        <button type="button" class="ms-btn ms-btn-secondary" (click)="selectedValuesChange.emit([]); $event.stopPropagation()">Clear all</button>
+        <button type="button" class="ms-btn ms-btn-primary" (click)="isOpen.set(false)">Done ({{ selectedValues.length }})</button>
+      </div>
+    }
+  </div>
+
+  <input type="hidden" [name]="label" [value]="selectedValues.join(',')" />
+</div>

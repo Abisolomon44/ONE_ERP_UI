@@ -3,6 +3,9 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Currency, IndustryType, GstRegistrationType, Language, TimeZone } from '../models';
 
+// Re-export Currency for consumers
+export type { Currency } from '../models';
+
 // ============================================================
 // Shared pagination shape — matches the real backend response:
 // { items, pageNumber, pageSize, totalCount, totalPages, hasNext, hasPrevious }
@@ -244,6 +247,61 @@ class ProductUnitService {
   delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/units/${id}`)).then(() => undefined); }
 }
 
+class WarehouseService {
+  constructor(private readonly http: HttpClient) {}
+  getPaged(page = 1, size = 10, search = '', companyId?: number): Promise<PaginatedResult<WarehouseDto>> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('search', search ?? '');
+    if (companyId != null) params = params.set('companyId', companyId);
+    return firstValueFrom(this.http.get<PaginatedResult<WarehouseDto>>('/api/organization/warehouses', { params }));
+  }
+  getAll(): Promise<WarehouseDto[]> {
+    return firstValueFrom(this.http.get<WarehouseDto[]>(`/api/organization/warehouses/all`));
+  }
+}
+
+export interface WarehouseDto {
+  id: number;
+  companyId: number;
+  branchId?: number | null;
+  warehouseCode: string;
+  warehouseName: string;
+  shortName?: string | null;
+  warehouseTypeId?: number | null;
+  parentWarehouseId?: number | null;
+  managerEmployeeId?: number | null;
+  allowNegativeStock: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  remarks?: string | null;
+  isActive: boolean;
+  isBlocked: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+  createdBy: number;
+  modifiedAt?: string | null;
+  modifiedBy?: number | null;
+}
+
+export type CreateWarehouseRequest = {
+  companyId: number;
+  branchId?: number | null;
+  warehouseCode: string;
+  warehouseName: string;
+  shortName?: string | null;
+  warehouseTypeId?: number | null;
+  parentWarehouseId?: number | null;
+  managerEmployeeId?: number | null;
+  allowNegativeStock?: boolean;
+  isDefault?: boolean;
+  sortOrder?: number;
+  remarks?: string | null;
+};
+
+export type UpdateWarehouseRequest = CreateWarehouseRequest & { isActive: boolean };
+
 // ============================================================
 // Products
 // ============================================================
@@ -253,6 +311,7 @@ export interface ProductDto {
   entityId?: number | null;
   companyId: number;
   branchId?: number | null;
+  warehouseId?: number | null;
   productCode: string;
   productName: string;
   categoryId?: number | null;
@@ -276,6 +335,7 @@ export interface ProductDto {
   brandName?: string | null;
   uomName?: string | null;
   branchName?: string | null;
+  warehouseName?: string | null;
   hsnSacCode?: string | null;
   createdAt: string;
   updatedAt?: string | null;
@@ -291,6 +351,7 @@ export type CreateProductRequest = {
   brandId?: number | null;
   uomId: number;
   branchId?: number | null;
+  warehouseId?: number | null;
   sku?: string | null;
   barcode?: string | null;
   mrp?: number | null;
@@ -319,6 +380,27 @@ class ProductService {
   create(req: CreateProductRequest): Promise<ProductDto> { return firstValueFrom(this.http.post<ProductDto>('/api/products', req)); }
   update(id: number, req: UpdateProductRequest): Promise<ProductDto> { return firstValueFrom(this.http.put<ProductDto>(`/api/products/${id}`, req)); }
   delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/products/${id}`)).then(() => undefined); }
+
+  // Price Master: Get direct products from Products table
+  getPriceMasterDirectProducts(
+    companyId: number,
+    branchId?: number | null,
+    warehouseId?: number | null,
+    search?: string,
+    categoryId?: number | null,
+    page = 1,
+    size = 500
+  ): Promise<PaginatedResult<PriceMasterProductDto>> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('companyId', companyId);
+    if (branchId != null && branchId > 0) params = params.set('branchId', branchId);
+    if (warehouseId != null && warehouseId > 0) params = params.set('warehouseId', warehouseId);
+    if (search) params = params.set('search', search);
+    if (categoryId != null && categoryId > 0) params = params.set('categoryId', categoryId);
+    return firstValueFrom(this.http.get<PaginatedResult<PriceMasterProductDto>>('/api/products/price-master-products', { params }));
+  }
 }
 
 // ============================================================
@@ -545,7 +627,9 @@ export interface PriceListDto {
   priceListId: number;
   companyId: number;
   priceTypeId: number;
-  priceTypeName?: string | null;
+  priceTypeIds?: string | null;          // CSV: '1,2,3,4'
+  priceTypeNames?: string | null;        // CSV: 'Sales,Purchase,Wholesale,Retail'
+  priceTypeName?: string | null;         // Primary (first) price type name
   currencyId: number;
   currencyName?: string | null;
   code: string;
@@ -560,7 +644,8 @@ export interface PriceListDto {
 export type CreatePriceListRequest = {
   code: string;
   name: string;
-  priceTypeId: number;
+  priceTypeId: number;                   // Primary (first) price type
+  priceTypeIds?: string | null;          // CSV of all price types
   currencyId: number;
   description?: string | null;
   effectiveFrom?: string | null;
@@ -573,6 +658,8 @@ export interface PriceListDetailDto {
   priceListDetailId: number;
   priceListId: number;
   productId: number;
+  priceTypeId: number;
+  priceTypeName?: string | null;
   productName?: string | null;
   unitId?: number | null;
   unitName?: string | null;
@@ -585,12 +672,36 @@ export interface PriceListDetailDto {
 export type CreatePriceListDetailRequest = {
   priceListId: number;
   productId: number;
+  priceTypeId: number;
   unitId?: number | null;
   price: number;
   minimumQuantity?: number;
   maximumQuantity?: number | null;
 };
 export type UpdatePriceListDetailRequest = CreatePriceListDetailRequest & { price: number; minimumQuantity: number; maximumQuantity?: number | null; isActive: boolean };
+
+/* ---------------- Price List Price Types (junction) ---------------- */
+
+export interface PriceListPriceTypeDto {
+  priceListPriceTypeId: number;
+  priceListId: number;
+  priceTypeId: number;
+  priceTypeName?: string | null;
+  priceTypeCode?: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type CreatePriceListPriceTypeRequest = {
+  priceListId: number;
+  priceTypeId: number;
+};
+
+export type UpdatePriceListPriceTypeRequest = {
+  priceListId: number;
+  priceTypeId: number;
+  isActive: boolean;
+};
 
 export interface DiscountRuleDto {
   discountRuleId: number;
@@ -821,6 +932,20 @@ class PriceListService {
   create(req: CreatePriceListRequest): Promise<PriceListDto> { return firstValueFrom(this.http.post<PriceListDto>('/api/price-lists', req)); }
   update(id: number, req: UpdatePriceListRequest): Promise<PriceListDto> { return firstValueFrom(this.http.put<PriceListDto>(`/api/price-lists/${id}`, req)); }
   delete(id: number): Promise<void> { return firstValueFrom(this.http.delete<void>(`/api/price-lists/${id}`)).then(() => undefined); }
+
+  // Price List Price Types (junction) - new endpoints
+  getPriceTypes(priceListId: number): Promise<PriceListPriceTypeDto[]> {
+    return firstValueFrom(this.http.get<PriceListPriceTypeDto[]>(`/api/price-lists/${priceListId}/price-types`));
+  }
+  addPriceType(priceListId: number, req: CreatePriceListPriceTypeRequest): Promise<PriceListPriceTypeDto> {
+    return firstValueFrom(this.http.post<PriceListPriceTypeDto>(`/api/price-lists/${priceListId}/price-types`, req));
+  }
+  updatePriceType(priceListId: number, priceTypeId: number, req: UpdatePriceListPriceTypeRequest): Promise<PriceListPriceTypeDto> {
+    return firstValueFrom(this.http.put<PriceListPriceTypeDto>(`/api/price-lists/${priceListId}/price-types/${priceTypeId}`, req));
+  }
+  deletePriceType(priceListId: number, priceTypeId: number): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/price-lists/${priceListId}/price-types/${priceTypeId}`)).then(() => undefined);
+  }
 }
 
 class PriceListDetailService {
@@ -908,6 +1033,7 @@ export class AdministrationService {
   readonly productSubCategories: ProductSubCategoryService;
   readonly productBrands: ProductBrandService;
   readonly productUnits: ProductUnitService;
+  readonly warehouses: WarehouseService;
   readonly products: ProductService;
   readonly taxTypeSystems: TaxTypeSystemService;
   readonly taxes: TaxService;
@@ -923,6 +1049,7 @@ export class AdministrationService {
     this.productSubCategories = new ProductSubCategoryService(http);
     this.productBrands = new ProductBrandService(http);
     this.productUnits = new ProductUnitService(http);
+    this.warehouses = new WarehouseService(http);
     this.products = new ProductService(http);
     this.taxTypeSystems = new TaxTypeSystemService(http);
     this.taxes = new TaxService(http);
@@ -1532,6 +1659,27 @@ export interface StockTransactionDto {
   remarks?: string | null;
 }
 
+// ============================================================
+// Price Master Products
+// ============================================================
+
+export interface PriceMasterProductDto {
+  productId: number;
+  productCode: string;
+  productName: string;
+  categoryId: number | null;
+  categoryName: string | null;
+  unitId: number;
+  unitName: string;
+  latestPurchasePrice: number;
+  currentStock: number;
+  isActive: boolean;
+  branchId?: number | null;
+  warehouseId?: number | null;
+}
+
+export type ProductSource = 'direct' | 'purchase';
+
 @Injectable({ providedIn: 'root' })
 export class StockService {
   constructor(private readonly http: HttpClient) {}
@@ -1549,6 +1697,27 @@ export class StockService {
     if (productId != null) params = params.set('productId', productId);
     if (warehouseId != null) params = params.set('warehouseId', warehouseId);
     return firstValueFrom(this.http.get<PaginatedResult<StockTransactionDto>>('/api/stock/transactions', { params }));
+  }
+
+  // Price Master: Get purchase products from stock (joined with product details)
+  getPriceMasterPurchaseProducts(
+    companyId: number,
+    branchId?: number | null,
+    warehouseId?: number | null,
+    search?: string,
+    categoryId?: number | null,
+    page = 1,
+    size = 500
+  ): Promise<PaginatedResult<PriceMasterProductDto>> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('companyId', companyId);
+    if (branchId != null && branchId > 0) params = params.set('branchId', branchId);
+    if (warehouseId != null && warehouseId > 0) params = params.set('warehouseId', warehouseId);
+    if (search) params = params.set('search', search);
+    if (categoryId != null && categoryId > 0) params = params.set('categoryId', categoryId);
+    return firstValueFrom(this.http.get<PaginatedResult<PriceMasterProductDto>>('/api/stock/price-master-products', { params }));
   }
 }
 

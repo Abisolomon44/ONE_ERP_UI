@@ -252,6 +252,22 @@
               </div>
             }
 
+            <!-- Multiselect: own layout with built-in label -->
+            @else if (field.type == 'multiselect') {
+              <div class="field-multiselect">
+                <app-multi-select
+                  [options]="field.options || []"
+                  [selectedValues]="userModel[field.name] || []"
+                  (selectedValuesChange)="onFieldChange(field.name, $event)"
+                  [placeholder]="field.placeholder || 'Select...'"
+                  [label]="field.label"
+                  [required]="field.required ?? false"
+                  [disabled]="field.disabled ?? false"
+                  [searchable]="true">
+                </app-multi-select>
+              </div>
+            }
+
             <!-- Everything else: floating-label field -->
             @else {
               <div class="ff" [class.area]="field.type == 'textarea'">

@@ -10,78 +10,355 @@
   (deleteClick)="deleteRow($event)"
   (saveClick)="save()"
   (cancelClick)="cancel()"
-  (refreshClick)="refresh()">
+  (refreshClick)="refresh()"
+  (fieldChange)="onFieldChange($event)">
 </app-master-page>
 
 @if (showEntry() && editing()) {
-  <div class="card detail-card">
-    <div class="card-header">
-      <h4>Price List Details</h4>
-      <div>
-        <button class="btn btn-secondary btn-sm" type="button" (click)="loadDetails(editing()!.priceListId)">Reset</button>
-        <button class="btn btn-primary btn-sm" type="button" (click)="addDetailRow()">
-          <i-lucide name="Plus" [size]="15"></i-lucide>
-          Add Row
-        </button>
-      </div>
-    </div>
+  <div class="price-detail-layout">
+    <!-- LEFT FILTER SIDEBAR -->
+    <aside class="filter-sidebar" aria-label="Price List Configuration">
+      <div class="filter-sidebar-inner">
+        <!-- SECTION A: GENERAL INFO -->
+        <section class="filter-section">
+          <header class="filter-section-header">
+            <i-lucide name="Info" [size]="16" class="section-icon"></i-lucide>
+            <h3 class="section-title">General</h3>
+          </header>
+          <div class="filter-fields">
+            <div class="field-group">
+              <label class="field-label" for="code">Price List Code</label>
+              <input
+                id="code"
+                type="text"
+                class="input"
+                [(ngModel)]="userModel['code']"
+                (ngModelChange)="onFieldChange({name: 'code', value: $event})"
+                [readonly]="true"
+                maxlength="30"
+                placeholder="Auto-generated" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="name">Price List Name <span class="required">*</span></label>
+              <input
+                id="name"
+                type="text"
+                class="input"
+                [(ngModel)]="userModel['name']"
+                (ngModelChange)="onFieldChange({name: 'name', value: $event})"
+                maxlength="100"
+                placeholder="Enter price list name" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="description">Description</label>
+              <textarea
+                id="description"
+                class="input textarea"
+                [(ngModel)]="userModel['description']"
+                (ngModelChange)="onFieldChange({name: 'description', value: $event})"
+                maxlength="300"
+                rows="2"
+                placeholder="Optional description"></textarea>
+            </div>
+          </div>
+        </section>
 
-    <div class="table-wrap">
-      <table class="btable">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Unit</th>
-            <th>Price</th>
-            <th>Min Qty</th>
-            <th>Max Qty</th>
-            <th style="width:70px" class="cell-actions">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of detailRows(); track row.key) {
-            <tr>
-              <td>
-                <select class="input" [(ngModel)]="row.productId">
-                  <option [ngValue]="null" disabled>Select</option>
-                  @for (opt of productOptions; track opt.value) {
-                    <option [ngValue]="opt.value">{{ opt.label }}</option>
-                  }
-                </select>
-              </td>
-              <td>
-                <select class="input" [(ngModel)]="row.unitId">
-                  <option [ngValue]="null" disabled>Select</option>
-                  @for (opt of unitOptions; track opt.value) {
-                    <option [ngValue]="opt.value">{{ opt.label }}</option>
-                  }
-                </select>
-              </td>
-              <td><input class="input" type="number" [(ngModel)]="row.price"></td>
-              <td><input class="input" type="number" [(ngModel)]="row.minimumQuantity"></td>
-              <td><input class="input" type="number" [(ngModel)]="row.maximumQuantity"></td>
-              <td class="cell-actions">
-                <button class="btn btn-sm btn-danger-soft" type="button" (click)="removeDetailRow(row)">
-                  <i-lucide name="Trash2" [size]="13"></i-lucide>
+        <!-- SECTION B: PRICE CONFIGURATION -->
+        <section class="filter-section">
+          <header class="filter-section-header">
+            <i-lucide name="Tag" [size]="16" class="section-icon"></i-lucide>
+            <h3 class="section-title">Price Configuration</h3>
+          </header>
+          <div class="filter-fields">
+            <div class="field-group">
+              <label class="field-label" for="priceTypeIds">Price Types <span class="required">*</span></label>
+              <select
+                id="priceTypeIds"
+                class="input select-multi"
+                multiple
+                [(ngModel)]="userModel['priceTypeIds']"
+                (ngModelChange)="onFieldChange({name: 'priceTypeIds', value: $event})">
+                @for (opt of config.fields[2]?.options; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <p class="field-hint">Hold Ctrl/Cmd to select multiple</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="currencyId">Currency <span class="required">*</span></label>
+              <select
+                id="currencyId"
+                class="input"
+                [(ngModel)]="userModel['currencyId']"
+                (ngModelChange)="onFieldChange({name: 'currencyId', value: $event})">
+                <option [ngValue]="null" disabled>Select Currency</option>
+                @for (opt of config.fields[3]?.options; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION C: PRICE TYPES (Junction Table) -->
+        <section class="filter-section">
+          <header class="filter-section-header">
+            <i-lucide name="Link2" [size]="16" class="section-icon"></i-lucide>
+            <h3 class="section-title">Price Types</h3>
+          </header>
+          <div class="filter-fields">
+            @if (editing()) {
+              <div class="price-types-list">
+                @if (priceTypeLoading()) {
+                  <div class="loading-small">Loading price types...</div>
+                } @else if (priceTypeRows().length > 0) {
+                  <ul class="price-type-items">
+                    @for (pt of priceTypeRows(); track pt.priceListPriceTypeId) {
+                      <li class="price-type-item">
+                        <span class="price-type-name">{{ pt.priceTypeName || pt.priceTypeCode || 'Unknown' }}</span>
+                        <button
+                          class="btn btn-xs btn-danger-soft"
+                          type="button"
+                          (click)="removePriceType(pt.priceTypeId)"
+                          [disabled]="priceTypeSaving()"
+                          aria-label="Remove price type">
+                          <i-lucide name="X" [size]="12"></i-lucide>
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="empty-hint">No price types assigned yet. Select from multiselect above and click "Add Price Types".</p>
+                }
+              </div>
+              <div class="filter-actions mt-2">
+                <button
+                  class="btn btn-primary btn-block"
+                  type="button"
+                  [disabled]="priceTypeSaving() || (userModel['priceTypeIds']?.length ?? 0) === 0"
+                  (click)="addPriceType()">
+                  <i-lucide [name]="priceTypeSaving() ? 'Loader2' : 'Plus'" [size]="14" [class.spin]="priceTypeSaving()"></i-lucide>
+                  {{ priceTypeSaving() ? 'Adding…' : 'Add Selected Price Types' }}
                 </button>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="6" class="list-empty empty-state">
-                <span>No detail lines — add rows with product prices below.</span>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+              </div>
+            } @else {
+              <p class="field-hint">Save the price list first to assign price types.</p>
+            }
+          </div>
+        </section>
 
-    <div class="dialog-inner-footer">
-      <button class="btn btn-primary" type="button" [disabled]="detailSaving()" (click)="saveDetails()">
-        <i-lucide name="Check" [size]="15"></i-lucide>
-        {{ detailSaving() ? 'Saving…' : 'Save Details' }}
-      </button>
-    </div>
+        <!-- SECTION D: VALIDITY -->
+        <section class="filter-section">
+          <header class="filter-section-header">
+            <i-lucide name="Calendar" [size]="16" class="section-icon"></i-lucide>
+            <h3 class="section-title">Validity Period</h3>
+          </header>
+          <div class="filter-fields">
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label" for="effectiveFrom">Valid From</label>
+                <input
+                  id="effectiveFrom"
+                  type="date"
+                  class="input"
+                  [(ngModel)]="userModel['effectiveFrom']"
+                  (ngModelChange)="onFieldChange({name: 'effectiveFrom', value: $event})" />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="effectiveTo">Valid To</label>
+                <input
+                  id="effectiveTo"
+                  type="date"
+                  class="input"
+                  [(ngModel)]="userModel['effectiveTo']"
+                  (ngModelChange)="onFieldChange({name: 'effectiveTo', value: $event})" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION D: STATUS -->
+        <section class="filter-section">
+          <header class="filter-section-header">
+            <i-lucide name="ToggleLeft" [size]="16" class="section-icon"></i-lucide>
+            <h3 class="section-title">Status</h3>
+          </header>
+          <div class="filter-fields">
+            <div class="field-group checkbox-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  [(ngModel)]="userModel['isDefault']"
+                  (ngModelChange)="onFieldChange({name: 'isDefault', value: $event})" />
+                <span class="checkbox-text">Set as Default Price List</span>
+              </label>
+            </div>
+            <div class="field-group checkbox-group">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  [(ngModel)]="userModel['isActive']"
+                  (ngModelChange)="onFieldChange({name: 'isActive', value: $event})" />
+                <span class="checkbox-text">Active</span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- ACTIONS -->
+        <div class="filter-actions">
+          <button
+            class="btn btn-secondary btn-block"
+            type="button"
+            (click)="loadDetails(editing()!.priceListId)">
+            <i-lucide name="RotateCcw" [size]="14"></i-lucide>
+            Reset Details
+          </button>
+          <button
+            class="btn btn-primary btn-block"
+            type="button"
+            [disabled]="detailSaving()"
+            (click)="saveDetails()">
+            <i-lucide [name]="detailSaving() ? 'Loader2' : 'Save'" [size]="14" [class.spin]="detailSaving()"></i-lucide>
+            {{ detailSaving() ? 'Saving…' : 'Save Details' }}
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT PRODUCT PRICE GRID -->
+    <main class="price-grid-panel" role="region" aria-label="Product Price Details">
+      <header class="grid-header">
+        <div class="grid-header-left">
+          <h2 class="grid-title">
+            <i-lucide name="List" [size]="18"></i-lucide>
+            Product Prices
+          </h2>
+          <span class="grid-subtitle">{{ editing()?.name || 'New Price List' }}</span>
+        </div>
+        <div class="grid-header-right">
+          <button class="btn btn-primary" type="button" (click)="addDetailRow()">
+            <i-lucide name="Plus" [size]="14"></i-lucide>
+            Add Product Price
+          </button>
+        </div>
+      </header>
+
+      @if (detailRows().length > 0) {
+        <div class="price-type-chips" aria-label="Price Types">
+          @for (pt of config.fields[2]?.options; track pt.value) {
+            @if (userModel['priceTypeIds']?.includes(pt.value)) {
+              <span class="price-type-chip">{{ pt.label }}</span>
+            }
+          }
+        </div>
+      }
+
+      <div class="table-container">
+        <table class="price-table" role="grid">
+          <thead>
+            <tr>
+              <th scope="col">Product</th>
+              <th scope="col">Unit</th>
+              <th scope="col">Price</th>
+              <th scope="col">Min Qty</th>
+              <th scope="col">Max Qty</th>
+              <th scope="col" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of detailRows(); track row.key) {
+              <tr class="price-row">
+                <td class="col-product">
+                  <select
+                    class="input input-sm"
+                    [(ngModel)]="row.productId"
+                    (ngModelChange)="onFieldChange({name: 'productId', value: $event})"
+                    aria-label="Select Product">
+                    <option [ngValue]="null" disabled>Select Product</option>
+                    @for (opt of productOptions; track opt.value) {
+                      <option [ngValue]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="col-unit">
+                  <select
+                    class="input input-sm"
+                    [(ngModel)]="row.unitId"
+                    (ngModelChange)="onFieldChange({name: 'unitId', value: $event})"
+                    aria-label="Select Unit">
+                    <option [ngValue]="null" disabled>Select Unit</option>
+                    @for (opt of unitOptions; track opt.value) {
+                      <option [ngValue]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="col-price">
+                  <input
+                    type="number"
+                    class="input input-sm input-price"
+                    [(ngModel)]="row.price"
+                    (ngModelChange)="onFieldChange({name: 'price', value: $event})"
+                    step="0.01"
+                    min="0"
+                    aria-label="Price" />
+                </td>
+                <td class="col-min-qty">
+                  <input
+                    type="number"
+                    class="input input-sm"
+                    [(ngModel)]="row.minimumQuantity"
+                    (ngModelChange)="onFieldChange({name: 'minimumQuantity', value: $event})"
+                    min="1"
+                    step="1"
+                    aria-label="Minimum Quantity" />
+                </td>
+                <td class="col-max-qty">
+                  <input
+                    type="number"
+                    class="input input-sm"
+                    [(ngModel)]="row.maximumQuantity"
+                    (ngModelChange)="onFieldChange({name: 'maximumQuantity', value: $event})"
+                    min="1"
+                    step="1"
+                    aria-label="Maximum Quantity (optional)" />
+                </td>
+                <td class="col-actions">
+                  <button
+                    class="btn btn-sm btn-danger-soft"
+                    type="button"
+                    (click)="removeDetailRow(row)"
+                    aria-label="Remove price line">
+                    <i-lucide name="Trash2" [size]="13"></i-lucide>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="6" class="empty-state">
+                  <i-lucide name="Package" [size]="32" class="empty-icon"></i-lucide>
+                  <p class="empty-text">No price lines added yet</p>
+                  <p class="empty-hint">Click "Add Product Price" to start adding products</p>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="grid-footer">
+        <span class="row-count">{{ detailRows().length }} product price line{{ detailRows().length !== 1 ? 's' : '' }}</span>
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="detailSaving()"
+          (click)="saveDetails()">
+          <i-lucide [name]="detailSaving() ? 'Loader2' : 'Check'" [size]="14" [class.spin]="detailSaving()"></i-lucide>
+          {{ detailSaving() ? 'Saving…' : 'Save All Prices' }}
+        </button>
+      </footer>
+    </main>
   </div>
 }

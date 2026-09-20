@@ -489,6 +489,11 @@
   cursor: pointer;
 }
 
+/* multiselect field - full width, uses component's own label */
+.field-multiselect {
+  grid-column: 1 / -1;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 720px) {
   .master-page { padding: 16px 14px; }

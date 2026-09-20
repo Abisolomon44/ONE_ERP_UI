@@ -10,18 +10,18 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  --pe-hdr: #023b85;
-  --pe-hdr-border: #0c2b4d;
-  --pe-grid-border: #64748b;
-  --pe-light-border: #cbd5e1;
-  --pe-text: #141b2d;
-  --pe-text-2: #475569;
-  --pe-readonly: #f8fafc;
-  --pe-selected: #eff6ff;
-  --pe-focus: #e8f0fe;
-  --pe-accent: #2563eb;
-  --pe-accent-hover: #1d4ed8;
-  --pe-key-border: #94a3b8;
+  --pe-hdr: var(--accent);
+  --pe-hdr-border: var(--accent-active);
+  --pe-grid-border: var(--border-strong);
+  --pe-light-border: var(--border);
+  --pe-text: var(--text);
+  --pe-text-2: var(--text-2);
+  --pe-readonly: var(--surface-2);
+  --pe-selected: var(--accent-soft);
+  --pe-focus: var(--accent-soft-2);
+  --pe-accent: var(--accent);
+  --pe-accent-hover: var(--accent-hover);
+  --pe-key-border: var(--text-3);
   --grid-border: var(--pe-grid-border);
   --focused-cell: var(--pe-focus);
 }
@@ -43,7 +43,7 @@
 .purchase-page {
   height: 100%;
   overflow-y: auto;
-  background: var(--bg, #f3f5fb);
+  background: var(--bg);
 }
 
 /* ---------- Compact top toolbar (40-46px) ---------- */

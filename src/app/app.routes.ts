@@ -189,6 +189,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/price-list/price-list').then((m) => m.PriceListPage),
       },
       {
+        path: 'price-master',
+        title: 'Price Master',
+        loadComponent: () => import('./pages/price-master/price-master').then((m) => m.PriceMasterPage),
+      },
+      {
         path: 'discount-rules',
         title: 'Discount Rules',
         loadComponent: () => import('./pages/discount-rule/discount-rule').then((m) => m.DiscountRulePage),
