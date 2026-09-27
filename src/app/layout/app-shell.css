@@ -1,24 +1,92 @@
 /* ============================================================
-   App shell — responsive sidebar drawer
+   App shell — responsive sidebar drawer (enterprise restyle)
+   Base sidebar look lives in global styles.css. This file adds:
+   polish (active indicator, focus rings, icon buttons), scoped
+   collapsed-mode styling, and the mobile drawer behaviour.
    ============================================================ */
 
+:host {
+  --sb-transition: var(--transition, 160ms ease);
+}
+
+/* ---------- Backdrop (mobile drawer) ---------- */
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
   z-index: 34;
-  background: rgba(10, 15, 30, 0.5);
+  background: rgba(10, 15, 30, 0.55);
   opacity: 0;
   visibility: hidden;
-  transition: opacity var(--transition), visibility var(--transition);
+  transition: opacity var(--sb-transition), visibility var(--sb-transition);
   -webkit-tap-highlight-color: transparent;
 }
+
 .sidebar-backdrop.show {
   opacity: 1;
   visibility: visible;
 }
 
+/* ---------- Sidebar polish ---------- */
+.sidebar {
+  box-shadow: none;
+}
+
+/* Brand block */
+.sidebar-brand {
+  min-height: 64px;
+  transition: padding var(--sb-transition);
+}
+
+.sidebar-brand .brand-logo {
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.30);
+}
+
+/* Nav items: hover affordance + active accent bar */
+.sidebar-nav .nav-item {
+  position: relative;
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-nav .nav-item:hover {
+  background: var(--surface-hover, var(--surface-3));
+}
+
+.sidebar-nav .nav-item.active {
+  background: var(--accent-soft);
+}
+
+.sidebar-nav .nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+
+.sidebar-nav .nav-item i-lucide {
+  transition: transform var(--sb-transition);
+}
+
+.sidebar-nav .nav-item:hover i-lucide {
+  transform: scale(1.06);
+}
+
+/* Keyboard accessibility */
+.nav-item:focus-visible,
+.nav-group-toggle:focus-visible,
+.nav-subgroup-toggle:focus-visible,
+.pe-side-toggle:focus-visible,
+.se-side-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* Collapsible workspace/domain groups */
-.nav-group { }
+.nav-group { min-width: 0; }
+
 .nav-group-toggle {
   width: 100%;
   text-align: left;
@@ -26,15 +94,19 @@
   background: none;
   border: none;
   font: inherit;
+  border-radius: var(--radius-sm);
 }
+
 .nav-group-label { flex: 1; }
+
 .nav-group-chevron {
   color: var(--text-3);
-  transition: transform var(--transition);
+  transition: transform var(--sb-transition);
   flex-shrink: 0;
 }
 
 .nav-subgroup { padding-left: 12px; }
+
 .nav-subgroup-toggle {
   width: 100%;
   text-align: left;
@@ -42,6 +114,7 @@
   background: none;
   border: none;
   font: inherit;
+  border-radius: var(--radius-sm);
 }
 
 .nav-leaf {
@@ -49,6 +122,57 @@
   font-size: 13px;
 }
 
+/* ---------- Collapsed (icons-only) mode ---------- */
+.sidebar.collapsed .sidebar-brand {
+  justify-content: center;
+  padding: 16px 8px;
+}
+
+.sidebar.collapsed .sidebar-nav {
+  padding: 12px 8px;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+
+/* Hide the active bar when icons-only; ring the icon instead */
+.sidebar.collapsed .nav-item.active::before {
+  content: none;
+}
+
+.sidebar.collapsed .nav-item.active {
+  box-shadow: inset 0 0 0 1px var(--accent-soft-2);
+}
+
+.sidebar.collapsed .user-chip {
+  justify-content: center;
+  gap: 0;
+}
+
+/* ---------- Footer / user chip polish ---------- */
+.sidebar-footer {
+  gap: 10px;
+}
+
+.pe-side-toggle,
+.se-side-toggle {
+  border-radius: var(--radius-sm);
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background var(--sb-transition), color var(--sb-transition), border-color var(--sb-transition);
+}
+
+.pe-side-toggle:hover,
+.se-side-toggle:hover {
+  border-color: var(--border-strong);
+}
+
+/* ---------- Mobile drawer (≤1024px) ---------- */
 @media (max-width: 1024px) {
   .sidebar {
     position: fixed;
@@ -62,7 +186,14 @@
     transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: var(--shadow-lg);
   }
+
   .sidebar.open {
     transform: translateX(0);
+  }
+
+  /* Drawer always shows labels, even if the desktop state was collapsed */
+  .sidebar.open .nav-item span,
+  .sidebar.open .user-meta {
+    display: revert;
   }
 }

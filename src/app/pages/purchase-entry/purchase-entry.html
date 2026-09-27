@@ -1,4 +1,5 @@
 <div class="page purchase-page">
+  <!-- ============ Toolbar: tabs + actions ============ -->
   <header class="top-toolbar">
     <div class="tabs-strip" role="tablist" aria-label="Purchase entry tabs">
       @for (tab of tabs(); track tab.tabId) {
@@ -34,9 +35,13 @@
   @if (!canView()) {
     <div class="empty">You do not have permission to view purchases.</div>
   } @else if (activeTab(); as tab) {
+    <!-- ============ Purchase Information ============ -->
     <section class="entry-card">
       <div class="section-header">
-        <h2>Purchase Information</h2>
+        <div class="section-heading">
+          <lucide-icon name="file-text" size="14"></lucide-icon>
+          <h2>Purchase Information</h2>
+        </div>
         @if (tab.purchaseNumber) {
           <span class="doc-no">Purchase #{{ tab.purchaseNumber }}</span>
         }
@@ -44,7 +49,7 @@
 
       <div class="purchase-grid">
         <div class="info-group">
-          <div class="info-group-title">Supplier</div>
+          <div class="info-group-title"><lucide-icon name="users" size="12"></lucide-icon>Supplier</div>
           <label>
             <span>Supplier *</span>
             <select data-field="supplier" [(ngModel)]="tab.supplierId" (ngModelChange)="markDirty()" [disabled]="!canManage()">
@@ -69,7 +74,7 @@
         </div>
 
         <div class="info-group">
-          <div class="info-group-title">Organization</div>
+          <div class="info-group-title"><lucide-icon name="building-2" size="12"></lucide-icon>Organization</div>
           <label>
             <span>Company *</span>
             <select data-field="company" [(ngModel)]="tab.companyId" (ngModelChange)="markDirty()" [disabled]="!canManage()">
@@ -100,7 +105,7 @@
         </div>
 
         <div class="info-group">
-          <div class="info-group-title">Document</div>
+          <div class="info-group-title"><lucide-icon name="file-text" size="12"></lucide-icon>Document</div>
           <label>
             <span>Purchase Date *</span>
             <input data-field="purchaseDate" type="date" [(ngModel)]="tab.purchaseDate" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
@@ -113,16 +118,18 @@
             <span>Supplier Invoice Date *</span>
             <input data-field="supplierInvoiceDate" type="date" [(ngModel)]="tab.supplierInvoiceDate" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
           </label>
+        </div>
 
-            <div class="info-group-title">Other</div>
+        <div class="info-group">
+          <div class="info-group-title"><lucide-icon name="sticky-note" size="12"></lucide-icon>Other</div>
           <label class="remarks-field">
             <span>Remarks</span>
-            <textarea data-field="remarks" rows="2" [(ngModel)]="tab.remarks" (ngModelChange)="markDirty()" [disabled]="!canManage()"></textarea>
+            <textarea data-field="remarks" rows="3" [(ngModel)]="tab.remarks" (ngModelChange)="markDirty()" [disabled]="!canManage()"></textarea>
           </label>
         </div>
 
         <div class="info-group">
-          <div class="info-group-title">Payment</div>
+          <div class="info-group-title"><lucide-icon name="credit-card" size="12"></lucide-icon>Payment</div>
           <label>
             <span>Tax Mode</span>
             <select data-field="taxMode" [(ngModel)]="tab.taxMode" (ngModelChange)="onTaxModeChange(tab)" [disabled]="!canManage()">
@@ -155,7 +162,7 @@
         </div>
 
         <div class="info-group">
-          <div class="info-group-title">Payment Amount</div>
+          <div class="info-group-title"><lucide-icon name="wallet" size="12"></lucide-icon>Payment Amount</div>
           <label>
             <span>Paid Amount</span>
             <input data-field="paidAmount" type="number" min="0" step="0.01" [(ngModel)]="tab.paidAmount" (ngModelChange)="markDirty(); recalculatePayment(tab)" [readonly]="isPaymentTypeCash(tab) || isPaymentTypeCredit(tab)" [disabled]="!canManage()" [class.readonly-field]="isPaymentTypeCash(tab) || isPaymentTypeCredit(tab)" />
@@ -168,17 +175,19 @@
             <div class="validation-msg">{{ paymentValidationMsg() }}</div>
           }
         </div>
-
-        
       </div>
 
+      <!-- ============ Items ============ -->
       <div class="items-header">
-        <h3>Items</h3>
+        <div class="section-heading">
+          <lucide-icon name="list" size="14"></lucide-icon>
+          <h3>Items</h3>
+        </div>
         <div class="items-actions">
           <button class="btn ghost sm" type="button" (click)="deleteSelected()" [disabled]="!canManage()">
             <lucide-icon name="trash-2"></lucide-icon> Delete Selected
           </button>
-          <button class="btn ghost sm" type="button" (click)="addItem()" [disabled]="!canManage()">
+          <button class="btn primary sm" type="button" (click)="addItem()" [disabled]="!canManage()">
             <lucide-icon name="plus"></lucide-icon> Add Item
           </button>
           <button class="btn ghost sm" type="button" (click)="openImport()" [disabled]="!canManage()">
@@ -249,20 +258,25 @@
                 <td class="num">{{ lineGst(it) | number: '1.2-2' }}</td>
                 <td class="num total-col">{{ lineTotal(it) | number: '1.2-2' }}</td>
                 <td class="delete-col">
-                  <button class="icon danger" type="button" (click)="removeItem($index)" [disabled]="!canManage()">
+                  <button class="icon danger" type="button" (click)="removeItem($index)" [disabled]="!canManage()" aria-label="Delete row">
                     <lucide-icon name="trash-2"></lucide-icon>
                   </button>
                 </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="17">No items yet — press <kbd>Insert</kbd> or click Add Item to begin.</td>
               </tr>
             }
           </tbody>
         </table>
       </div>
 
+      <!-- ============ Product search panel ============ -->
       @if (productOpen !== null) {
         <div class="product-panel">
           <div class="product-panel-head">
-            <span>Select Product — Row {{ productOpen + 1 }}</span>
+            <span><lucide-icon name="package-search" size="14"></lucide-icon> Select Product — Row {{ productOpen + 1 }}</span>
             <button class="btn ghost sm" type="button" (click)="closeProduct()">Close</button>
           </div>
           <div class="table-scroll">
@@ -284,9 +298,10 @@
         </div>
       }
 
+      <!-- ============ Keyboard command bar ============ -->
       <div class="grid-hint">
-        <span><b>F6</b> Focus Grid</span>
-        <span><b>Insert</b> New Row</span>
+        <span><b>F6</b> Grid</span>
+        <span><b>Insert</b> Add Row</span>
         <span><b>F3</b> Product Search</span>
         <span><b>↑ ↓ ← →</b> Navigate</span>
         <span><b>Enter</b> Next Cell</span>
@@ -295,6 +310,7 @@
         <span><b>Esc</b> Close</span>
       </div>
 
+      <!-- ============ Totals ============ -->
       <div class="totals-row">
         <div class="total-item"><span>Gross Amount</span><strong>{{ totalGross | number: '1.2-2' }}</strong></div>
         <div class="total-item"><span>Discount Amount</span><strong>{{ totalDiscount | number: '1.2-2' }}</strong></div>

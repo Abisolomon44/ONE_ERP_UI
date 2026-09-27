@@ -1,90 +1,91 @@
 /* ===========================================================
-   ONE ERP Master Page Template — Professional Edition
-   Uses ONE ERP Design System tokens
-   NOTE: CSS/SCSS only — no HTML markup changes required.
-         All new rules target the SAME class names already
-         present in your MasterPage component.
+   ONE ERP Master Page Template — Enterprise Edition
+   Component-scoped restyle on top of the global design system
+   (styles.css provides .card/.btn/.input/.btable/.ff*).
+   All rules target the SAME class names as the template.
 =========================================================== */
 
-/* ---------- Motion tokens (add once, globally, if not present) ---------- */
-:root {
+/* ---------- Motion/shadow tokens (scoped to host; :root does not
+   survive Angular view encapsulation) ---------- */
+:host {
   --transition-fast: 140ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.12), 0 4px 8px rgba(15, 23, 42, 0.04);
+  --mp-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --mp-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --mp-focus-ring: 0 0 0 3px var(--accent-soft);
 }
 
 .master-page {
-  padding: 24px 28px;
+  padding: 20px 24px;
 }
 
-/* ---------- Header ---------- */
+/* ============================ Header ============================ */
 .master-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 22px;
-  padding-bottom: 18px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
 }
 
 .master-header h3 {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 20px;
-  font-weight: 800;
+  gap: 9px;
+  font-size: 18px;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text);
-  margin: 0 0 4px;
+  margin: 0 0 3px;
+  line-height: 1.3;
 }
 
 .master-header h3 i-lucide {
   color: var(--accent);
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  display: flex;
 }
 
 .master-header small {
   color: var(--text-3);
-  font-size: 13px;
+  font-size: 12.5px;
   letter-spacing: 0.01em;
 }
 
+/* ---------- Toolbar ---------- */
 .toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .toolbar .search-box {
-  position: relative;       /* anchors .input-prefix */
+  position: relative;
   display: flex;
   align-items: center;
-  min-width: 220px;
+  min-width: 230px;
 }
 
-/* icon rendered by <i-lucide class="input-prefix"> inside .search-box —
-   pin it inside the input instead of letting it flow as a block sibling */
 .toolbar .search-box .input-prefix {
   position: absolute;
-  left: 12px;
+  left: 11px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-3);
-  pointer-events: none;     /* clicks pass through to the input underneath */
+  pointer-events: none;
   z-index: 1;
+  display: flex;
 }
 
 .toolbar .search-box .search-input.has-prefix {
   width: 100%;
-  padding-left: 34px;       /* room for .input-prefix so text doesn't run under it */
+  height: 34px;
+  padding: 0 12px 0 33px;
+  font-size: 13px;
 }
 
 .toolbar .search-box .search-input {
@@ -94,21 +95,12 @@
 .toolbar .search-box .search-input:focus-visible {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: var(--mp-focus-ring);
 }
 
 .toolbar .btn {
-  transition: background var(--transition-fast), border-color var(--transition-fast),
-    box-shadow var(--transition-fast), transform var(--transition-fast);
-}
-
-.toolbar .btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-.toolbar .btn:active {
-  transform: translateY(0);
+  height: 34px;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .toolbar .btn:focus-visible {
@@ -117,16 +109,18 @@
 }
 
 .toolbar .btn i-lucide {
+  display: flex;
   flex-shrink: 0;
 }
 
-/* ---------- Stat cards ---------- */
+/* ============================ Stat cards ============================ */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 18px;
 }
+
 @media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px)  { .stat-grid { grid-template-columns: 1fr; } }
 
@@ -135,52 +129,73 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-xs);
-  transition: box-shadow var(--transition-base), transform var(--transition-base),
-    border-color var(--transition-base);
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+/* 2px accent bar reveals on hover — flat, enterprise */
+.stat-card-flex::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity var(--transition-base);
 }
 
 .stat-card-flex:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-  border-color: var(--accent-soft);
+  border-color: var(--border-strong);
+  box-shadow: var(--mp-shadow-md);
+}
+
+.stat-card-flex:hover::before {
+  opacity: 1;
 }
 
 .stat-card-flex .stat-label {
   display: block;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--text-3);
 }
 
 .stat-card-flex .stat-value {
-  margin: 6px 0 2px;
+  margin: 5px 0 2px;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
+  font-size: 21px;
   letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.stat-card-flex .stat-hint {
+  font-size: 11.5px;
+  color: var(--text-3);
 }
 
 .stat-card-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
   background: var(--accent-soft);
   color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform var(--transition-base);
 }
 
-.stat-card-flex:hover .stat-card-icon {
-  transform: scale(1.06);
+.stat-card-icon i-lucide {
+  display: flex;
 }
 
-/* ---------- List states ---------- */
+/* ============================ List states ============================ */
 .list-loading,
 .list-empty {
   display: flex;
@@ -188,7 +203,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 60px 20px;
+  padding: 52px 20px;
   color: var(--text-3);
   font-size: 13px;
 }
@@ -201,20 +216,24 @@
   to { transform: rotate(360deg); }
 }
 
-.list-empty i-lucide {
-  opacity: 0.5;
+.list-empty .empty-icon {
+  opacity: 0.45;
+  color: var(--text-3);
 }
 
-.list-empty h5 {
-  font-size: 14.5px;
+.list-empty .empty-title {
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-2);
   margin: 4px 0 0;
 }
 
-/* Skeleton rows shown while a table is loading (optional class hook:
-   add .is-loading to .btable tbody tr, no markup change required beyond
-   toggling the class you may already set from the component state) */
+.list-empty .text-muted {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* Skeleton rows (hook: tr.is-loading) */
 .btable tbody tr.is-loading td {
   position: relative;
   color: transparent;
@@ -227,9 +246,9 @@
   border-radius: 4px;
   background: linear-gradient(
     90deg,
-    var(--border) 25%,
-    var(--surface-2, #eef1f5) 37%,
-    var(--border) 63%
+    var(--surface-3) 25%,
+    var(--surface-hover) 37%,
+    var(--surface-3) 63%
   );
   background-size: 400% 100%;
   animation: master-shimmer 1.4s ease infinite;
@@ -240,27 +259,22 @@
   100% { background-position: 0 50%; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .list-loading i-lucide,
-  .btable tbody tr.is-loading td::before {
-    animation: none;
-  }
-}
-
-/* ---------- Table ---------- */
-.btable {
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--shadow-xs);
-}
-
+/* ============================ Table ============================ */
 .btable thead th {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-3);
-  background: var(--accent-soft);
+  background: var(--surface-2);
+  border-bottom: 2px solid var(--accent);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.btable tbody td {
+  font-size: 13px;
 }
 
 .btable tbody tr {
@@ -268,7 +282,17 @@
 }
 
 .btable tbody tr:hover {
-  background: var(--accent-soft);
+  background: var(--surface-hover, var(--surface-2));
+}
+
+/* Row badges/pills stay compact */
+.btable .pill,
+.btable .badge {
+  font-size: 11.5px;
+}
+
+.btable .currency {
+  font-variant-numeric: tabular-nums;
 }
 
 .btable .cell-actions {
@@ -276,32 +300,36 @@
   gap: 6px;
   justify-content: flex-end;
 }
+
 .btable th.cell-actions {
   display: table-cell;
   text-align: right;
 }
+
 .btable .cell-actions .btn {
-  padding: 6px;
-  border-radius: 6px;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  padding: 5px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .btable .cell-actions .btn:hover {
+  border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent);
 }
 
-/* ---------- Pagination bar ---------- */
+/* ============================ Pagination ============================ */
 .master-pagination {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text-2);
 }
 
@@ -313,11 +341,7 @@
 .master-pagination .page-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.master-pagination .page-controls .btn {
-  transition: background var(--transition-fast), opacity var(--transition-fast);
+  gap: 8px;
 }
 
 .master-pagination .page-controls .btn:disabled {
@@ -335,19 +359,19 @@
 
 .page-size-select {
   width: auto;
-  padding: 7px 30px 7px 10px;
+  height: 32px;
+  padding: 0 28px 0 10px;
   font-size: 12.5px;
   cursor: pointer;
-  transition: border-color var(--transition-fast);
 }
 
 .page-size-select:focus-visible {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: var(--mp-focus-ring);
 }
 
-/* ---------- Entry tabs ---------- */
+/* ============================ Entry tabs ============================ */
 .entry-tabs {
   display: flex;
   gap: 4px;
@@ -358,17 +382,18 @@
 }
 
 .entry-tab {
-  padding: 14px 4px;
+  padding: 13px 4px;
   margin-right: 22px;
   border: none;
   background: transparent;
-  font-size: 13.5px;
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-3);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   white-space: nowrap;
-  transition: color 160ms ease, border-color 160ms ease;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .entry-tab:hover {
@@ -378,7 +403,7 @@
 .entry-tab:focus-visible {
   outline: none;
   color: var(--text);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: var(--mp-focus-ring);
   border-radius: 4px;
 }
 
@@ -387,13 +412,16 @@
   border-bottom-color: var(--accent);
 }
 
-/* ---------- Entry form grid ---------- */
+/* ============================ Entry form ============================ */
 .entry-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px 20px;
+  gap: 2px 18px;
 }
-@media (max-width: 720px) { .entry-grid { grid-template-columns: 1fr; } }
+
+@media (max-width: 720px) {
+  .entry-grid { grid-template-columns: 1fr; }
+}
 
 .ff.area {
   grid-column: 1 / -1;
@@ -404,16 +432,10 @@
 .ff textarea:focus-visible {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: var(--mp-focus-ring);
 }
 
-/* ---------- Dropdown fields ----------
-   A native <select> always shows its current option, so it never has a
-   real "empty" state to key a floating label off. The template now always
-   applies .floated for dropdown fields — this just gives the select body
-   itself a bit of extra top padding so the value text clears the label
-   once it's permanently parked above the box, and disables the styling
-   normally reserved for an actually-empty text input. */
+/* Dropdown fields: label is always floated; add head-room for the value */
 .ff-control-select {
   padding-top: 14px;
   cursor: pointer;
@@ -424,7 +446,7 @@
   opacity: 0.6;
 }
 
-/* ---------- Data-scope tagging ---------- */
+/* ============================ Data-scope tagging ============================ */
 .ff-wrap { position: relative; }
 
 .scope-chip {
@@ -434,18 +456,21 @@
   margin-top: 8px;
   padding: 3px 11px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--accent);
   background: var(--accent-soft);
-  border: 1px solid var(--accent-soft);
+  border: 1px solid transparent;
+}
+
+.scope-chip i-lucide {
+  display: flex;
 }
 
 .scope-chip.no-access {
   color: var(--danger);
   background: var(--danger-soft);
-  border-color: var(--danger-soft);
 }
 
 .no-access-tag {
@@ -458,17 +483,21 @@
   gap: 4px;
   padding: 2px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--danger);
   background: var(--danger-soft);
-  border: 1px solid var(--danger-soft);
   pointer-events: none;
+  z-index: 1;
 }
 
-/* checkbox field doesn't want the floating-label treatment */
+.no-access-tag i-lucide {
+  display: flex;
+}
+
+/* Checkbox field — own layout, no floating label */
 .field-checkbox {
   display: flex;
   align-items: center;
@@ -476,12 +505,14 @@
   padding-top: 26px;
   margin-bottom: 16px;
 }
+
 .field-checkbox input {
   width: 16px;
   height: 16px;
   accent-color: var(--accent);
   cursor: pointer;
 }
+
 .field-checkbox label {
   font-size: 13.5px;
   font-weight: 500;
@@ -489,53 +520,34 @@
   cursor: pointer;
 }
 
-/* multiselect field - full width, uses component's own label */
+/* Multiselect — full width, uses component's own label */
 .field-multiselect {
   grid-column: 1 / -1;
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 720px) {
-  .master-page { padding: 16px 14px; }
-  .toolbar { width: 100%; }
-  .toolbar .search-box { flex: 1 1 100%; }
-  .toolbar .search-box .search-input { width: 100%; }
-  .master-pagination { flex-direction: column; align-items: stretch; text-align: center; }
-  .master-pagination .page-controls { justify-content: center; }
-}
-
-/* ---------- Print (handy for report-style master lists) ---------- */
-@media print {
-  .toolbar,
-  .master-pagination .page-controls,
-  .btable .cell-actions { display: none !important; }
-  .master-page { padding: 0; }
-  .stat-card-flex,
-  .btable { box-shadow: none; }
-}
-
-/* ---------- Action kebab dropdown ---------- */
+/* ============================ Action kebab dropdown ============================ */
 .action-menu {
   position: relative;
 }
 
+/* FIX: was hardcoded #000 (invisible on dark surfaces) */
 .action-menu .icon-btn {
-  color: #000;
+  color: var(--text-2);
 }
 
 .action-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 168px;
+  min-width: 176px;
   z-index: 50;
   display: flex;
   flex-direction: column;
-  padding: 6px;
-  background: var(--surface, #ffffff);
+  padding: 5px;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
   animation: action-pop 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -549,11 +561,12 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border: none;
   background: transparent;
-  border-radius: 8px;
-  font-size: 13.5px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-2);
   text-align: left;
@@ -569,8 +582,10 @@
 }
 
 .action-item i-lucide {
+  display: flex;
   flex-shrink: 0;
   color: var(--text-3);
+  transition: color var(--transition-fast);
 }
 
 .action-item:hover i-lucide,
@@ -583,4 +598,41 @@
   inset: 0;
   z-index: 40;
   background: transparent;
+}
+
+/* ============================ Responsive ============================ */
+@media (max-width: 720px) {
+  .master-page { padding: 14px 12px; }
+  .toolbar { width: 100%; }
+  .toolbar .search-box { flex: 1 1 100%; min-width: 0; }
+  .toolbar .search-box .search-input { width: 100%; }
+  .master-pagination { flex-direction: column; align-items: stretch; text-align: center; }
+  .master-pagination .page-controls { justify-content: center; }
+}
+
+/* ============================ Reduced motion ============================ */
+@media (prefers-reduced-motion: reduce) {
+  .list-loading i-lucide,
+  .btable tbody tr.is-loading td::before,
+  .action-dropdown {
+    animation: none;
+  }
+
+  .stat-card-flex,
+  .stat-card-flex::before,
+  .entry-tab,
+  .action-item,
+  .btable tbody tr,
+  .btable .cell-actions .btn {
+    transition: none;
+  }
+}
+
+/* ============================ Print ============================ */
+@media print {
+  .toolbar,
+  .master-pagination .page-controls,
+  .btable .cell-actions { display: none !important; }
+  .master-page { padding: 0; }
+  .card { box-shadow: none; }
 }

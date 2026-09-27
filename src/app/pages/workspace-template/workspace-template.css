@@ -1,21 +1,40 @@
 /* ===========================================================
-   ONE ERP Workspace Template
-   Restyled to use ONE ERP Design System tokens
+   ONE ERP Workspace Template — enterprise restyle
+   Theme-aware via ONEERP design tokens (light/dark + accents)
 =========================================================== */
 
 :host {
   display: block;
   width: 100%;
+
+  --ws-accent: var(--accent);
+  --ws-accent-hover: var(--accent-hover);
+  --ws-accent-soft: var(--accent-soft);
+  --ws-border: var(--border);
+  --ws-border-strong: var(--border-strong);
+  --ws-surface: var(--surface);
+  --ws-surface-2: var(--surface-2);
+  --ws-surface-3: var(--surface-3);
+  --ws-text: var(--text);
+  --ws-text-2: var(--text-2);
+  --ws-text-3: var(--text-3);
+  --ws-danger: var(--danger);
+  --ws-success: var(--success);
+  --ws-warning: var(--warning);
+  --ws-info: var(--info);
+  --ws-transition: var(--transition, 160ms ease);
 }
 
-/* ---------- Header ---------- */
+/* ============================ Header ============================ */
 .workspace-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 28px;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--ws-border);
 }
 
 .workspace-title {
@@ -25,127 +44,42 @@
 }
 
 .workspace-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-lg);
-  background: var(--accent-soft);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
+  margin-right: 14px;
   flex-shrink: 0;
 }
 
-.workspace-icon i {
-  font-size: 30px;
-  color: var(--accent);
+.workspace-icon i-lucide {
+  display: flex;
+  color: var(--ws-accent);
 }
 
 .workspace-title h2 {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--text);
-  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ws-text);
+  margin: 0 0 2px;
+  line-height: 1.3;
 }
 
 .workspace-title p {
   margin: 0;
-  color: var(--text-3);
-  font-size: 13.5px;
+  color: var(--ws-text-3);
+  font-size: 12.5px;
 }
 
 .workspace-header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-/* ---------- Quick Actions ---------- */
-.workspace-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 28px;
-}
-
-/* Soft color variants not in the base design system's btn set */
-.btn-success { background: var(--success-soft); color: var(--success); }
-.btn-success:hover { background: rgba(22, 163, 74, 0.2); }
-.btn-warning { background: var(--warning-soft); color: var(--warning); }
-.btn-warning:hover { background: rgba(217, 119, 6, 0.2); }
-.btn-info { background: var(--info-soft); color: var(--info); }
-.btn-info:hover { background: rgba(8, 145, 178, 0.2); }
-
-/* (shortcut card styles are consolidated in the block below) */
-
-/* ---------- Bottom section ---------- */
-.workspace-bottom {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
-}
-@media (max-width: 860px) { .workspace-bottom { grid-template-columns: 1fr; } }
-
-.activity-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--border);
-}
-.activity-row:last-child { border-bottom: none; }
-
-.activity-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.activity-icon i { font-size: 18px; }
-
-.activity-title {
-  font-weight: 600;
-  font-size: 13.5px;
-  color: var(--text);
-}
-
-.activity-desc {
-  font-size: 12.5px;
-  color: var(--text-3);
-  margin-top: 2px;
-}
-
-.activity-time {
-  margin-left: auto;
-  font-size: 11.5px;
-  color: var(--text-3);
-  white-space: nowrap;
-}
-
-.favorite-btn {
-  justify-content: flex-start;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.favorite-btn:last-child { margin-bottom: 0; }
-
-
-/* ---------- Lucide icon centering ---------- */
-.workspace-icon i-lucide,
-.shortcut-icon i-lucide,
-.activity-icon i-lucide {
-  color: var(--accent);
-  display: flex;
-}
-
-.btn i-lucide {
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -154,132 +88,330 @@
   display: flex;
   align-items: center;
 }
+
 .search-box i-lucide.input-prefix {
   position: absolute;
-  left: 12px;
-  color: var(--text-3);
+  left: 11px;
+  color: var(--ws-text-3);
   pointer-events: none;
+  display: flex;
 }
 
+.search-input {
+  height: 34px;
+  min-width: 220px;
+  font-size: 12.5px;
+}
 
-/* ---------- Shortcut cards ---------- */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--radius-sm);
+  background: var(--ws-surface);
+  color: var(--ws-text-2);
+  cursor: pointer;
+  transition: background var(--ws-transition), border-color var(--ws-transition), color var(--ws-transition);
+}
+
+.icon-btn:hover {
+  background: var(--ws-surface-3);
+  border-color: var(--ws-border-strong);
+  color: var(--ws-text);
+}
+
+.icon-btn i-lucide {
+  display: flex;
+}
+
+/* ============================ Quick Actions ============================ */
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.workspace-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background var(--ws-transition), border-color var(--ws-transition), color var(--ws-transition);
+}
+
+.workspace-actions .btn i-lucide {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Soft semantic variants */
+.btn-primary { background: var(--ws-accent); color: var(--accent-contrast); }
+.btn-primary:hover { background: var(--ws-accent-hover); }
+
+.btn-success { background: var(--success-soft); color: var(--success); border-color: transparent; }
+.btn-success:hover { background: var(--success); color: var(--accent-contrast); }
+
+.btn-warning { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+.btn-warning:hover { background: var(--warning); color: var(--accent-contrast); }
+
+.btn-info { background: var(--info-soft); color: var(--info); border-color: transparent; }
+.btn-info:hover { background: var(--info); color: var(--accent-contrast); }
+
+.btn-danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+.btn-danger:hover { background: var(--danger); color: var(--accent-contrast); }
+
+.btn-secondary,
+.btn-default {
+  background: var(--ws-surface);
+  color: var(--ws-text);
+  border-color: var(--ws-border-strong);
+}
+.btn-secondary:hover,
+.btn-default:hover { background: var(--ws-surface-3); }
+
+/* ============================ Shortcut Cards ============================ */
 .shortcut-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 14px;
-  margin-bottom: 28px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
 }
-@media (max-width: 1300px) { .shortcut-grid { grid-template-columns: repeat(5, 1fr); } }
-@media (max-width: 1100px) { .shortcut-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 860px)  { .shortcut-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 620px)  { .shortcut-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 400px)  { .shortcut-grid { grid-template-columns: 1fr; } }
 
 .shortcut-card {
   position: relative;
-  background: linear-gradient(160deg, var(--surface) 0%, var(--accent-soft) 220%);
-  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--ws-surface);
+  border: 1px solid var(--ws-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 18px 14px 16px;
+  padding: 16px 12px 14px;
   text-align: center;
+  text-decoration: none;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition: border-color var(--ws-transition), box-shadow var(--ws-transition), transform var(--ws-transition);
 }
 
 .shortcut-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--accent);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ws-accent);
   opacity: 0;
-  transition: opacity 160ms ease;
+  transition: opacity var(--ws-transition);
 }
 
 .shortcut-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--accent);
+  border-color: var(--ws-accent);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.10);
+  transform: translateY(-2px);
 }
+
 .shortcut-card:hover::before { opacity: 1; }
 
+.shortcut-card:focus-visible {
+  outline: 2px solid var(--ws-accent);
+  outline-offset: 2px;
+}
+
 .shortcut-icon {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--ws-accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 10px;
-  transition: background 160ms ease, border-color 160ms ease;
-}
-.shortcut-card:hover .shortcut-icon {
-  background: var(--accent);
-  border-color: var(--accent);
+  transition: background var(--ws-transition);
 }
 
 .shortcut-icon i-lucide {
-  font-size: 20px;
-  color: var(--accent);
-  transition: color 160ms ease;
+  display: flex;
+  color: var(--ws-accent);
+  transition: color var(--ws-transition);
 }
-.shortcut-card:hover .shortcut-icon i-lucide { color: #fff; }
+
+.shortcut-card:hover .shortcut-icon {
+  background: var(--ws-accent);
+}
+
+.shortcut-card:hover .shortcut-icon i-lucide {
+  color: var(--accent-contrast);
+}
 
 .shortcut-card h5 {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0 0 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ws-text);
+  margin: 0 0 3px;
+  line-height: 1.35;
 }
 
 .shortcut-card p {
-  color: var(--text-3);
-  font-size: 11.5px;
+  color: var(--ws-text-3);
+  font-size: 11px;
   margin: 0;
   line-height: 1.4;
 }
 
-/* ---------- Domain Groups ---------- */
+/* ============================ Domain Groups ============================ */
 .domain-groups {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 14px;
 }
-@media (max-width: 860px) { .domain-groups { grid-template-columns: 1fr; } }
 
-.domain-group { padding: 18px 20px; }
+.domain-group {
+  background: var(--ws-surface);
+  border: 1px solid var(--ws-border);
+  border-radius: var(--radius);
+  padding: 14px 16px 10px;
+  min-width: 0;
+}
+
 .domain-group-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   font-weight: 700;
-  font-size: 15px;
-  color: var(--text);
-  margin-bottom: 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ws-text);
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--ws-border);
 }
-.domain-module { padding: 8px 0; border-top: 1px solid var(--border); }
-.domain-module:first-of-type { border-top: none; }
-.domain-module-name { font-weight: 600; font-size: 13.5px; color: var(--text-2); margin: 6px 0; }
-.domain-submodule { padding: 4px 0 4px 14px; }
-.domain-submodule-name { font-size: 13px; color: var(--text-3); margin-bottom: 4px; }
+
+.domain-group-header i-lucide {
+  display: flex;
+  color: var(--ws-accent);
+  flex-shrink: 0;
+}
+
+.domain-module {
+  padding: 10px 0 4px;
+}
+
+.domain-module + .domain-module {
+  border-top: 1px solid var(--ws-border);
+}
+
+.domain-module-name {
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--ws-text);
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.domain-module-name::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--ws-accent);
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.domain-submodule {
+  padding: 2px 0 4px 10px;
+  border-left: 1px solid var(--ws-border);
+  margin-left: 1px;
+}
+
+.domain-submodule + .domain-submodule {
+  margin-top: 6px;
+}
+
+.domain-submodule-name {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ws-text-3);
+  margin-bottom: 6px;
+}
+
 .domain-screen-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin: 3px 8px 3px 0;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 12.5px;
-  font-weight: 600;
+  margin: 0 6px 6px 0;
+  padding: 4px 11px;
+  border: 1px solid var(--ws-border);
+  border-radius: var(--radius-sm);
+  background: var(--ws-surface-2);
+  color: var(--ws-text-2);
+  font-size: 12px;
+  font-weight: 500;
   text-decoration: none;
-  transition: background 160ms ease, color 160ms ease;
+  transition: border-color var(--ws-transition), background var(--ws-transition), color var(--ws-transition);
 }
-.domain-screen-link:hover { background: var(--accent); color: #fff; }
-.domain-screen-link i-lucide { opacity: 0.7; transition: opacity 160ms ease; }
-.domain-screen-link:hover i-lucide { opacity: 1; }
+
+.domain-screen-link:hover {
+  border-color: var(--ws-accent);
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+}
+
+.domain-screen-link:focus-visible {
+  outline: 2px solid var(--ws-accent);
+  outline-offset: 1px;
+}
+
+.domain-screen-link i-lucide {
+  display: flex;
+  opacity: 0.6;
+  transition: opacity var(--ws-transition), transform var(--ws-transition);
+}
+
+.domain-screen-link:hover i-lucide {
+  opacity: 1;
+  transform: translateX(1px);
+}
+
+/* ============================ Responsive ============================ */
+@media (max-width: 720px) {
+  .domain-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .search-input {
+    min-width: 150px;
+  }
+
+  .workspace-header {
+    margin-bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shortcut-card,
+  .shortcut-card::before,
+  .shortcut-icon,
+  .shortcut-icon i-lucide,
+  .icon-btn,
+  .domain-screen-link,
+  .domain-screen-link i-lucide {
+    transition: none;
+  }
+}

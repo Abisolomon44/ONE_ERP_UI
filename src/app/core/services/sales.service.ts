@@ -124,6 +124,8 @@ export interface CreateSalesRequest {
   sourceType?: string;
   salesTypeId?: number | null;
   priceListId?: number | null;
+  /** Set when raised inside a POS drawer session; drives cash reconciliation. */
+  posSessionId?: number | null;
   referenceNo?: string | null;
   referenceDate?: string | null;
   paymentTypeID?: number | null;

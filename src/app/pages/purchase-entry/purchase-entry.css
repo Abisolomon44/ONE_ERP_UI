@@ -1,8 +1,8 @@
 /* ============================================================
-   Purchase Entry — full-screen immersive UI.
+   Purchase Entry — compact enterprise ERP transaction screen.
    Global header + sidebar are hidden for this route (see
    styles.css :has(app-purchase-entry) block). This page owns
-   the whole viewport and uses a compact, dense grid layout.
+   the whole viewport. Theme-aware via ONEERP tokens.
    ============================================================ */
 
 :host {
@@ -10,20 +10,27 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  --pe-hdr: var(--accent);
-  --pe-hdr-border: var(--accent-active);
-  --pe-grid-border: var(--border-strong);
-  --pe-light-border: var(--border);
+
+  /* Component tokens — all resolve from global theme */
+  --pe-surface: var(--surface);
+  --pe-surface-2: var(--surface-2);
+  --pe-surface-3: var(--surface-3);
+  --pe-border: var(--border);
+  --pe-border-strong: var(--border-strong);
   --pe-text: var(--text);
   --pe-text-2: var(--text-2);
-  --pe-readonly: var(--surface-2);
-  --pe-selected: var(--accent-soft);
-  --pe-focus: var(--accent-soft-2);
+  --pe-text-3: var(--text-3);
   --pe-accent: var(--accent);
   --pe-accent-hover: var(--accent-hover);
-  --pe-key-border: var(--text-3);
-  --grid-border: var(--pe-grid-border);
-  --focused-cell: var(--pe-focus);
+  --pe-accent-soft: var(--accent-soft);
+  --pe-focus-ring: var(--accent-soft-2);
+  --pe-danger: var(--danger);
+  --pe-danger-soft: var(--danger-soft);
+  --pe-warning: var(--warning);
+  --pe-success: var(--success);
+  --pe-control-h: 30px;
+  --pe-radius: var(--radius-sm);
+  --pe-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
 .page {
@@ -46,15 +53,15 @@
   background: var(--bg);
 }
 
-/* ---------- Compact top toolbar (40-46px) ---------- */
+/* ============================ Toolbar ============================ */
 .top-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
-  min-height: 42px;
-  padding: 0.3rem 0.1rem 0.25rem;
-  border-bottom: 1px solid var(--pe-grid-border, #64748b);
+  min-height: 44px;
+  padding: 0.25rem 0.1rem;
+  border-bottom: 1px solid var(--pe-border);
   flex-shrink: 0;
 }
 
@@ -76,28 +83,35 @@
 .new-tab {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  border: 1px solid var(--border, #e2e7f0);
-  background: var(--surface-2, #f8fafd);
-  color: var(--text, #e4e9f5);
-  border-radius: 5px 5px 0 0;
-  padding: 0.3rem 0.55rem;
+  gap: 0.3rem;
+  border: 1px solid var(--pe-border);
+  background: var(--pe-surface-2);
+  color: var(--pe-text-2);
+  border-radius: var(--pe-radius) var(--pe-radius) 0 0;
+  padding: 0.32rem 0.6rem;
   font-size: 0.74rem;
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
   min-height: 28px;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
 .purchase-tab {
   position: relative;
 }
 
+.purchase-tab:hover:not(.active) {
+  background: var(--pe-surface-3);
+  color: var(--pe-text);
+}
+
 .purchase-tab.active {
-  background: var(--surface, #ffffff);
-  border-bottom-color: var(--surface, #ffffff);
-  color: var(--accent, #2563eb);
-  box-shadow: 0 -1px 0 rgba(37, 99, 235, 0.15);
+  background: var(--pe-surface);
+  border-bottom-color: var(--pe-surface);
+  color: var(--pe-accent);
+  font-weight: 600;
+  box-shadow: inset 0 2px 0 0 var(--pe-accent);
 }
 
 .purchase-tab.dirty .tab-label {
@@ -108,13 +122,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #f59e0b;
+  color: var(--pe-warning);
   font-weight: 700;
   font-size: 0.68rem;
 }
 
 .tab-state.success {
-  color: #16a34a;
+  color: var(--pe-success);
 }
 
 .tab-close {
@@ -125,19 +139,27 @@
   height: 15px;
   border-radius: 50%;
   font-size: 0.85rem;
-  color: var(--text-3, #8792ac);
+  color: var(--pe-text-3);
   margin-left: 0.15rem;
+  transition: background 160ms ease;
 }
 
 .tab-close:hover {
-  background: var(--surface-3, #eef2f9);
+  background: var(--pe-surface-3);
+  color: var(--pe-danger);
 }
 
 .new-tab {
   background: transparent;
   border-style: dashed;
-  color: var(--accent, #2563eb);
+  border-color: var(--pe-border-strong);
+  color: var(--pe-accent);
   font-weight: 600;
+}
+
+.new-tab:hover {
+  border-color: var(--pe-accent);
+  background: var(--pe-accent-soft);
 }
 
 .page-actions {
@@ -148,37 +170,75 @@
   flex-shrink: 0;
 }
 
+/* ============================ Buttons ============================ */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  border: 1px solid var(--border, #e2e7f0);
-  background: var(--surface, #ffffff);
-  color: var(--text, #141b2d);
-  border-radius: 5px;
-  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--pe-border-strong);
+  background: var(--pe-surface);
+  color: var(--pe-text);
+  border-radius: var(--pe-radius);
+  padding: 0 0.8rem;
   font-size: 0.78rem;
+  font-weight: 500;
   height: 30px;
   cursor: pointer;
   min-width: 82px;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.btn:focus-visible,
+.purchase-tab:focus-visible,
+.new-tab:focus-visible,
+.tab-close:focus-visible,
+.icon:focus-visible {
+  outline: 2px solid var(--pe-accent);
+  outline-offset: 1px;
 }
 
 .btn.primary {
-  background: var(--accent, #2563eb);
-  border-color: var(--accent, #2563eb);
-  color: var(--accent-contrast, #ffffff);
+  background: var(--pe-accent);
+  border-color: var(--pe-accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: var(--pe-accent-hover);
+  border-color: var(--pe-accent-hover);
 }
 
 .btn.secondary {
-  background: var(--surface-2, #f8fafd);
+  background: var(--pe-surface-2);
+}
+
+.btn.secondary:hover:not(:disabled) {
+  background: var(--pe-surface-3);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: var(--pe-border);
+  color: var(--pe-text-2);
+}
+
+.btn.ghost:hover:not(:disabled) {
+  background: var(--pe-surface-3);
+  color: var(--pe-text);
 }
 
 .btn.sm {
-  padding: 0.22rem 0.55rem;
+  padding: 0 0.6rem;
   height: 26px;
   min-width: auto;
   font-size: 0.74rem;
+}
+
+.btn.sm lucide-icon {
+  width: 13px;
+  height: 13px;
 }
 
 .btn:disabled {
@@ -186,18 +246,17 @@
   cursor: not-allowed;
 }
 
-/* ---------- Purchase Information ---------- */
+/* ============================ Entry card ============================ */
 .entry-card {
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--pe-grid-border, #64748b);
-  border-radius: 6px;
-  padding: 8px 10px;
+  background: var(--pe-surface);
+  border: 1px solid var(--pe-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1 1 auto;
   min-height: 0;
-  box-shadow: none;
 }
 
 .section-header {
@@ -206,63 +265,90 @@
   justify-content: space-between;
   gap: 0.5rem;
   min-height: 30px;
-  border-bottom: 1px solid var(--pe-light-border, #cbd5e1);
-  padding-bottom: 5px;
+  border-bottom: 1px solid var(--pe-border);
+  padding-bottom: 6px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.section-heading lucide-icon {
+  color: var(--pe-accent);
+  flex-shrink: 0;
 }
 
 .section-header h2,
 .items-header h3 {
   margin: 0;
   font-size: 11px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--pe-hdr, #1e3a5f);
+  color: var(--pe-text-2);
 }
 
 .doc-no {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: 0.74rem;
-  color: var(--pe-text-2, #475569);
-  background: var(--pe-readonly, #f8fafc);
-  border: 1px solid var(--pe-light-border, #cbd5e1);
-  border-radius: 5px;
-  padding: 0.1rem 0.4rem;
+  font-family: var(--pe-font-mono);
+  font-size: 0.72rem;
+  color: var(--pe-accent);
+  background: var(--pe-accent-soft);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+  font-variant-numeric: tabular-nums;
 }
 
+/* ============================ Information groups ============================ */
 .purchase-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .info-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
-  border: 1px solid var(--pe-light-border, #cbd5e1);
-  border-radius: 5px;
-  background: var(--pe-readonly, #f8fafc);
-  padding: 6px 8px;
+  border: 1px solid var(--pe-border);
+  border-radius: var(--pe-radius);
+  background: var(--pe-surface-2);
+  padding: 8px 10px;
+  transition: border-color 160ms ease;
+}
+
+.info-group:hover {
+  border-color: var(--pe-border-strong);
 }
 
 .info-group-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--pe-hdr, #1e3a5f);
-  margin-bottom: 1px;
+  color: var(--pe-accent);
+  margin-bottom: 2px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--pe-border);
+}
+
+.info-group-title lucide-icon {
+  flex-shrink: 0;
 }
 
 label {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
   font-size: 11px;
-  color: var(--pe-text-2, #475569);
+  color: var(--pe-text-2);
 }
 
 label > span {
@@ -274,44 +360,60 @@ label.full {
   width: 100%;
 }
 
+/* ============================ Form controls ============================ */
 input,
 select,
 textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--pe-light-border, #cbd5e1);
-  background: var(--surface, #ffffff);
-  color: var(--pe-text, #141b2d);
-  border-radius: 4px;
-  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--pe-border-strong);
+  background: var(--pe-surface);
+  color: var(--pe-text);
+  border-radius: var(--pe-radius);
+  padding: 0 0.45rem;
   font-size: 0.76rem;
-  min-height: 28px;
+  font-family: inherit;
+  height: var(--pe-control-h);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 textarea {
-  min-height: 48px;
+  height: auto;
+  min-height: 54px;
+  padding: 0.35rem 0.45rem;
   resize: vertical;
+  line-height: 1.45;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--pe-accent, #2563eb);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+  border-color: var(--pe-accent);
+  box-shadow: 0 0 0 3px var(--pe-focus-ring);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--pe-surface-3);
+  border-color: var(--pe-border);
+  color: var(--pe-text-3);
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .remarks-field {
   flex: 1 1 auto;
 }
 
-/* ---------- Items header ---------- */
+/* ============================ Items header ============================ */
 .items-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-top: 2px;
+  margin-top: 4px;
   flex-shrink: 0;
 }
 
@@ -321,11 +423,11 @@ textarea:focus {
   gap: 0.35rem;
 }
 
-/* ---------- Purchase grid ---------- */
+/* ============================ Items grid ============================ */
 .table-scroll {
   overflow: auto;
-  border: 1px solid var(--pe-grid-border, #64748b);
-  border-radius: 4px;
+  border: 1px solid var(--pe-border-strong);
+  border-radius: var(--pe-radius);
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -335,13 +437,15 @@ textarea:focus {
   min-width: 1240px;
   border-collapse: collapse;
   table-layout: fixed;
-  background: #ffffff;
+  background: var(--pe-surface);
 }
 
 .items-table th,
 .items-table td {
-  border: 1px solid var(--pe-grid-border, #64748b);
-  padding: 0.14rem 0.38rem;
+  border: 1px solid var(--pe-border);
+  border-left: none;
+  border-right: none;
+  padding: 0.14rem 0.4rem;
   text-align: left;
   font-size: 0.72rem;
   vertical-align: middle;
@@ -349,44 +453,36 @@ textarea:focus {
 }
 
 .items-table thead th {
-  background: var(--pe-hdr, #1e3a5f);
-  color: #ffffff;
+  background: var(--pe-surface-3);
+  color: var(--pe-text-2);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 10px;
   height: 30px;
-  padding: 0.3rem 0.38rem;
-  border: 1px solid var(--pe-hdr-border, #16324f);
-  border-bottom: 2px solid var(--pe-hdr-border, #16324f);
+  padding: 0.3rem 0.4rem;
+  border-bottom: 2px solid var(--pe-accent);
   position: sticky;
   top: 0;
   z-index: 2;
 }
 
-.items-table tbody {
-  background: #ffffff;
-}
-
 .items-table tbody tr {
-  background: #ffffff;
+  background: var(--pe-surface);
+  transition: background 120ms ease;
 }
 
 .items-table tbody tr:hover {
-  background: var(--pe-selected, #eff6ff);
-}
-
-.items-table tbody tr:hover td {
-  border-color: var(--pe-grid-border, #64748b);
+  background: var(--pe-surface-2);
 }
 
 /* Selected row (checkbox checked) — accent bar + soft highlight */
 .items-table tbody tr:has(input[type="checkbox"]:checked) {
-  background: var(--pe-selected, #eff6ff);
+  background: var(--pe-accent-soft);
 }
 
 .items-table tbody tr:has(input[type="checkbox"]:checked) td:first-child {
-  box-shadow: inset 3px 0 0 0 var(--pe-accent, #2563eb);
+  box-shadow: inset 3px 0 0 0 var(--pe-accent);
 }
 
 .product-col {
@@ -394,8 +490,8 @@ textarea:focus {
 }
 
 .code-cell {
-  color: var(--pe-text-2, #475569);
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color: var(--pe-text-2);
+  font-family: var(--pe-font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -410,13 +506,16 @@ textarea:focus {
 .check-col input {
   width: auto;
   height: auto;
+  min-height: auto;
   cursor: pointer;
-  accent-color: var(--accent, #2563eb);
+  accent-color: var(--pe-accent);
   margin: 0;
+  padding: 0;
+  border: none;
 }
 
 .items-table thead .check-col input {
-  accent-color: #ffffff;
+  accent-color: var(--pe-accent);
 }
 
 .delete-col {
@@ -424,41 +523,43 @@ textarea:focus {
   text-align: center !important;
 }
 
-/* Grid inputs — compact, grid-border, clear focus */
+/* Grid inputs — compact, clear focus */
 .items-table input,
 .items-table select {
   width: 100%;
   min-width: 0;
-  padding: 0.18rem 0.3rem;
+  padding: 0 0.3rem;
   height: 24px;
   font-size: 0.72rem;
-  border: 1px solid var(--pe-grid-border, #64748b);
-  border-radius: 2px;
-  background: #ffffff;
-  color: var(--pe-text, #141b2d);
+  border: 1px solid var(--pe-border);
+  border-radius: 3px;
+  background: var(--pe-surface);
+  color: var(--pe-text);
+  box-shadow: none;
 }
 
 .items-table input:focus,
 .items-table select:focus {
-  background: var(--pe-focus, #e8f0fe);
-  border: 2px solid var(--pe-accent, #2563eb);
+  background: var(--pe-surface);
+  border-color: var(--pe-accent);
+  box-shadow: 0 0 0 2px var(--pe-focus-ring);
   outline: none;
-  box-shadow: none;
-  caret-color: transparent;
+  caret-color: var(--pe-text);
 }
 
 /* Readonly / calculated cells */
 .items-table input[readonly] {
-  background: var(--pe-readonly, #f8fafc);
-  color: var(--pe-text-2, #475569);
+  background: var(--pe-surface-2);
+  color: var(--pe-text-2);
+  border-color: var(--pe-border);
   caret-color: transparent;
   cursor: default;
 }
 
 .items-table input[readonly]:focus {
-  background: var(--pe-readonly, #f8fafc);
-  color: var(--pe-text-2, #475569);
-  border: 1px solid var(--pe-grid-border, #64748b);
+  background: var(--pe-surface-2);
+  color: var(--pe-text-2);
+  border-color: var(--pe-border);
   box-shadow: none;
 }
 
@@ -481,12 +582,26 @@ textarea:focus {
 
 .total-col {
   font-weight: 700;
-  color: var(--pe-text, #141b2d);
+  color: var(--pe-text);
 }
 
 .num {
   text-align: right !important;
   font-variant-numeric: tabular-nums;
+}
+
+.empty-row td {
+  padding: 14px 0.4rem;
+  text-align: center;
+  color: var(--pe-text-3);
+  font-size: 0.74rem;
+  background: var(--pe-surface-2);
+}
+
+.empty-row kbd {
+  border: 1px solid var(--pe-border-strong);
+  background: var(--pe-surface);
+  color: var(--pe-text-2);
 }
 
 .icon {
@@ -495,19 +610,35 @@ textarea:focus {
   justify-content: center;
   width: 22px;
   height: 22px;
-  border: 1px solid var(--pe-light-border, #cbd5e1);
-  border-radius: 4px;
-  background: #ffffff;
-  color: #dc2626;
+  border: 1px solid var(--pe-border);
+  border-radius: var(--pe-radius);
+  background: var(--pe-surface);
+  color: var(--pe-danger);
   cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
 }
 
-/* ---------- Product search panel (existing behavior) ---------- */
+.icon:hover:not(:disabled) {
+  background: var(--pe-danger-soft);
+  border-color: var(--pe-danger);
+}
+
+.icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon lucide-icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* ============================ Product search panel ============================ */
 .product-panel {
-  border: 1px solid var(--pe-grid-border, #64748b);
-  border-radius: 6px;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  border: 1px solid var(--pe-border-strong);
+  border-radius: var(--pe-radius);
+  background: var(--pe-surface);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -517,12 +648,22 @@ textarea:focus {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 8px 12px;
-  background: var(--pe-readonly, #f8fafc);
-  border-bottom: 1px solid var(--pe-light-border, #cbd5e1);
-  font-size: 0.78rem;
+  padding: 7px 12px;
+  background: var(--pe-surface-2);
+  border-bottom: 1px solid var(--pe-border);
+  font-size: 0.76rem;
   font-weight: 700;
-  color: var(--pe-hdr, #1e3a5f);
+  color: var(--pe-text);
+}
+
+.product-panel-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.product-panel-head lucide-icon {
+  color: var(--pe-accent);
 }
 
 .product-panel .table-scroll {
@@ -539,24 +680,23 @@ textarea:focus {
 
 .ac-table th {
   text-align: left;
-  padding: 0.28rem 0.42rem;
-  background: var(--pe-hdr, #1e3a5f);
-  color: #ffffff;
+  padding: 0.28rem 0.45rem;
+  background: var(--pe-surface-3);
+  color: var(--pe-text-2);
   font-weight: 700;
-  font-size: 11px;
-  height: 32px;
+  font-size: 10px;
+  height: 28px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border: 1px solid var(--pe-hdr-border, #16324f);
-  border-bottom: 2px solid var(--pe-hdr-border, #16324f);
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--pe-accent);
   position: sticky;
   top: 0;
   z-index: 1;
 }
 
 .ac-table td {
-  padding: 0.28rem 0.42rem;
-  border-bottom: 1px solid var(--pe-light-border, #cbd5e1);
+  padding: 0.3rem 0.45rem;
+  border-bottom: 1px solid var(--pe-border);
 }
 
 .ac-row {
@@ -565,39 +705,41 @@ textarea:focus {
 
 .ac-row.hi,
 .ac-row:hover {
-  background: var(--pe-focus, #e8f0fe);
-  color: var(--pe-hdr, #1e3a5f);
-  box-shadow: inset 3px 0 0 0 var(--pe-accent, #2563eb);
+  background: var(--pe-accent-soft);
+  color: var(--pe-text);
+  box-shadow: inset 3px 0 0 0 var(--pe-accent);
 }
 
 .ac-code-cell {
-  color: var(--pe-text-2, #475569);
+  color: var(--pe-text-2);
+  font-family: var(--pe-font-mono);
   white-space: nowrap;
 }
 
 .ac-name-cell {
-  color: var(--pe-text, #141b2d);
+  color: var(--pe-text);
 }
 
 .ac-empty {
-  padding: 0.5rem;
-  color: var(--pe-text-2, #475569);
+  padding: 0.6rem;
+  color: var(--pe-text-3);
   font-size: 0.72rem;
-  background: #ffffff;
+  background: var(--pe-surface);
 }
 
-/* ---------- Grid hint / shortcut bar ---------- */
+/* ============================ Keyboard command bar ============================ */
 .grid-hint {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.9rem;
   font-size: 0.68rem;
-  color: var(--pe-text-2, #475569);
+  color: var(--pe-text-2);
   flex-shrink: 0;
-  border-top: 1px solid var(--pe-grid-border, #64748b);
-  background: #ffffff;
-  padding: 0.4rem 0.15rem 0.15rem;
+  border-top: 1px solid var(--pe-border);
+  background: var(--pe-surface-2);
+  margin: 0 -12px;
+  padding: 5px 12px;
 }
 
 .grid-hint b {
@@ -605,33 +747,41 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   min-width: 22px;
-  padding: 0.13rem 0.32rem;
-  border: 1px solid var(--pe-key-border, #94a3b8);
+  padding: 0.13rem 0.34rem;
+  border: 1px solid var(--pe-border-strong);
+  border-bottom-width: 2px;
   border-radius: 4px;
-  background: #ffffff;
-  color: var(--pe-hdr, #1e3a5f);
-  font-size: 11px;
+  background: var(--pe-surface);
+  color: var(--pe-text-2);
+  font-size: 10px;
   font-weight: 700;
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.15);
+  font-family: var(--pe-font-mono);
   line-height: 1.2;
 }
 
-/* ---------- Totals (frozen / sticky) ---------- */
+.grid-hint span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ============================ Totals ============================ */
 .totals-row {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 0.6rem 1rem;
-  padding: 0.55rem 0.15rem 0.3rem;
-  border-top: 2px solid var(--pe-hdr, #1e3a5f);
-  background: #ffffff;
+  gap: 0.6rem 1.1rem;
+  padding: 0.5rem 0.1rem 0.25rem;
+  border-top: 2px solid var(--pe-accent);
+  background: var(--pe-surface-2);
+  margin: 0 -12px;
+  padding-left: 12px;
+  padding-right: 12px;
   flex-shrink: 0;
   position: sticky;
   bottom: 0;
   z-index: 4;
-  margin-top: 0.1rem;
 }
 
 .total-item {
@@ -644,39 +794,41 @@ textarea:focus {
 }
 
 .total-item span {
-  font-size: 0.66rem;
-  color: var(--pe-text-2, #475569);
+  font-size: 0.65rem;
+  color: var(--pe-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .total-item strong {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--pe-text, #141b2d);
+  color: var(--pe-text);
 }
 
 .grand-total {
   padding-left: 1rem;
-  border-left: 2px solid var(--pe-hdr, #1e3a5f);
+  border-left: 2px solid var(--pe-accent);
   min-width: 120px;
 }
 
 .grand-total span {
-  color: var(--pe-hdr, #1e3a5f);
+  color: var(--pe-accent);
   font-weight: 700;
 }
 
 .grand-total strong {
   font-size: 19px;
   font-weight: 800;
-  color: var(--pe-accent, #2563eb);
+  color: var(--pe-accent);
 }
 
 .empty {
-  color: var(--pe-text-2, #475569);
+  color: var(--pe-text-2);
   padding: 0.5rem 0;
 }
 
-/* ---------- Keyboard help modal ---------- */
+/* ============================ Keyboard help modal ============================ */
 .kb-overlay {
   position: fixed;
   inset: 0;
@@ -689,8 +841,9 @@ textarea:focus {
 
 .kb-modal {
   width: min(520px, 92vw);
-  background: var(--surface, #ffffff);
-  border-radius: 12px;
+  background: var(--pe-surface);
+  border: 1px solid var(--pe-border);
+  border-radius: var(--radius);
   padding: 1rem 1.2rem;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.22);
 }
@@ -706,51 +859,81 @@ textarea:focus {
 .kb-head h3 {
   margin: 0;
   font-size: 0.9rem;
+  color: var(--pe-text);
 }
 
 .kb-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.78rem;
+  color: var(--pe-text-2);
 }
 
 .kb-table td {
-  border-bottom: 1px solid var(--border, #e2e7f0);
+  border-bottom: 1px solid var(--pe-border);
   padding: 0.32rem 0.3rem;
 }
 
 kbd {
   display: inline-block;
   padding: 0.09rem 0.38rem;
-  border: 1px solid var(--border, #e2e7f0);
-  background: var(--surface-2, #f8fafd);
+  border: 1px solid var(--pe-border-strong);
+  border-bottom-width: 2px;
+  background: var(--pe-surface-2);
   border-radius: 4px;
   font-size: 0.72rem;
-  font-family: ui-monospace, monospace;
+  font-family: var(--pe-font-mono);
+  color: var(--pe-text);
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 1600px) {
-  .purchase-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
+/* ============================ Validation / state helpers ============================ */
+.validation-msg {
+  color: var(--pe-danger);
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 2px;
+  padding: 3px 7px;
+  background: var(--pe-danger-soft);
+  border: 1px solid transparent;
+  border-left: 3px solid var(--pe-danger);
+  border-radius: var(--pe-radius);
 }
 
-@media (max-width: 1400px) {
-  .purchase-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+.readonly-field {
+  background: var(--pe-surface-2) !important;
+  color: var(--pe-text-2) !important;
+  border-color: var(--pe-border) !important;
+  caret-color: transparent;
+  cursor: default;
 }
 
+.readonly-field:focus {
+  background: var(--pe-surface-2) !important;
+  color: var(--pe-text-2) !important;
+  border-color: var(--pe-border) !important;
+  box-shadow: none;
+}
+
+.disabled-select {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tax Mode select — subtle emphasis */
+.purchase-grid .info-group label select[data-field="taxMode"] {
+  font-weight: 600;
+  color: var(--pe-accent);
+}
+
+/* ============================ Responsive ============================ */
+/* Purchase info stays in ONE row on desktop/laptop; stacks only on small screens */
 @media (max-width: 1100px) {
   .purchase-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-}
 
-@media (max-width: 860px) {
-  .purchase-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .totals-row {
+    justify-content: flex-start;
   }
 }
 
@@ -768,52 +951,4 @@ kbd {
   .purchase-grid {
     grid-template-columns: 1fr;
   }
-}
-
-/* ---------- Validation Messages ---------- */
-.validation-msg {
-  color: #dc2626;
-  font-size: 0.72rem;
-  font-weight: 600;
-  margin-top: 2px;
-  padding: 2px 6px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 4px;
-}
-
-/* ---------- Readonly Field ---------- */
-.readonly-field {
-  background: var(--pe-readonly, #f8fafc) !important;
-  color: var(--pe-text-2, #475569) !important;
-  caret-color: transparent;
-  cursor: default;
-}
-
-.readonly-field:focus {
-  background: var(--pe-readonly, #f8fafc) !important;
-  color: var(--pe-text-2, #475569) !important;
-  border: 1px solid var(--pe-grid-border, #64748b);
-  box-shadow: none;
-}
-
-/* ---------- Disabled Select ---------- */
-.disabled-select {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ---------- Tax Mode Select ---------- */
-.purchase-grid .info-group label select[data-field="taxMode"] {
-  font-weight: 600;
-  color: var(--pe-accent, #2563eb);
-}
-
-/* ---------- Total Row - Paid/Balance ---------- */
-.totals-row .total-item.paid-item strong {
-  color: var(--pe-accent, #2563eb);
-}
-
-.totals-row .total-item.balance-item strong {
-  color: #16a34a;
 }
