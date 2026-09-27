@@ -143,9 +143,10 @@ export class CountersPage implements OnInit {
     const storeId = this.userModel['storeId'];
     if (storeId) {
       try {
-        this.generatedCode = await this.pos.counters.getNextCode(storeId);
+        this.generatedCode = await this.pos.counters.getNextCounterCode(storeId);
         this.userModel['counterCode'] = this.generatedCode;
-      } catch {
+      } catch (err) {
+        console.error('generateCounterCode failed:', err);
         this.generatedCode = '';
         this.userModel['counterCode'] = '';
       }
@@ -156,13 +157,23 @@ export class CountersPage implements OnInit {
 
   protected async createCounter(): Promise<void> {
     this.editing.set(null);
+    
+    // Ensure stores are loaded
+    if (this.stores().length === 0) {
+      await this.loadStores();
+    }
+    
+    const storeId = this.stores()[0]?.id ?? null;
     this.userModel = {
-      storeId: this.stores()[0]?.id ?? null,
+      storeId,
       counterCode: '',
       counterName: '',
       isActive: true,
     };
     this.showEntry.set(true);
+    if (storeId) {
+      await this.generateCounterCode();
+    }
   }
 
   protected editCounter(row: Record<string, any>): void {

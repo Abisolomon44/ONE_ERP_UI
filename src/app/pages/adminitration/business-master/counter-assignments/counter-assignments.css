@@ -1,0 +1,5 @@
+/* Counter Assignments Page Styles */
+:host {
+  display: block;
+  height: 100%;
+}

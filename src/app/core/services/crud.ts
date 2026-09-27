@@ -108,4 +108,9 @@ export class PagedCrudService<TDto, TCreate = Partial<TDto>, TUpdate = Partial<T
     if (branchId != null) params = params.set('branchId', branchId);
     return firstValueFrom(this.http.get<string>(`${this.baseUrl}/next-code`, { params }));
   }
+
+  getNextCounterCode(storeId: number): Promise<string> {
+    const params = new HttpParams().set('storeId', storeId);
+    return firstValueFrom(this.http.get<string>(`${this.baseUrl}/next-code`, { params }));
+  }
 }

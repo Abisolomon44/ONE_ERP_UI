@@ -193,6 +193,20 @@
                 {{ pt.name }}</span
               >
             }
+            @if (canEdit() && priceListId && filteredRows().length > 0) {
+              <div class="legend-actions">
+                @if (editingPriceTypeIds().size === 0 || editingPriceTypeIds().size < sortedPriceTypes().length) {
+                  <button class="btn btn-sm btn-secondary" type="button" (click)="startEditAll()" [disabled]="saving()">
+                    <i-lucide name="Edit" [size]="12"></i-lucide> Edit All
+                  </button>
+                }
+                @if (editingPriceTypeIds().size > 0) {
+                  <button class="btn btn-sm btn-secondary" type="button" (click)="cancelEditAll()" [disabled]="saving()">
+                    <i-lucide name="X" [size]="12"></i-lucide> Cancel
+                  </button>
+                }
+              </div>
+            }
           </div>
         }
 
@@ -230,17 +244,38 @@
                           <span>{{ pt.name }}</span>
                         </div>
                         <div class="price-th-actions">
-                          <button
-                            class="btn btn-sm btn-primary"
-                            type="button"
-                            (click)="savePriceType(pt.priceTypeId)"
-                            [disabled]="
-                              !canEdit() || saving() || !priceListId || filteredRows().length === 0
-                            "
-                            [title]="'Save ' + pt.name"
-                          >
-                            <i-lucide name="Save" [size]="12"></i-lucide>
-                          </button>
+                          @if (canEdit() && priceListId && filteredRows().length > 0) {
+                            @if (isEditingPriceType(pt.priceTypeId)) {
+                              <button
+                                class="btn btn-sm btn-primary"
+                                type="button"
+                                (click)="savePriceType(pt.priceTypeId)"
+                                [disabled]="saving()"
+                                [title]="'Save ' + pt.name"
+                              >
+                                <i-lucide name="Save" [size]="12"></i-lucide>
+                              </button>
+                              <button
+                                class="btn btn-sm btn-secondary"
+                                type="button"
+                                (click)="toggleEditPriceType(pt.priceTypeId)"
+                                [disabled]="saving()"
+                                title="Cancel editing"
+                              >
+                                <i-lucide name="X" [size]="12"></i-lucide>
+                              </button>
+                            } @else {
+                              <button
+                                class="btn btn-sm btn-secondary"
+                                type="button"
+                                (click)="toggleEditPriceType(pt.priceTypeId)"
+                                [disabled]="saving()"
+                                [title]="'Edit ' + pt.name"
+                              >
+                                <i-lucide name="Edit" [size]="12"></i-lucide>
+                              </button>
+                            }
+                          }
                         </div>
                       </th>
                     }
@@ -265,7 +300,8 @@
                             class="price-input"
                             [value]="getPrice(row, pt.priceTypeId) | number: '1.2-2'"
                             (change)="onPriceChange(row, pt.priceTypeId, $event)"
-                            [disabled]="!canEdit() || saving()"
+                            [disabled]="!canEdit() || saving() || !isEditingPriceType(pt.priceTypeId)"
+                            [readonly]="!isEditingPriceType(pt.priceTypeId)"
                             step="0.01"
                             min="0"
                           />

@@ -1,27 +1,20 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
-import { firstValueFrom } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
 import { MasterPage, MasterConfig } from '../../../shared/master-page/master-page';
 import {
   PosService,
   POSSessionDto,
+  CounterOperatorAssignmentDto,
   CreatePOSSessionRequest,
   UpdatePOSSessionRequest,
 } from '../../../../core/services/pos_service';
 
-interface UserOption {
-  userId: number;
-  username: string;
-  fullName: string;
-}
-
-interface PaginatedUsers {
-  items: UserOption[];
-}
-
 type POSSessionRow = POSSessionDto & { status: string };
+
+const STATUS_OPEN = 1;
+const STATUS_CLOSED = 2;
+const STATUS_VOID = 3;
 
 @Component({
   selector: 'app-pos-sessions',
@@ -32,16 +25,11 @@ type POSSessionRow = POSSessionDto & { status: string };
 })
 export class PosSessionsPage implements OnInit {
   private readonly pos = inject(PosService);
-  private readonly http = inject(HttpClient);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly showEntry = signal(false);
   protected readonly sessions = signal<POSSessionRow[]>([]);
-  protected readonly rawSessions = signal<POSSessionDto[]>([]);
-  protected readonly stores = signal<any[]>([]);
-  protected readonly counters = signal<any[]>([]);
-  protected readonly users = signal<UserOption[]>([]);
   protected readonly editing = signal<POSSessionDto | null>(null);
 
   protected userModel: Record<string, any> = {};
@@ -62,47 +50,61 @@ export class PosSessionsPage implements OnInit {
     allowRefresh: true,
 
     columns: [
-      { field: 'sessionNumber', header: 'Session No' },
+      { field: 'sessionNumber', header: 'Session No', width: '150px' },
       { field: 'storeName', header: 'Store' },
       { field: 'counterName', header: 'Counter' },
-      { field: 'cashierUserName', header: 'Cashier' },
+      { field: 'operatorNameSnapshot', header: 'Operator' },
       { field: 'openingCash', header: 'Opening', type: 'currency', width: '110px' },
-      { field: 'closingCash', header: 'Closing', type: 'currency', width: '110px' },
+      { field: 'expectedClosingCash', header: 'Expected', type: 'currency', width: '110px' },
+      { field: 'actualClosingCash', header: 'Actual', type: 'currency', width: '110px' },
+      { field: 'cashDifference', header: 'Difference', type: 'currency', width: '110px' },
       { field: 'status', header: 'Status', type: 'badge', width: '100px' },
     ],
 
     tabs: [
       {
         name: 'Session',
-        fields: ['storeId', 'counterId', 'cashierUserId', 'openingCash', 'closingCash'],
+        fields: ['storeId', 'counterId', 'operatorId', 'operatorName', 'openingCash', 'closingCash'],
       },
       { name: 'Status', fields: ['status'] },
     ],
 
+    // Company and Branch are context, resolved by the backend from the Store.
     fields: [
-      { name: 'storeId', label: 'Store', type: 'dropdown', options: [] },
-      { name: 'counterId', label: 'Counter', type: 'dropdown', options: [] },
-      { name: 'cashierUserId', label: 'Cashier', type: 'dropdown', options: [] },
+      { name: 'storeId', label: 'Store', type: 'dropdown', required: true, options: [] },
+      { name: 'counterId', label: 'Counter', type: 'dropdown', required: true, options: [], disabled: true },
+      { name: 'operatorId', label: 'Operator', type: 'dropdown', required: true, options: [], disabled: true },
+      { name: 'operatorName', label: 'Operator Name', type: 'text', readonly: true },
       { name: 'openingCash', label: 'Opening Cash', type: 'number', required: true },
       { name: 'closingCash', label: 'Closing Cash', type: 'number' },
-      { name: 'status', label: 'Status', type: 'dropdown', readonly: true, options: [
-        { value: 1, label: 'Open (1)' },
-        { value: 2, label: 'Closed (2)' },
-        { value: 3, label: 'Void (3)' },
-      ] },
+      {
+        name: 'status',
+        label: 'Status',
+        type: 'dropdown',
+        disabled: true,
+        options: [
+          { value: STATUS_OPEN, label: 'Open' },
+          { value: STATUS_CLOSED, label: 'Closed' },
+          { value: STATUS_VOID, label: 'Void' },
+        ],
+      },
     ],
   };
 
   ngOnInit(): void {
-    void this.loadDropdowns();
+    void this.loadStores();
     void this.load();
   }
 
+  //===========================
+  // List
+  //===========================
+
   private statusLabel(status: number): string {
     switch (status) {
-      case 1: return 'Open';
-      case 2: return 'Closed';
-      case 3: return 'Void';
+      case STATUS_OPEN: return 'Open';
+      case STATUS_CLOSED: return 'Closed';
+      case STATUS_VOID: return 'Void';
       default: return `Unknown (${status})`;
     }
   }
@@ -118,9 +120,10 @@ export class PosSessionsPage implements OnInit {
         size: 100,
         search: '',
       });
-      const raw = res.items ?? [];
-      this.rawSessions.set(raw);
-      this.sessions.set(raw.map((s) => ({ ...s, status: this.statusLabel(s.status) }) as POSSessionRow));
+      const rows = (res.items ?? []) as POSSessionDto[];
+      this.sessions.set(
+        rows.map((s) => ({ ...s, status: this.statusLabel(s.status) })) as POSSessionRow[],
+      );
     } catch (err) {
       console.error('[PosSessionsPage] load failed:', err);
     } finally {
@@ -128,73 +131,166 @@ export class PosSessionsPage implements OnInit {
     }
   }
 
-  private async loadDropdowns(): Promise<void> {
+  private async loadStores(): Promise<void> {
     try {
       const companyId = +(localStorage.getItem('companyId') ?? '1');
-
-      const [storesRes, countersRes, usersRes] = await Promise.all([
-        this.pos.stores.getPaged({ companyId, page: 1, size: 200, search: '' }),
-        this.pos.counters.getPaged({ page: 1, size: 200, search: '' }),
-        firstValueFrom(this.http.get<PaginatedUsers>(`/api/users?page=1&size=200&search=`)),
-      ]);
-
-      const stores = storesRes.items ?? [];
-      const counters = countersRes.items ?? [];
-      this.stores.set(stores);
-      this.counters.set(counters);
-      const users = usersRes?.items ?? [];
-      this.users.set(users);
-
-      this.setOptions(
-        'storeId',
-        stores.map((s: any) => ({ value: s.id, label: s.storeName })),
-      );
-      this.setOptions(
-        'counterId',
-        counters.map((c: any) => ({ value: c.id, label: c.counterName })),
-      );
-      this.setOptions(
-        'cashierUserId',
-        users.map((u) => ({ value: u.userId, label: `${u.fullName} (${u.username})` })),
-      );
+      const res = await this.pos.stores.getPaged({ companyId, page: 1, size: 200, search: '' });
+      this.patchField('storeId', {
+        options: (res.items ?? []).map((s) => ({ value: s.id, label: s.storeName })),
+      });
     } catch (err) {
-      console.error('loadDropdowns failed:', err);
+      console.error('[PosSessionsPage] loadStores failed:', err);
     }
   }
 
-  private setOptions(fieldName: string, options: { value: any; label: string }[]): void {
+  //===========================
+  // Cascades: Store -> Counter -> Operator
+  //===========================
+
+  private async loadCounters(storeId: number): Promise<void> {
+    try {
+      const res = await this.pos.counters.getPaged({ storeId, page: 1, size: 200, search: '' });
+      this.patchField('counterId', {
+        options: (res.items ?? []).map((c) => ({ value: c.id, label: c.counterName })),
+        disabled: false,
+      });
+    } catch (err) {
+      console.error('[PosSessionsPage] loadCounters failed:', err);
+      this.patchField('counterId', { options: [], disabled: true });
+    }
+  }
+
+  /** Operators are constrained to the counter's active assignments. */
+  private async loadOperators(counterId: number): Promise<void> {
+    try {
+      const assignments = await this.pos.operatorsByCounter(counterId);
+      this.patchField('operatorId', {
+        options: assignments.map((a: CounterOperatorAssignmentDto) => ({
+          value: a.operatorId,
+          label: `${a.operatorName} (${a.operatorCode})`,
+        })),
+        disabled: false,
+      });
+    } catch (err) {
+      console.error('[PosSessionsPage] loadOperators failed:', err);
+      this.patchField('operatorId', { options: [], disabled: true });
+    }
+  }
+
+  protected onFieldChange(event: { name: string; value: any }): void {
+    this.userModel[event.name] = event.value;
+
+    if (event.name === 'storeId') {
+      this.clearCounterAndOperator();
+      if (event.value) void this.loadCounters(event.value);
+      return;
+    }
+
+    if (event.name === 'counterId') {
+      this.clearOperator();
+      if (event.value) void this.loadOperators(event.value);
+      return;
+    }
+
+    if (event.name === 'operatorId') {
+      this.userModel['operatorName'] = event.value ? this.operatorName(event.value) : '';
+    }
+  }
+
+  private operatorName(operatorId: number): string {
+    const option = this.fieldByName('operatorId')?.options?.find((o) => o.value === operatorId);
+    if (!option) return '';
+    const match = option.label.match(/^(.*) \(/);
+    return match ? match[1] : option.label;
+  }
+
+  /** Counter options are store-scoped, so both are dropped when the store changes. */
+  private clearCounterAndOperator(): void {
+    this.userModel['counterId'] = null;
+    this.userModel['operatorId'] = null;
+    this.userModel['operatorName'] = '';
+    this.patchField('counterId', { options: [], disabled: true });
+    this.patchField('operatorId', { options: [], disabled: true });
+  }
+
+  private clearOperator(): void {
+    this.userModel['operatorId'] = null;
+    this.userModel['operatorName'] = '';
+    this.patchField('operatorId', { options: [], disabled: true });
+  }
+
+  //===========================
+  // Config helpers
+  //===========================
+
+  private fieldByName(name: string) {
+    return this.config.fields.find((f) => f.name === name);
+  }
+
+  private patchField(name: string, patch: Record<string, unknown>): void {
     this.config = {
       ...this.config,
-      fields: this.config.fields.map((f) =>
-        f.name === fieldName ? { ...f, options } : f
-      ),
+      fields: this.config.fields.map((f) => (f.name === name ? { ...f, ...patch } : f)),
     };
   }
+
+  //===========================
+  // Entry lifecycle
+  //===========================
 
   protected createSession(): void {
     this.editing.set(null);
     this.userModel = {
-      storeId: this.stores()[0]?.id ?? null,
-      counterId: this.counters().find((c) => c.storeId === this.userModel['storeId'])?.id ?? null,
-      cashierUserId: null,
+      storeId: null,
+      counterId: null,
+      operatorId: null,
+      operatorName: '',
       openingCash: 0,
       closingCash: null,
-      status: 1,
+      status: STATUS_OPEN,
     };
+    this.clearCounterAndOperator();
+    // A new session always starts Open and the user cannot choose otherwise.
+    this.patchField('status', {
+      disabled: true,
+      options: [
+        { value: STATUS_OPEN, label: 'Open' },
+        { value: STATUS_CLOSED, label: 'Closed' },
+        { value: STATUS_VOID, label: 'Void' },
+      ],
+    });
     this.showEntry.set(true);
   }
 
-  protected editSession(row: Record<string, any>): void {
-    const original = this.rawSessions().find((s) => s.sessionNumber === row['sessionNumber']) ?? null;
-    this.editing.set(original ?? (row as POSSessionDto));
+  protected async editSession(row: Record<string, any>): Promise<void> {
+    const session = row as unknown as POSSessionDto;
+    this.editing.set(session);
     this.userModel = {
-      storeId: original?.storeId ?? row['storeId'] ?? null,
-      counterId: original?.counterId ?? row['counterId'] ?? null,
-      cashierUserId: original?.cashierUserId ?? row['cashierUserId'] ?? null,
-      openingCash: original?.openingCash ?? row['openingCash'] ?? 0,
-      closingCash: original?.closingCash ?? row['closingCash'] ?? null,
-      status: original?.status ?? row['status'] ?? 1,
+      storeId: session.storeId ?? null,
+      counterId: session.counterId ?? null,
+      operatorId: session.operatorId ?? null,
+      operatorName: session.operatorNameSnapshot ?? '',
+      openingCash: session.openingCash ?? 0,
+      closingCash: session.actualClosingCash ?? 0,
+      status: session.status ?? STATUS_OPEN,
     };
+
+    this.patchField('operatorName', { readonly: true });
+    if (session.storeId) await this.loadCounters(session.storeId);
+    if (session.counterId) await this.loadOperators(session.counterId);
+
+    // Status is only selectable while the session is still open.
+    const closable = session.status === STATUS_OPEN;
+    this.patchField('status', {
+      disabled: !closable,
+      options: closable
+        ? [
+            { value: STATUS_CLOSED, label: 'Closed' },
+            { value: STATUS_VOID, label: 'Void' },
+          ]
+        : [{ value: session.status, label: this.statusLabel(session.status) }],
+    });
+
     this.showEntry.set(true);
   }
 
@@ -205,27 +301,16 @@ export class PosSessionsPage implements OnInit {
       const editing = this.editing();
       if (editing) {
         const payload: UpdatePOSSessionRequest = {
-          closingCash: this.userModel['closingCash'] ?? null,
-          status: this.userModel['status'] ?? 2,
+          actualClosingCash: this.userModel['closingCash'] ?? null,
+          status: this.userModel['status'] ?? STATUS_CLOSED,
+          version: editing.version ?? null,
         };
         await this.pos.posSessions.update(editing.id, payload);
       } else {
-        const storeId = this.userModel['storeId'] ?? null;
-        const counterId = this.userModel['counterId'] ?? null;
-        const store = this.stores().find((s) => s.id === storeId);
-        const counter = this.counters().find((c) => c.id === counterId);
-        const user = this.users().find((u) => u.userId === this.userModel['cashierUserId']);
         const payload: CreatePOSSessionRequest = {
-          companyId: +(localStorage.getItem('companyId') ?? '1'),
-          branchId: store?.branchId ?? null,
-          storeId,
-          counterId,
-          cashierUserId: this.userModel['cashierUserId'] ?? null,
-          companyName: null,
-          branchName: null,
-          storeName: store?.storeName ?? null,
-          counterName: counter?.counterName ?? null,
-          cashierUserName: user ? user.fullName : null,
+          storeId: this.userModel['storeId'],
+          counterId: this.userModel['counterId'],
+          operatorId: this.userModel['operatorId'],
           openingCash: this.userModel['openingCash'] ?? 0,
         };
         await this.pos.posSessions.create(payload);

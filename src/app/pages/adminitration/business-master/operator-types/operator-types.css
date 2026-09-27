@@ -1,0 +1,5 @@
+/* Operator Types Page Styles */
+:host {
+  display: block;
+  height: 100%;
+}

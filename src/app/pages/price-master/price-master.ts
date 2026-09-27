@@ -19,6 +19,7 @@ import {
   StockService,
   PriceMasterProductDto,
   ProductSource,
+  PriceListPriceTypeDto,
 } from '../../core/services/master_service';
 import { Currency } from '../../core/models';
 import { OrganizationService, BranchDto, WarehouseDto } from '../../core/services/organization_service';
@@ -110,6 +111,9 @@ export class PriceMasterPage implements OnInit {
   protected readonly isEmpty = computed(() => !this.loading() && !this.loadingProducts() && this.filteredRows().length === 0);
 
   protected readonly isBranchRequired = computed(() => this.productSource === 'purchase');
+
+  // Editing state - track which price types are being edited
+  protected readonly editingPriceTypeIds = signal<Set<number>>(new Set());
 
   // ===================== Init =====================
   ngOnInit(): void {
@@ -425,13 +429,33 @@ export class PriceMasterPage implements OnInit {
       return;
     }
 
-    // Filter price types to only show the one associated with this price list
-    const selectedPriceList = this.priceLists().find(pl => pl.priceListId === this.priceListId);
-    if (selectedPriceList) {
-      this.priceTypes.set(this.priceTypes().filter(pt => pt.priceTypeId === selectedPriceList.priceTypeId));
-    }
+    // Load price types from junction table (PriceListPriceTypes)
+    await this.loadPriceTypesForPriceList(this.priceListId);
 
     await this.loadPriceListDetails(this.priceListId);
+  }
+
+  private async loadPriceTypesForPriceList(priceListId: number): Promise<void> {
+    try {
+      const junctionTypes = await this.billing.priceLists.getPriceTypes(priceListId);
+      if (junctionTypes && junctionTypes.length > 0) {
+        // Get full price type details for the associated price types
+        const priceTypeIds = junctionTypes.map(jt => jt.priceTypeId);
+        const allPriceTypes = await this.billing.priceTypes.getAll(true);
+        const filtered = allPriceTypes.filter(pt => priceTypeIds.includes(pt.priceTypeId));
+        this.priceTypes.set(filtered);
+      } else {
+        // Fallback: if no junction entries, use primary price type
+        const selectedPriceList = this.priceLists().find(pl => pl.priceListId === priceListId);
+        if (selectedPriceList) {
+          const allPriceTypes = await this.billing.priceTypes.getAll(true);
+          this.priceTypes.set(allPriceTypes.filter(pt => pt.priceTypeId === selectedPriceList.priceTypeId));
+        }
+      }
+    } catch (e: any) {
+      console.error('[PriceMaster] loadPriceTypesForPriceList error:', e);
+      this.toast.error('Failed to load price types for price list', e?.message);
+    }
   }
 
   private async loadPriceListDetails(priceListId: number): Promise<void> {
@@ -534,12 +558,18 @@ export class PriceMasterPage implements OnInit {
 
     this.saving.set(true);
     try {
-      const items: CreatePriceListDetailRequest[] = [];
+      // 1. Fetch ALL existing details for this price list
+      const existingDetails = await this.billing.priceLists.getDetails(this.priceListId!);
 
+      // 2. Keep existing details for OTHER price types (not the one being saved)
+      const otherDetails = (existingDetails ?? []).filter(d => (d as any).priceTypeId !== priceTypeId);
+
+      // 3. Build new/updated items for the current price type
+      const newItems: CreatePriceListDetailRequest[] = [];
       for (const row of rowsToSave) {
         const price = row.prices[priceTypeId] ?? 0;
         if (price > 0) { // Only save if price is entered
-          items.push({
+          newItems.push({
             priceListId: this.priceListId!,
             productId: row.productId,
             unitId: row.unitId,
@@ -551,13 +581,27 @@ export class PriceMasterPage implements OnInit {
         }
       }
 
-      if (items.length === 0) {
+      if (newItems.length === 0 && otherDetails.length === 0) {
         this.toast.info('Nothing to save', 'No prices entered for this price type');
         return;
       }
 
-      await this.billing.priceLists.replaceDetails(this.priceListId!, items);
-      this.toast.success('Prices saved', `Saved ${items.length} ${this.sortedPriceTypes().find(pt => pt.priceTypeId === priceTypeId)?.name ?? ''} prices`);
+      // 4. Merge: keep other price types + add/update current price type
+      const mergedItems = [
+        ...otherDetails.map(d => ({
+          priceListId: this.priceListId!,
+          productId: d.productId,
+          unitId: d.unitId ?? null,
+          price: d.price,
+          minimumQuantity: d.minimumQuantity ?? 1,
+          maximumQuantity: d.maximumQuantity ?? null,
+          priceTypeId: (d as any).priceTypeId,
+        })),
+        ...newItems,
+      ];
+
+      await this.billing.priceLists.replaceDetails(this.priceListId!, mergedItems);
+      this.toast.success('Prices saved', `Saved ${newItems.length} ${this.sortedPriceTypes().find(pt => pt.priceTypeId === priceTypeId)?.name ?? ''} prices (other price types preserved)`);
       await this.loadPriceListDetails(this.priceListId!);
     } catch (e: any) {
       this.toast.error('Save failed', e?.message);
@@ -598,13 +642,23 @@ export class PriceMasterPage implements OnInit {
 
     this.saving.set(true);
     try {
+      // 1. Fetch ALL existing details for this price list
+      const existingDetails = await this.billing.priceLists.getDetails(this.priceListId!);
+
+      // 2. Get current price type IDs being displayed
+      const currentPriceTypeIds = this.sortedPriceTypes().map(pt => pt.priceTypeId);
+
+      // 3. Keep existing details for price types NOT in current view
+      const otherDetails = (existingDetails ?? []).filter(d => !currentPriceTypeIds.includes((d as any).priceTypeId));
+
+      // 4. Build new/updated items for all current price types
+      const newItems: CreatePriceListDetailRequest[] = [];
       const priceTypes = this.sortedPriceTypes();
-      const items: CreatePriceListDetailRequest[] = [];
 
       for (const row of rowsToSave) {
         for (const priceType of priceTypes) {
           const price = row.prices[priceType.priceTypeId] ?? 0;
-          items.push({
+          newItems.push({
             priceListId: this.priceListId!,
             productId: row.productId,
             unitId: row.unitId,
@@ -616,8 +670,22 @@ export class PriceMasterPage implements OnInit {
         }
       }
 
-      await this.billing.priceLists.replaceDetails(this.priceListId!, items);
-      this.toast.success('Prices saved', `Saved ${items.length} price entries`);
+      // 5. Merge: keep other price types + add/update current price types
+      const mergedItems = [
+        ...otherDetails.map(d => ({
+          priceListId: this.priceListId!,
+          productId: d.productId,
+          unitId: d.unitId ?? null,
+          price: d.price,
+          minimumQuantity: d.minimumQuantity ?? 1,
+          maximumQuantity: d.maximumQuantity ?? null,
+          priceTypeId: (d as any).priceTypeId,
+        })),
+        ...newItems,
+      ];
+
+      await this.billing.priceLists.replaceDetails(this.priceListId!, mergedItems);
+      this.toast.success('Prices saved', `Saved ${newItems.length} price entries (other price types preserved)`);
       await this.loadPriceListDetails(this.priceListId!);
     } catch (e: any) {
       this.toast.error('Failed to save prices', e?.error?.message ?? e?.message);
@@ -696,5 +764,28 @@ export class PriceMasterPage implements OnInit {
     if (codeLower.includes('online')) return 'Globe';
     if (codeLower.includes('mrp')) return 'Tag';
     return 'DollarSign';
+  }
+
+  protected isEditingPriceType(priceTypeId: number): boolean {
+    return this.editingPriceTypeIds().has(priceTypeId);
+  }
+
+  protected toggleEditPriceType(priceTypeId: number): void {
+    const current = new Set(this.editingPriceTypeIds());
+    if (current.has(priceTypeId)) {
+      current.delete(priceTypeId);
+    } else {
+      current.add(priceTypeId);
+    }
+    this.editingPriceTypeIds.set(current);
+  }
+
+  protected startEditAll(): void {
+    const allIds = new Set(this.sortedPriceTypes().map(pt => pt.priceTypeId));
+    this.editingPriceTypeIds.set(allIds);
+  }
+
+  protected cancelEditAll(): void {
+    this.editingPriceTypeIds.set(new Set());
   }
 }

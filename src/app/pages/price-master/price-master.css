@@ -424,6 +424,32 @@
   background: var(--surface-2);
 }
 
+.price-master-page .price-input:read-only {
+  cursor: default;
+  color: var(--text);
+  background: var(--surface);
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.price-master-page .price-input:read-only:hover {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Legend actions */
+.price-master-page .legend-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.price-master-page .legend-actions .btn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
 .price-master-page .col-qty {
   width: 80px;
   min-width: 75px;

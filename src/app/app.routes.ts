@@ -384,6 +384,51 @@ export const routes: Routes = [
       },
 
       {
+        path: 'operators',
+        title: 'Operators',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/operators/operators').then(
+            (m) => m.OperatorsPage,
+          ),
+      },
+
+      {
+        path: 'counter-assignments',
+        title: 'Counter Assignments',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/counter-assignments/counter-assignments').then(
+            (m) => m.CounterAssignmentsPage,
+          ),
+      },
+
+      {
+        path: 'operator-types',
+        title: 'Operator Types',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/operator-types/operator-types').then(
+            (m) => m.OperatorTypesPage,
+          ),
+      },
+
+      {
+        path: 'store-types',
+        title: 'Store Types',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/storetypes/store-types').then(
+            (m) => m.StoreTypesPage,
+          ),
+      },
+
+      {
+        path: 'sources',
+        title: 'Sources',
+        loadComponent: () =>
+          import('./pages/adminitration/business-master/sources/sources').then(
+            (m) => m.SourcesPage,
+          ),
+      },
+
+      {
         path: 'pos-sessions',
         title: 'POS Sessions',
         loadComponent: () =>

@@ -1,0 +1,246 @@
+<div class="sale-entry-popup-overlay" (click)="onCancel()">
+  <div class="sale-entry-popup" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="popup-title">
+
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="header-main">
+        <div class="header-icon">
+          <lucide-icon name="file-text" size="18"></lucide-icon>
+        </div>
+        <div class="header-text">
+          <h2 id="popup-title">Sale Entry</h2>
+          <p class="subtitle">Confirm your billing context before creating the invoice</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="step-badge">Step 1 of 2</span>
+        <button class="close-btn" type="button" (click)="onCancel()" aria-label="Close popup">
+          <lucide-icon name="x" size="18"></lucide-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Body -->
+    <div class="popup-body">
+
+      <!-- Loading State -->
+      @if (loading()) {
+        <div class="popup-loading" role="status">
+          <div class="spinner"></div>
+          <p class="loading-title">Loading billing context&hellip;</p>
+          <p class="loading-sub">Preparing Company, Branch, Store, Counter and POS Session&hellip;</p>
+        </div>
+      } @else {
+
+        <!-- Error Message -->
+        @if (errorMessage()) {
+          <div class="popup-alert" role="alert">
+            <lucide-icon name="alert-circle" size="17"></lucide-icon>
+            <div class="alert-content">
+              <span class="alert-title">Unable to load billing context</span>
+              <span class="alert-text">{{ errorMessage() }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- Section 1: Business Context (Company → Branch → Store) -->
+        <section class="popup-section">
+          <div class="section-title">
+            <lucide-icon name="building-2" size="14"></lucide-icon>
+            <h3>Business Context</h3>
+            <span class="section-rule"></span>
+          </div>
+          <div class="field-grid two-col">
+            <div class="form-field">
+              <label class="field-label" for="ctx-company">Company</label>
+              <div class="select-wrap">
+                <select
+                  id="ctx-company"
+                  class="field-select"
+                  [(ngModel)]="selectedCompanyId"
+                  (ngModelChange)="onCompanyChange()"
+                  [disabled]="loading()"
+                  aria-label="Select Company">
+                  <option [ngValue]="null">Select company&hellip;</option>
+                  @for (c of context()?.companies ?? []; track c.id) {
+                    <option [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
+                  }
+                </select>
+                <lucide-icon class="select-caret" name="chevron-down" size="15"></lucide-icon>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label" for="ctx-branch">Branch</label>
+              <div class="select-wrap">
+                <select
+                  id="ctx-branch"
+                  class="field-select"
+                  [(ngModel)]="selectedBranchId"
+                  (ngModelChange)="onBranchChange()"
+                  [disabled]="loading() || !selectedCompanyId"
+                  aria-label="Select Branch">
+                  <option [ngValue]="null">Select branch&hellip;</option>
+                  @for (b of context()?.branches ?? []; track b.id) {
+                    <option [ngValue]="b.id">{{ b.name }} ({{ b.code }})</option>
+                  }
+                  @if (!context()?.branches?.length && selectedCompanyId) {
+                    <option disabled>No branches found</option>
+                  }
+                </select>
+                <lucide-icon class="select-caret" name="chevron-down" size="15"></lucide-icon>
+              </div>
+            </div>
+
+            <div class="form-field span-2">
+              <label class="field-label" for="ctx-store">Store</label>
+              <div class="select-wrap">
+                <select
+                  id="ctx-store"
+                  class="field-select"
+                  [(ngModel)]="selectedStoreId"
+                  (ngModelChange)="onStoreChange()"
+                  [disabled]="loading() || !selectedBranchId"
+                  aria-label="Select Store">
+                  <option [ngValue]="null">Select store&hellip;</option>
+                  @for (s of context()?.stores ?? []; track s.id) {
+                    <option [ngValue]="s.id">{{ s.name }} ({{ s.code }})</option>
+                  }
+                  @if (!context()?.stores?.length && selectedBranchId) {
+                    <option disabled>No stores found</option>
+                  }
+                </select>
+                <lucide-icon class="select-caret" name="chevron-down" size="15"></lucide-icon>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: Billing Context (Counter · Operator) -->
+        <section class="popup-section">
+          <div class="section-title">
+            <lucide-icon name="monitor" size="14"></lucide-icon>
+            <h3>Billing Context</h3>
+            <span class="section-rule"></span>
+          </div>
+          <div class="info-grid">
+            <!-- Counter panel -->
+            <div class="info-panel">
+              <div class="info-panel-head">
+                <lucide-icon name="monitor" size="13"></lucide-icon>
+                <span>Counter</span>
+              </div>
+              @if (context()?.counter) {
+                <div class="info-panel-body">
+                  <span class="info-primary">{{ context()!.counter!.name }}</span>
+                  <span class="info-meta">{{ context()!.counter!.code }} &middot; {{ context()!.counter!.assignment }}</span>
+                </div>
+              } @else {
+                <div class="info-empty">
+                  <lucide-icon name="alert-triangle" size="15"></lucide-icon>
+                  <span>No default counter assigned</span>
+                </div>
+              }
+            </div>
+
+            <!-- Operator panel -->
+            <div class="info-panel">
+              <div class="info-panel-head">
+                <lucide-icon name="user-cog" size="13"></lucide-icon>
+                <span>Operator</span>
+              </div>
+              @if (context()?.operator) {
+                <div class="info-panel-body">
+                  <span class="info-primary">{{ context()!.operator!.name }}</span>
+                  <span class="info-meta">{{ context()!.operator!.type }} &middot; {{ context()!.operator!.code }}</span>
+                </div>
+              } @else {
+                <div class="info-empty">
+                  <lucide-icon name="alert-triangle" size="15"></lucide-icon>
+                  <span>Operator information unavailable</span>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 3: POS Session -->
+        <section class="popup-section">
+          <div class="section-title">
+            <lucide-icon name="credit-card" size="14"></lucide-icon>
+            <h3>POS Session</h3>
+            <span class="section-rule"></span>
+            @if (context()?.posSession) {
+              <span class="session-badge" [class]="'session-badge ' + getStatusBadgeClass(context()!.posSession!.status)">
+                <span class="status-dot"></span>{{ getStatusText(context()!.posSession!.status) }}
+              </span>
+            } @else {
+              <span class="session-badge badge-closed"><span class="status-dot"></span>No Session</span>
+            }
+          </div>
+
+          @if (context()?.posSession) {
+            <div class="session-panel">
+              <div class="session-panel-head">
+                <lucide-icon name="receipt" size="15"></lucide-icon>
+                <span class="session-no">{{ context()!.posSession!.sessionNumber }}</span>
+              </div>
+              <div class="session-summary">
+                <div class="session-metric">
+                  <span class="session-label">Opening Cash</span>
+                  <span class="session-value">{{ formatCurrency(context()!.posSession!.openingCash) }}</span>
+                </div>
+                <div class="session-metric">
+                  <span class="session-label">Opened At</span>
+                  <span class="session-value">{{ formatDateTime(context()!.posSession!.openedAt) }}</span>
+                </div>
+                <div class="session-metric">
+                  <span class="session-label">Opened By</span>
+                  <span class="session-value">{{ context()!.posSession!.openedBy }}</span>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <div class="session-warning">
+              <lucide-icon name="alert-triangle" size="17"></lucide-icon>
+              <div class="warning-content">
+                <span class="warning-title">No active POS session found</span>
+                <span class="warning-text">Please open a POS session from the POS Sessions page before starting Sale Entry.</span>
+              </div>
+            </div>
+          }
+        </section>
+
+        <!-- Context ready confirmation -->
+        @if (context()?.counter && context()?.operator && context()?.posSession) {
+          <div class="ready-strip">
+            <lucide-icon name="badge-check" size="16"></lucide-icon>
+            <div class="ready-content">
+              <span class="ready-title">Billing context is ready</span>
+              <span class="ready-path">Company &rarr; Branch &rarr; Store &rarr; Counter &rarr; Operator &rarr; POS Session</span>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Footer -->
+    <footer class="popup-footer">
+      <span class="step-indicator">Step 1 of 2</span>
+      <div class="footer-actions">
+        <button class="btn btn-secondary" type="button" (click)="onCancel()" [disabled]="validating()">
+          Cancel
+        </button>
+        <button class="btn btn-primary" type="button" (click)="onContinue()" [disabled]="validating()">
+          @if (validating()) {
+            <span class="btn-spinner"></span>
+            <span>Validating&hellip;</span>
+          } @else {
+            <span>Continue</span>
+            <lucide-icon name="arrow-right" size="15"></lucide-icon>
+          }
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>

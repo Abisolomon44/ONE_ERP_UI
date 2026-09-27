@@ -29,6 +29,7 @@ export class AppShell {
   protected readonly mobileOpen = signal(false);
   protected readonly isMobile = signal(this.initIsMobile());
   private onPurchaseEntry = false;
+  private onSalesEntry = false;
   private collapsePrior = false;
 
   protected readonly workspaces = signal<WorkspaceNode[]>([]);
@@ -55,16 +56,20 @@ export class AppShell {
 
   private applyRouteCollapse(url: string): void {
     const path = url.split('?')[0];
-    const entering = path === '/purchase-entry' || path.startsWith('/purchase-entry/');
-    if (entering && !this.onPurchaseEntry) {
-      // First time on Purchase Entry: remember current state, force collapsed.
+    const enteringPurchase = path === '/purchase-entry' || path.startsWith('/purchase-entry/');
+    const enteringSales = path === '/sales-entry' || path.startsWith('/sales-entry/');
+    const entering = enteringPurchase || enteringSales;
+
+    if (entering && !this.onPurchaseEntry && !this.onSalesEntry) {
+      // First time on Purchase/Sales Entry: remember current state, force collapsed.
       this.collapsePrior = this.collapsed();
       this.collapsed.set(true);
-    } else if (!entering && this.onPurchaseEntry) {
-      // Leaving Purchase Entry: restore the sidebar state used elsewhere.
+    } else if (!entering && (this.onPurchaseEntry || this.onSalesEntry)) {
+      // Leaving Purchase/Sales Entry: restore the sidebar state used elsewhere.
       this.collapsed.set(this.collapsePrior);
     }
-    this.onPurchaseEntry = entering;
+    this.onPurchaseEntry = enteringPurchase;
+    this.onSalesEntry = enteringSales;
   }
 
   private initIsMobile(): boolean {
