@@ -34,26 +34,27 @@ import { PurchaseReportChartDto } from '../../../core/services/purchase-report.s
         font-size: 0.78rem;
       }
       .prs-bar-label {
-        color: var(--muted, #64748b);
+        color: var(--text-3, #8792ac);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
       .prs-bar-track {
-        height: 12px;
-        background: var(--border, #e2e8f0);
+        height: 10px;
+        background: var(--surface-3, #eef2f9);
         border-radius: 6px;
         overflow: hidden;
       }
       .prs-bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, #3b82f6, #6366f1);
+        background: linear-gradient(90deg, var(--accent), var(--accent-hover));
         border-radius: 6px;
+        transition: width var(--transition, 160ms);
       }
       .prs-bar-value {
         text-align: right;
         font-variant-numeric: tabular-nums;
-        color: var(--text, #0f172a);
+        color: var(--text, #141b2d);
       }
     `,
   ],

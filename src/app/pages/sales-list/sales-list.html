@@ -39,6 +39,8 @@
               <td class="num">{{ r.paidAmount | number: '1.2-2' }}</td>
               <td class="num">{{ r.balanceAmount | number: '1.2-2' }}</td>
               <td class="row-actions">
+                <button class="icon" type="button" (click)="preview(r)" title="A4 Preview"><lucide-icon name="eye"></lucide-icon></button>
+                <button class="icon" type="button" (click)="print(r)" title="A4 Print"><lucide-icon name="printer"></lucide-icon></button>
                 <button class="icon" type="button" (click)="edit(r)" [disabled]="!canManage()"><lucide-icon name="pencil"></lucide-icon></button>
                 <button class="icon danger" type="button" (click)="remove(r)" [disabled]="!canManage()"><lucide-icon name="trash-2"></lucide-icon></button>
               </td>

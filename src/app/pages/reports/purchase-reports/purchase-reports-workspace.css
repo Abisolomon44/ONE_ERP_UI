@@ -1,9 +1,131 @@
+/* ============================================================
+   Purchase Reports Workspace — VERTICAL tab rail
+   Left column = report types (icons + labels, sticky, accent
+   bar on the active item). Right column = active report screen.
+   Local tokens prefixed --prp-* (view encapsulation).
+   ============================================================ */
+
+:host {
+  --prp-rail-w: 224px;
+}
+
 .prp {
+  display: grid;
+  grid-template-columns: var(--prp-rail-w) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* ---------- Vertical rail ---------- */
+.rp-tabs {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 3px;
+  position: sticky;
+  top: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-lg, 14px);
+  padding: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.rp-tabs-caption {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-3);
+  padding: 6px 10px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rp-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm, 6px);
+  padding: 9px 11px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-2);
+  transition: background var(--transition), color var(--transition);
+}
+
+.rp-tab:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.rp-tab.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.rp-tab.active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+
+.rp-tab:focus-visible {
+  outline: 2px solid var(--accent-soft-2);
+  outline-offset: 1px;
+}
+
+.rp-tab lucide-icon {
+  flex-shrink: 0;
+}
+
+/* ---------- Content ---------- */
+.rp-content {
+  min-width: 0;
+  min-height: 320px;
 }
 
 .prp-pane.hidden {
   display: none;
+}
+
+/* ---------- Responsive: fold rail into top chips ---------- */
+@media (max-width: 1100px) {
+  .prp {
+    grid-template-columns: 1fr;
+  }
+
+  .rp-tabs {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .rp-tabs-caption {
+    flex-basis: 100%;
+    padding: 0 2px 6px;
+  }
+
+  .rp-tab {
+    width: auto;
+    padding: 7px 12px;
+    font-size: 12.5px;
+  }
+
+  .rp-tab.active::before {
+    display: none;
+  }
 }

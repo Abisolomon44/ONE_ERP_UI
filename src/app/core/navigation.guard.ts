@@ -41,6 +41,22 @@ async function canEnter(url: string, nav: NavigationStoreService, router: Router
     // screens still get access-denied.
   }
 
+  // The Document Designer and the standalone Document Preview are opened from
+  // the Document Design hub (query params carry the template version) and
+  // share its screen authorization. Document Master sub-pages
+  // (/document-design/master/*) are part of the same module and share it too.
+  // The DB-seeded master URLs (/invoice-types, /printer-models, …) are real
+  // screens and fall through to the exact-match check below for restricted users.
+  if (
+    path === '/document-designer' ||
+    path === '/document-design/preview' ||
+    path.startsWith('/document-design/master/')
+  ) {
+    if (nav.isUnrestricted()) return true;
+    await nav.ensureLoaded();
+    if (nav.isRouteAuthorized('/document-design') || nav.isRouteAuthorized('/invoice-templates')) return true;
+  }
+
   if (path === '/workspace' || path.startsWith('/workspace/')) {
     await nav.ensureLoaded();
     const id = Number(path.split('/')[2]);

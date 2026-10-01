@@ -1,5 +1,61 @@
 <div class="page sales-page">
-  <header class="top-toolbar">
+  <!-- ============================================================
+       TOP ERP TOOLBAR (dark, dense) — actions live here ONLY
+       ============================================================ -->
+  <header class="se-topbar">
+    <div class="se-brand">
+      <span class="se-logo"><lucide-icon name="shopping-cart" size="16"></lucide-icon></span>
+      <div class="se-brand-text">
+        <span class="se-title">Retail &amp; Wholesale Billing</span>
+        <span class="se-subtitle">Concurrent Multi-Sale Mode</span>
+      </div>
+      @if (ctxPosSession() !== '—') {
+        <span
+          class="se-pos-chip"
+          [title]="'Operator: ' + ctxOperator() + ' · Salesperson: ' + ctxSalesperson() + ' · Session: ' + ctxPosSession()"
+        >
+          POS • {{ ctxCounter() }} • {{ ctxPosSession() }}
+        </span>
+      }
+    </div>
+
+    <div class="se-toolbar-actions">
+      <button class="se-btn se-btn-primary" type="button" (click)="newDoc()">
+        <lucide-icon name="plus" size="13"></lucide-icon>
+        New Sale
+        <kbd>Ctrl+N</kbd>
+      </button>
+      <button class="se-btn" type="button" (click)="save()" [disabled]="!canManage() || saving">
+        <lucide-icon name="save" size="13"></lucide-icon>
+        {{ saving ? 'Saving…' : 'Save' }}
+        <kbd>Ctrl+S</kbd>
+      </button>
+      <button class="se-btn" type="button" (click)="saveAndPrint()" [disabled]="!canManage() || saving">
+        <lucide-icon name="printer" size="13"></lucide-icon>
+        {{ saving ? 'Saving…' : 'Save &amp; Print' }}
+      </button>
+      <button class="se-btn se-btn-danger" type="button" (click)="closeActiveSale()" [disabled]="saving">
+        <lucide-icon name="x" size="13"></lucide-icon>
+        Close Tab
+        <kbd>Esc</kbd>
+      </button>
+      <span class="se-toolbar-sep"></span>
+      <button
+        class="se-btn se-btn-icon"
+        type="button"
+        (click)="theme.toggleMode()"
+        [title]="theme.mode() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+        aria-label="Toggle theme"
+      >
+        <lucide-icon [name]="theme.mode() === 'light' ? 'moon' : 'sun'" size="14"></lucide-icon>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       MULTI-SALE TAB BAR
+       ============================================================ -->
+  <nav class="se-tabbar">
     <div class="tabs-strip" role="tablist" aria-label="Sales entry tabs">
       @for (tab of tabs(); track tab.saleTabId) {
         <button
@@ -11,135 +67,87 @@
           role="tab"
           [attr.aria-selected]="tab.saleTabId === activeTabId()"
         >
-          <span class="tab-label">{{ tab.saleLabel }}</span>
+          <span class="tab-label">{{ tab.salesNo || tab.saleLabel }}</span>
           @if (tab.isDirty) {
-            <span class="tab-state">*</span>
+            <span class="tab-state" title="Unsaved changes">*</span>
           } @else if (tab.isSaved && !tab.isDirty) {
-            <span class="tab-state success">✓</span>
+            <span class="tab-state success" title="Saved">✓</span>
           }
           <span class="tab-close" aria-label="Close tab" (click)="closeTab(tab.saleTabId, $event)">×</span>
         </button>
       }
-      <button type="button" class="new-tab" (click)="newDoc()">+ New Sale</button>
-    </div>
-
-    <div class="page-actions">
-      <button
-        class="btn theme-toggle"
-        type="button"
-        (click)="theme.toggleMode()"
-        [title]="theme.mode() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
-        aria-label="Toggle theme"
-      >
-        <lucide-icon [name]="theme.mode() === 'light' ? 'moon' : 'sun'" size="16"></lucide-icon>
+      <button type="button" class="new-tab" (click)="newDoc()">
+        <lucide-icon name="plus" size="12"></lucide-icon>
+        New Sale Tab
       </button>
     </div>
-  </header>
+  </nav>
 
   @if (!canView()) {
     <div class="empty">You do not have permission to view sales.</div>
   } @else if (activeTab) {
-    <!-- SALE CONTEXT (read-only, sourced from the context popup) -->
-    <section class="context-card" aria-label="Sale context">
-      <div class="ctx-item">
-        <span class="ctx-label">Company</span>
-        <span class="ctx-value">{{ ctxCompany() }}</span>
-      </div>
-      <div class="ctx-item">
-        <span class="ctx-label">Branch</span>
-        <span class="ctx-value">{{ ctxBranch() }}</span>
-      </div>
-      <div class="ctx-item">
-        <span class="ctx-label">Store</span>
-        <span class="ctx-value">{{ ctxStore() }}</span>
-      </div>
-      <div class="ctx-item">
-        <span class="ctx-label">Counter</span>
-        <span class="ctx-value">{{ ctxCounter() }}</span>
-      </div>
-      <div class="ctx-item">
-        <span class="ctx-label">Operator</span>
-        <span class="ctx-value">{{ ctxOperator() }}</span>
-      </div>
-      <div class="ctx-item">
-        <span class="ctx-label">Operator Type</span>
-        <span class="ctx-value">{{ ctxOperatorType() }}</span>
-      </div>
-      <div class="ctx-item">
-        <span class="ctx-label">Salesperson</span>
-        <span class="ctx-value">{{ ctxSalesperson() }}</span>
-      </div>
-      <div class="ctx-item pos">
-        <span class="ctx-label">POS Session</span>
-        <span class="ctx-value">
-          {{ ctxPosSession() }}
-          @if (ctxPosSession() !== '—') {
-            <span class="pos-badge">[{{ ctxPosStatus() }}]</span>
-          }
-        </span>
-      </div>
-    </section>
-
-    <!-- CUSTOMER / SALE DETAILS / BILLING -->
-    <section class="entry-card">
-      <div class="sales-grid">
-        <div class="info-group">
-          <div class="info-group-title">Customer</div>
-          <label>
-            <span>Customer *</span>
+    <!-- ============================================================
+         SALE METADATA BAR (compact, 2 rows)
+         ============================================================ -->
+    <section class="se-meta" aria-label="Sale details">
+      <div class="se-header-grid">
+        <!-- Column 1: Company / Customer -->
+        <div class="se-hcol">
+          <div class="se-field">
+            <span class="se-flabel">Company *</span>
+            <select
+              data-field="company"
+              [ngModel]="companyId"
+              (ngModelChange)="onCompanyChange($event)"
+              [disabled]="!canManage() || companyBranchLocked"
+            >
+              <option [ngValue]="null">— Select —</option>
+              @for (c of lookups()?.companies ?? []; track c.id) {
+                <option [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
+              }
+            </select>
+          </div>
+          <div class="se-field">
+            <span class="se-flabel">Customer *</span>
             <select data-field="customer" [(ngModel)]="customerId" (ngModelChange)="markDirty()" [disabled]="!canManage()">
               <option [ngValue]="null">— Select —</option>
               @for (c of lookups()?.customers ?? []; track c.id) {
                 <option [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
               }
             </select>
-          </label>
-          <label>
-            <span>Contact No</span>
+          </div>
+        </div>
+
+        <!-- Column 2: Branch / Contact No -->
+        <div class="se-hcol">
+          <div class="se-field">
+            <span class="se-flabel">Branch *</span>
+            <select
+              data-field="branch"
+              [ngModel]="branchId"
+              (ngModelChange)="onBranchChange($event)"
+              [disabled]="!canManage() || companyBranchLocked"
+            >
+              <option [ngValue]="null">— Select —</option>
+              @for (b of lookups()?.branches ?? []; track b.id) {
+                <option [ngValue]="b.id">{{ b.name }} ({{ b.code }})</option>
+              }
+            </select>
+          </div>
+          <div class="se-field">
+            <span class="se-flabel">Contact No</span>
             <input data-field="contactNo" [(ngModel)]="customerPhone" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
-          </label>
+          </div>
         </div>
 
-        <div class="info-group">
-          <div class="info-group-title">Sale Details</div>
-          <label>
-            <span>Sale Date *</span>
-            <input data-field="saleDate" type="date" [(ngModel)]="invoiceDate" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
-          </label>
-          <label>
-            <span>Source *</span>
-            <select
-              data-field="source"
-              [ngModel]="sourceId"
-              (ngModelChange)="onSourceChange($event)"
-              [disabled]="!canManage()"
-            >
-              <option [ngValue]="null">— Select —</option>
-              @for (s of sources(); track s.id) {
-                <option [ngValue]="s.id">{{ s.name }} ({{ s.code }})</option>
-              }
-            </select>
-          </label>
-        </div>
-
-        <div class="info-group">
-          <div class="info-group-title">Billing / Tax</div>
-          <label>
-            <span>Warehouse *</span>
-            <select
-              data-field="warehouse"
-              [ngModel]="warehouseId"
-              (ngModelChange)="onWarehouseChange($event)"
-              [disabled]="!canManage()"
-            >
-              <option [ngValue]="null">— Select —</option>
-              @for (w of lookups()?.warehouses ?? []; track w.id) {
-                <option [ngValue]="w.id">{{ w.name }} ({{ w.code }})</option>
-              }
-            </select>
-          </label>
-          <label>
-            <span>Price List</span>
+        <!-- Column 3: Sale No / Price List -->
+        <div class="se-hcol">
+          <div class="se-field">
+            <span class="se-flabel">Sale No</span>
+            <span class="se-chip se-chip-doc">{{ salesNo || '—' }}</span>
+          </div>
+          <div class="se-field">
+            <span class="se-flabel">Price List</span>
             <select
               data-field="priceList"
               [ngModel]="priceListId"
@@ -151,9 +159,49 @@
                 <option [ngValue]="p.priceListId">{{ p.name }} ({{ p.code }})</option>
               }
             </select>
-          </label>
-          <label>
-            <span>Tax Type</span>
+          </div>
+        </div>
+
+        <!-- Column 4: Sale Date / Price Type -->
+        <div class="se-hcol">
+          <div class="se-field">
+            <span class="se-flabel">Sale Date *</span>
+            <input data-field="saleDate" type="date" [(ngModel)]="invoiceDate" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
+          </div>
+          <div class="se-field">
+            <span class="se-flabel">Price Type</span>
+            <select
+              data-field="priceType"
+              [ngModel]="priceTypeId"
+              (ngModelChange)="onPriceTypeChange($event)"
+              [disabled]="!canManage() || !priceListId"
+            >
+              <option [ngValue]="null">— Select —</option>
+              @for (pt of priceTypes(); track pt.priceTypeId) {
+                <option [ngValue]="pt.priceTypeId">{{ pt.name }} ({{ pt.code }})</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Column 5: Source / Tax Type -->
+        <div class="se-hcol">
+          <div class="se-field">
+            <span class="se-flabel">Source *</span>
+            <select
+              data-field="source"
+              [ngModel]="sourceId"
+              (ngModelChange)="onSourceChange($event)"
+              [disabled]="!canManage()"
+            >
+              <option [ngValue]="null">— Select —</option>
+              @for (s of sources(); track s.id) {
+                <option [ngValue]="s.id">{{ s.name }} ({{ s.code }})</option>
+              }
+            </select>
+          </div>
+          <div class="se-field">
+            <span class="se-flabel">Tax Type</span>
             <select
               data-field="taxType"
               [ngModel]="taxTypeSystemId"
@@ -165,26 +213,54 @@
                 <option [ngValue]="t.id">{{ t.name }} ({{ t.code }})</option>
               }
             </select>
-          </label>
+          </div>
         </div>
 
-        <div class="info-group remarks-group">
-          <div class="info-group-title">Remarks</div>
-          <textarea data-field="remarks" rows="3" [(ngModel)]="remarks" (ngModelChange)="markDirty()" [disabled]="!canManage()"></textarea>
+        <!-- Column 6: Warehouse / Remarks -->
+        <div class="se-hcol">
+          <div class="se-field">
+            <span class="se-flabel">Warehouse *</span>
+            <select
+              data-field="warehouse"
+              [ngModel]="warehouseId"
+              (ngModelChange)="onWarehouseChange($event)"
+              [disabled]="!canManage()"
+            >
+              <option [ngValue]="null">— Select —</option>
+              @for (w of lookups()?.warehouses ?? []; track w.id) {
+                <option [ngValue]="w.id">{{ w.name }} ({{ w.code }})</option>
+              }
+            </select>
+          </div>
+          <div class="se-field">
+            <span class="se-flabel">Remarks</span>
+            <textarea data-field="remarks" rows="1" [(ngModel)]="remarks" (ngModelChange)="markDirty()" [disabled]="!canManage()"></textarea>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ITEMS -->
-    <section class="entry-card items-card">
-      <div class="items-header">
-        <h3>Items</h3>
-        <div class="items-actions">
-          <button class="btn ghost sm accent" type="button" (click)="openProductPanel()" [disabled]="!canManage()">
-            <lucide-icon name="plus"></lucide-icon> Add Product
+    <!-- ============================================================
+         GRID 1 — MAIN SALE TRANSACTION ITEMS (primary workspace)
+         ============================================================ -->
+    <section class="se-items-card">
+      <div class="se-grid-head">
+        <div class="se-grid-title">
+          <span class="se-grid-name">Grid 1 — Main Sale Transaction Items</span>
+          <span class="se-grid-sub">
+            {{ salesNo || 'New Sale' }} · {{ items().length }} item{{ items().length === 1 ? '' : 's' }}
+          </span>
+        </div>
+        <span class="se-flow-hint" title="Cell flow inside the grid">Flow: Qty → Free → Rate → Disc%</span>
+        <div class="se-grid-actions">
+          <button class="se-btn se-btn-sm" type="button" (click)="openProductPanel()" [disabled]="!canManage()">
+            <lucide-icon name="package-search" size="13"></lucide-icon>
+            Add Product
+            <kbd>F3</kbd>
           </button>
-          <button class="btn ghost sm" type="button" (click)="openImport()" [disabled]="!canManage()">
-            <lucide-icon name="upload"></lucide-icon> Import
+          <button class="se-btn se-btn-sm" type="button" (click)="openImport()" [disabled]="!canManage()">
+            <lucide-icon name="upload" size="13"></lucide-icon>
+            Import
           </button>
           <input #importInput type="file" accept=".csv,text/csv" hidden (change)="onImportFile($event)" />
         </div>
@@ -195,23 +271,24 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th class="col-idx">#</th>
                 <th class="product-col">Product</th>
                 <th>Unit</th>
                 <th>Qty</th>
                 <th>Free Qty</th>
-                <th>Rate</th>
+                <th>Rate (₹)</th>
                 <th>Disc %</th>
+                <th>Disc Amt</th>
                 <th>Taxable</th>
                 <th>Tax</th>
-                <th>Amount</th>
-                <th class="delete-col">Delete</th>
+                <th>Amount (₹)</th>
+                <th class="delete-col">Act</th>
               </tr>
             </thead>
             <tbody #itemsBody data-kb-grid>
               @for (it of items(); track trackByIndex($index)) {
                 <tr>
-                  <td>{{ $index + 1 }}</td>
+                  <td class="col-idx">{{ $index + 1 }}</td>
                   <td class="product-col">
                     <input
                       type="text"
@@ -231,24 +308,25 @@
                       }
                     </select>
                   </td>
-                  <td><input [attr.data-row]="$index" [attr.data-col]="2" type="number" min="0" step="0.01" [(ngModel)]="it.quantity" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
-                  <td><input [attr.data-row]="$index" [attr.data-col]="3" type="number" min="0" step="0.01" [(ngModel)]="it.freeQuantity" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
-                  <td><input [attr.data-row]="$index" [attr.data-col]="4" type="number" min="0" step="0.01" [(ngModel)]="it.rate" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
-                  <td><input [attr.data-row]="$index" [attr.data-col]="5" type="number" min="0" step="0.01" [(ngModel)]="it.discountPercentage" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
-                  <td class="num">{{ lineTaxable(it) | number: '1.2-2' }}</td>
-                  <td class="num">{{ lineTax(it) | number: '1.2-2' }}</td>
+                  <td><input class="cell-edit" [attr.data-row]="$index" [attr.data-col]="2" type="number" min="0" step="0.01" [(ngModel)]="it.quantity" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
+                  <td><input class="cell-edit" [attr.data-row]="$index" [attr.data-col]="3" type="number" min="0" step="0.01" [(ngModel)]="it.freeQuantity" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
+                  <td><input class="cell-edit" [attr.data-row]="$index" [attr.data-col]="4" type="number" min="0" step="0.01" [(ngModel)]="it.rate" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
+                  <td><input class="cell-edit" [attr.data-row]="$index" [attr.data-col]="5" type="number" min="0" step="0.01" [(ngModel)]="it.discountPercentage" (ngModelChange)="markDirty()" [disabled]="!canManage()" /></td>
+                  <td class="num calc">{{ lineDisc(it) | number: '1.2-2' }}</td>
+                  <td class="num calc">{{ lineTaxable(it) | number: '1.2-2' }}</td>
+                  <td class="num calc">{{ lineTax(it) | number: '1.2-2' }}</td>
                   <td class="num strong">{{ lineTotal(it) | number: '1.2-2' }}</td>
                   <td class="delete-col">
-                    <button class="icon danger" type="button" (click)="removeItem($index)" [disabled]="!canManage()">
-                      <lucide-icon name="trash-2"></lucide-icon>
+                    <button class="icon danger" type="button" (click)="removeItem($index)" [disabled]="!canManage()" title="Delete row (Delete key)">
+                      <lucide-icon name="trash-2" size="13"></lucide-icon>
                     </button>
                   </td>
                 </tr>
               }
               @if (!items().length) {
                 <tr>
-                  <td colspan="11" class="empty-row">
-                    No products added yet. Click <strong>Add Product</strong> (or press <kbd>F3</kbd> / <kbd>Insert</kbd>) to add the first line.
+                  <td colspan="12" class="empty-row">
+                    No products added yet. Press <kbd>F3</kbd> / <kbd>Insert</kbd> or click <strong>Add Product</strong> to add the first line.
                   </td>
                 </tr>
               }
@@ -262,18 +340,19 @@
             <div class="product-panel" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Product Load">
               <header class="panel-head">
                 <div class="panel-title">
-                  <lucide-icon name="package-search" size="18"></lucide-icon>
-                  <h3>Product Load</h3>
+                  <lucide-icon name="package-search" size="15"></lucide-icon>
+                  <h3>Product Entry</h3>
+                  <span class="panel-count">{{ panelResults().length }} product{{ panelResults().length === 1 ? '' : 's' }}</span>
                 </div>
                 <button class="icon secondary" type="button" (click)="closeProductPanel()" aria-label="Close product panel">
-                  <lucide-icon name="x"></lucide-icon>
+                  <lucide-icon name="x" size="14"></lucide-icon>
                 </button>
               </header>
 
               <div class="panel-filters">
-                <label>
+                <label class="panel-search">
                   <span>Search Product / Barcode</span>
-                  <input type="text" [(ngModel)]="panelSearch" (ngModelChange)="onPanelSearch()" placeholder="Name, code or barcode…" />
+                  <input type="text" data-kb-autocomplete [(ngModel)]="panelSearch" (ngModelChange)="onPanelSearch()" placeholder="Name, code or barcode…" />
                 </label>
                 <label>
                   <span>Category</span>
@@ -293,19 +372,24 @@
                     }
                   </select>
                 </label>
+                <span class="panel-hint"><kbd>↑↓</kbd> Navigate · <kbd>Enter</kbd> Select · <kbd>Esc</kbd> Close</span>
               </div>
 
-              <div class="panel-body">
+              <div class="panel-body" #panelBody>
                 @if (panelLoading()) {
                   <div class="panel-status">Loading products…</div>
+                } @else if (panelError()) {
+                  <div class="panel-status panel-error">{{ panelError() }}</div>
                 } @else if (!panelResults().length) {
                   <div class="panel-status">No products match your search.</div>
                 } @else {
                   <table class="panel-table">
                     <thead>
                       <tr>
-                        <th>Product Code</th>
-                        <th>Product Name</th>
+                        <th class="col-idx">#</th>
+                        <th>Code</th>
+                        <th>Barcode</th>
+                        <th>Product Description</th>
                         <th class="num">Stock</th>
                         <th class="num">Rate</th>
                         <th class="select-col">Select</th>
@@ -314,7 +398,9 @@
                     <tbody>
                       @for (p of panelResults(); track p.id; let i = $index) {
                         <tr [class.hi]="panelHi === i" (mousedown)="$event.preventDefault(); selectPanelProduct(p)" (mouseenter)="panelHi = i">
+                          <td class="col-idx">{{ i + 1 }}</td>
                           <td>{{ p.productCode }}</td>
+                          <td>{{ p.barcode }}</td>
                           <td>{{ p.productName }}</td>
                           <td class="num">{{ stockOf(p) }}</td>
                           <td class="num">{{ rateOf(p) | number: '1.2-2' }}</td>
@@ -331,71 +417,113 @@
           </div>
         }
       </div>
+    </section>
+
+    <!-- ============================================================
+         PAYMENT + TOTALS (horizontal split)
+         ============================================================ -->
+    <section class="se-bottom">
+      <!-- PAYMENT SETTLEMENT -->
+      <div class="se-panel se-payment">
+        <div class="se-panel-head">
+          <span class="se-panel-title">Payment Settlement &amp; Multi-Mode Split</span>
+          <button class="se-btn se-btn-sm" type="button" (click)="addPaymentLine()" [disabled]="!canManage() || !paymentLinesEditable">
+            <lucide-icon name="plus" size="12"></lucide-icon>
+            Add Payment Split
+          </button>
+        </div>
+
+        <div class="pay-lines">
+          <div class="pay-line-head">
+            <span>Payment Mode</span>
+            <span>Amount (₹)</span>
+            <span>Ref / UTR / Auth No</span>
+            <span></span>
+          </div>
+          @for (line of paymentLines; track $index) {
+            <div class="pay-line">
+              <select data-field="paymentMode" [(ngModel)]="line.paymentMethodID" (ngModelChange)="markDirty()" [disabled]="!canManage() || !paymentLinesEditable">
+                <option [ngValue]="null">— Select —</option>
+                @for (m of lookups()?.paymentMethods ?? []; track m.id) {
+                  <option [ngValue]="m.id">{{ m.name }}</option>
+                }
+              </select>
+              <input data-field="paymentAmount" type="number" min="0" step="0.01" [(ngModel)]="line.amount" (ngModelChange)="markDirty()" [disabled]="!canManage() || !paymentLinesEditable" />
+              <input data-field="paymentReference" [(ngModel)]="line.referenceNo" (ngModelChange)="markDirty()" [disabled]="!canManage() || !paymentLinesEditable" />
+              <button class="icon-btn" type="button" (click)="removePaymentLine($index)" [disabled]="!canManage() || !paymentLinesEditable || paymentLines.length <= 1" title="Remove payment line">
+                <lucide-icon name="trash-2" size="13"></lucide-icon>
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="pay-summary">
+          <div class="pay-stat">
+            <span>Invoice Total</span>
+            <strong>{{ grandTotal | number: '1.2-2' }}</strong>
+          </div>
+          <div class="pay-stat">
+            <span>Amount Paid</span>
+            <strong>{{ amountPaid | number: '1.2-2' }}</strong>
+          </div>
+          <div class="pay-stat warn">
+            <span>Balance Due</span>
+            <strong>{{ balanceAmount | number: '1.2-2' }}</strong>
+          </div>
+          <div class="pay-stat success">
+            <span>Change Return</span>
+            <strong>{{ changeAmount | number: '1.2-2' }}</strong>
+          </div>
+        </div>
+      </div>
 
       <!-- TOTALS -->
-      <div class="totals-row">
-        <div class="total-item"><span>Gross</span><strong>{{ totalGross | number: '1.2-2' }}</strong></div>
-        <div class="total-item"><span>Discount</span><strong>{{ totalDiscount | number: '1.2-2' }}</strong></div>
-        <div class="total-item"><span>Taxable</span><strong>{{ taxable | number: '1.2-2' }}</strong></div>
-        <div class="total-item"><span>CGST</span><strong>{{ totalCgst | number: '1.2-2' }}</strong></div>
-        <div class="total-item"><span>SGST</span><strong>{{ totalSgst | number: '1.2-2' }}</strong></div>
-        <div class="total-item"><span>IGST</span><strong>{{ totalIgst | number: '1.2-2' }}</strong></div>
-        <div class="total-item"><span>CESS</span><strong>{{ totalCess | number: '1.2-2' }}</strong></div>
-        <div class="total-item grand-total"><span>Grand Total</span><strong>{{ grandTotal | number: '1.2-2' }}</strong></div>
-      </div>
-    </section>
-
-    <!-- PAYMENT -->
-    <section class="entry-card payment-card">
-      <div class="section-header">
-        <h2>Payment</h2>
-      </div>
-      <div class="payment-grid">
-        <label>
-          <span>Payment Mode</span>
-          <select data-field="paymentMode" [(ngModel)]="payMethodID" (ngModelChange)="markDirty()" [disabled]="!canManage()">
-            <option [ngValue]="null">— Select —</option>
-            @for (m of lookups()?.paymentMethods ?? []; track m.id) {
-              <option [ngValue]="m.id">{{ m.name }}</option>
-            }
-          </select>
-        </label>
-        <label>
-          <span>Amount</span>
-          <input data-field="paymentAmount" type="number" min="0" step="0.01" [(ngModel)]="payAmount" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
-        </label>
-        <label>
-          <span>Reference No</span>
-          <input data-field="paymentReference" [(ngModel)]="payReferenceNo" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
-        </label>
-        <div class="pay-readonly">
-          <span>Amount Paid</span>
-          <strong>{{ amountPaid | number: '1.2-2' }}</strong>
+      <div class="se-panel se-totals">
+        <div class="se-panel-head">
+          <span class="se-panel-title">Totals</span>
         </div>
-        <div class="pay-readonly">
-          <span>Balance</span>
-          <strong>{{ balanceAmount | number: '1.2-2' }}</strong>
-        </div>
-        <div class="pay-readonly cash-back">
-          <span>Change</span>
-          <strong>{{ changeAmount | number: '1.2-2' }}</strong>
+        <div class="se-totals-body">
+          <div class="se-total-row"><span>Gross Amount</span><strong>{{ totalGross | number: '1.2-2' }}</strong></div>
+          <div class="se-total-row"><span>Discount Total</span><strong>{{ totalDiscount | number: '1.2-2' }}</strong></div>
+          <div class="se-total-row"><span>Taxable Amount</span><strong>{{ taxable | number: '1.2-2' }}</strong></div>
+          <div class="se-total-row"><span>CESS Amount</span><strong>{{ totalCess | number: '1.2-2' }}</strong></div>
+          <div class="se-total-row"><span>CGST Total</span><strong>{{ totalCgst | number: '1.2-2' }}</strong></div>
+          <div class="se-total-row"><span>SGST Total</span><strong>{{ totalSgst | number: '1.2-2' }}</strong></div>
+          <div class="se-total-row"><span>IGST Total</span><strong>{{ totalIgst | number: '1.2-2' }}</strong></div>
+          <div class="se-grand-total">
+            <span>Grand Total (Net Payable)</span>
+            <strong>₹ {{ grandTotal | number: '1.2-2' }}</strong>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ACTIONS -->
-    <footer class="entry-actions">
-      <button class="btn secondary" type="button" (click)="closeActiveSale()" [disabled]="saving">
-        <lucide-icon name="x"></lucide-icon> Cancel
-      </button>
-      <span class="actions-spacer"></span>
-      <button class="btn primary" type="button" (click)="save()" [disabled]="!canManage() || saving">
-        {{ saving ? 'Saving…' : 'Save' }}
-      </button>
-      <button class="btn primary alt" type="button" (click)="saveAndPrint()" [disabled]="!canManage() || saving">
-        {{ saving ? 'Saving…' : 'Save & Print' }}
-        <lucide-icon name="printer"></lucide-icon>
-      </button>
+    <!-- ============================================================
+         FOOTER — keyboard shortcut information ONLY (no actions)
+         ============================================================ -->
+    <footer class="se-shortcutbar">
+      <span class="sc-group">Multi-Sale:</span>
+      <span class="sc-item"><kbd>Ctrl+Tab</kbd> Next Tab</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>Ctrl+Shift+Tab</kbd> Prev Tab</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>Ctrl+N</kbd> New Sale</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>Ctrl+S</kbd> Save</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>F3</kbd> Product</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>Insert</kbd> Add Product</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>F6</kbd> Focus Grid</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>Del</kbd> Delete Row</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>Enter</kbd> Next Cell</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>Esc</kbd> Close Tab</span>
+      <span class="sc-sep">|</span>
+      <span class="sc-item"><kbd>?</kbd> Shortcuts Help</span>
     </footer>
   }
 </div>

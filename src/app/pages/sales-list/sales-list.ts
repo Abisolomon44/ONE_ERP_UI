@@ -5,6 +5,7 @@ import { SalesService, SalesInvoiceDto } from '../../core/services/sales.service
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { SalesHubService } from '../../core/sales-hub.service';
+import { DocumentPrintService } from '../../core/services/document-print.service';
 
 @Component({
   selector: 'app-sales-list',
@@ -18,6 +19,7 @@ export class SalesListPage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
   private readonly hub = inject(SalesHubService);
+  private readonly docPrint = inject(DocumentPrintService);
 
   protected readonly canManage = signal(false);
   protected readonly loading = signal(false);
@@ -42,6 +44,16 @@ export class SalesListPage implements OnInit {
 
   protected edit(p: SalesInvoiceDto): void {
     this.hub.requestEdit(p.salesInvoiceId);
+  }
+
+  /** A4 preview of the SAVED invoice via the resolved published template. */
+  protected async preview(p: SalesInvoiceDto): Promise<void> {
+    await this.docPrint.openPreview(p.salesInvoiceId, p.companyId, false);
+  }
+
+  /** A4 print of the SAVED invoice via the resolved published template. */
+  protected async print(p: SalesInvoiceDto): Promise<void> {
+    await this.docPrint.openPreview(p.salesInvoiceId, p.companyId, true);
   }
 
   protected newInvoice(): void {

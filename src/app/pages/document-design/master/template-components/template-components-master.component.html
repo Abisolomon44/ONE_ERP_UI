@@ -1,0 +1,136 @@
+<div class="dd-page">
+  <!-- ================= toolbar ================= -->
+  <header class="dd-topbar">
+    <div class="dd-brand">
+      <span class="dd-logo"><lucide-icon name="puzzle" size="16"></lucide-icon></span>
+      <div class="dd-brand-text">
+        <span class="dd-title">DOCUMENT MASTER</span>
+        <span class="dd-subtitle">Manage reusable components used by document templates.</span>
+        <span class="dd-subtitle">INVOICE &amp; PRINT DESIGN → MASTER → TEMPLATE COMPONENTS</span>
+      </div>
+    </div>
+
+    <div class="dd-actions">
+      <button class="dd-btn" type="button" (click)="load()" [disabled]="loading()">
+        <lucide-icon name="refresh-cw" size="13"></lucide-icon>
+        Refresh
+      </button>
+      <button class="dd-btn dd-btn-primary" type="button" (click)="newComponent()" [disabled]="!canManage()">
+        <lucide-icon name="plus" size="13"></lucide-icon>
+        + New Component
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= document master tabs ================= -->
+  <nav class="dd-tabs">
+    @for (tab of masterTabs; track tab) {
+      <button type="button" class="dd-tab" [class.active]="tab === activeTab" (click)="openHubMaster(tab)">
+        {{ tab }}
+      </button>
+    }
+  </nav>
+
+  <!-- ================= list ================= -->
+  <section class="dd-card">
+    <div class="dd-filter-row">
+      <div class="dd-search">
+        <input
+          type="text"
+          placeholder="Search components…"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+          [disabled]="loading()" />
+        <button class="dd-btn" type="button" (click)="load()" [disabled]="loading()">Search</button>
+      </div>
+      <div class="dd-status-filter">
+        <label class="dd-select-label" for="tc-status">Status</label>
+        <select id="tc-status" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    @if (loading()) { <div class="dd-loading">Loading…</div> }
+
+    <table class="dd-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Component Type</th>
+          <th>Description</th>
+          <th>Display Order</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of filteredRows(); track row.id) {
+          <tr>
+            <td class="mono">{{ row.code }}</td>
+            <td>{{ row.name }}</td>
+            <td><span class="dd-badge type">{{ row.componentType || '—' }}</span></td>
+            <td class="desc" [title]="row.description || ''">{{ row.description || '—' }}</td>
+            <td>{{ row.displayOrder }}</td>
+            <td>
+              <span class="dd-badge" [class.pub]="row.isActive" [class.inactive]="!row.isActive">
+                {{ row.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="dd-row-actions">
+              <button class="dd-btn dd-mini" type="button" (click)="editComponent(row)" [disabled]="!canManage()">Edit</button>
+              <button class="dd-btn dd-mini dd-danger" type="button" (click)="remove(row)" [disabled]="!canDelete()">Delete</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="muted">No document components found.</td></tr>
+          <tr><td colspan="7" class="muted">Adjust the search or status filter, or click “+ New Component”.</td></tr>
+        }
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<!-- ================= create / edit dialog ================= -->
+@if (showEntry()) {
+  <div class="dd-modal-backdrop" (click)="cancel()">
+    <div class="dd-modal" (click)="$event.stopPropagation()">
+      <h3>{{ editingId() ? 'Edit Template Component' : 'New Template Component' }}</h3>
+      <div class="dd-form-grid">
+        <label>Component Code *
+          <input type="text" [(ngModel)]="model.code" maxlength="50" placeholder="e.g. LOGO" />
+        </label>
+        <label>Component Name *
+          <input type="text" [(ngModel)]="model.name" maxlength="100" placeholder="e.g. Logo" />
+        </label>
+        <label>Component Type *
+          <input
+            type="text"
+            list="tc-component-types"
+            [(ngModel)]="model.componentType"
+            maxlength="50"
+            placeholder="e.g. TEXT, TABLE, IMAGE…" />
+          <datalist id="tc-component-types">
+            @for (t of componentTypes(); track t) { <option [value]="t"></option> }
+          </datalist>
+        </label>
+        <label>Display Order
+          <input type="number" [(ngModel)]="model.displayOrder" />
+        </label>
+        <label class="span2">Description
+          <textarea rows="2" [(ngModel)]="model.description" maxlength="300"></textarea>
+        </label>
+        <label class="chk"><input type="checkbox" [(ngModel)]="model.isActive" /> Active</label>
+      </div>
+      <div class="dd-modal-actions">
+        <button class="dd-btn" type="button" (click)="cancel()">Cancel</button>
+        <button class="dd-btn dd-btn-primary" type="button" (click)="save()" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

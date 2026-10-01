@@ -21,6 +21,7 @@ import {
   TaxTypeSystemDto,
   TaxDto,
   PriceListDto,
+  PriceTypeDto,
   ProductCategoryDto,
   ProductBrandDto,
 } from '../../core/services/master_service';
@@ -32,6 +33,7 @@ import { SalesHubService } from '../../core/sales-hub.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { SaleEntryContextPopupComponent } from './sale-entry-context-popup.component';
 import { SaleEntryContextResponse } from '../../core/services/sale-entry-context.service';
+import { DocumentPrintService } from '../../core/services/document-print.service';
 
 interface DraftItem {
   productId: number | null;
@@ -50,6 +52,14 @@ interface DraftItem {
   remarks?: string | null;
 }
 
+interface DraftPayment {
+  amount: number;
+  paymentTypeID: number | null;
+  paymentMethodID: number | null;
+  referenceNo: string;
+  remarks: string;
+}
+
 interface SaleTabState {
   saleTabId: string;
   saleLabel: string;
@@ -64,15 +74,12 @@ interface SaleTabState {
   sourceId: number | null;
   sourceCode: string;
   priceListId: number | null;
+  priceTypeId: number | null;
   taxTypeSystemId: number | null;
   paymentTypeID: number | null;
   paymentMethodID: number | null;
   remarks: string;
-  payAmount: number;
-  payTypeID: number | null;
-  payMethodID: number | null;
-  payReferenceNo: string;
-  payRemarks: string;
+  paymentLines: DraftPayment[];
   items: DraftItem[];
   contextStoreName: string;
   contextCounterName: string;
@@ -106,6 +113,7 @@ export class SalesEntryPage implements OnInit {
   private readonly el = inject(ElementRef);
   protected readonly kb = inject(KeyboardShortcutService);
   private readonly hub = inject(SalesHubService);
+  private readonly docPrint = inject(DocumentPrintService);
   protected readonly theme = inject(ThemeService);
 
   protected readonly showContextPopup = signal(false);
@@ -114,6 +122,7 @@ export class SalesEntryPage implements OnInit {
 
   private readonly itemsBody = viewChild<ElementRef<HTMLElement>>('itemsBody');
   private readonly importInput = viewChild<ElementRef<HTMLInputElement>>('importInput');
+  protected readonly panelBody = viewChild<ElementRef<HTMLElement>>('panelBody');
 
   protected readonly canView = signal(false);
   protected readonly canManage = signal(false);
@@ -128,6 +137,8 @@ export class SalesEntryPage implements OnInit {
   protected readonly taxTypeSystems = signal<TaxTypeSystemDto[]>([]);
   protected readonly taxMasters = signal<TaxDto[]>([]);
   protected readonly priceLists = signal<PriceListDto[]>([]);
+  protected readonly priceTypes = signal<PriceTypeDto[]>([]);
+  private readonly allPriceTypes = signal<PriceTypeDto[]>([]);
   protected readonly productCategories = signal<ProductCategoryDto[]>([]);
   protected readonly productBrands = signal<ProductBrandDto[]>([]);
 
@@ -141,6 +152,7 @@ export class SalesEntryPage implements OnInit {
   protected sourceId: number | null = null;
   protected sourceCode = 'SALES';
   protected priceListId: number | null = null;
+  protected priceTypeId: number | null = null;
   protected taxTypeSystemId: number | null = null;
   protected paymentTypeID: number | null = null;
   protected paymentMethodID: number | null = null;
@@ -148,11 +160,7 @@ export class SalesEntryPage implements OnInit {
   protected editingId: number | null = null;
   protected saving = false;
 
-  protected payAmount = 0;
-  protected payTypeID: number | null = null;
-  protected payMethodID: number | null = null;
-  protected payReferenceNo = '';
-  protected payRemarks = '';
+  protected paymentLines: DraftPayment[] = [this.newPaymentLine()];
 
   protected searchText = '';
   protected selectedId: number | null = null;
@@ -160,6 +168,7 @@ export class SalesEntryPage implements OnInit {
   // Product Load Panel (centered overlay inside the Items area)
   protected readonly productPanelOpen = signal(false);
   protected readonly panelLoading = signal(false);
+  protected readonly panelError = signal<string | null>(null);
   protected readonly panelProducts = signal<ProductDto[]>([]);
   protected readonly panelResults = signal<ProductDto[]>([]);
   protected readonly panelStock = signal<Map<number, number>>(new Map());
@@ -202,13 +211,15 @@ export class SalesEntryPage implements OnInit {
       await this.loadMasters();
       await this.loadList();
 
-      // Show context popup for new entries (not when editing existing)
+      // A POS-originated entry must carry drawer context. A normal sale must not
+      // be forced through it: it can be raised with no store, counter, operator
+      // or POS session, leaving POSSessionId null.
       const idParam = this.route.snapshot.queryParamMap.get('id');
       const hasHubRequest = this.hub.editRequest();
 
-      if (!idParam && !hasHubRequest) {
+      if (hasHubRequest) {
         this.showContextPopup.set(true);
-      } else if (idParam && !hasHubRequest) {
+      } else if (idParam) {
         try {
           const d = await this.svc.getById(Number(idParam));
           if (d) this.edit(d);
@@ -273,7 +284,7 @@ export class SalesEntryPage implements OnInit {
     this.applyTabState(nextTab);
 
     try {
-      const nextNumber = await this.svc.getNextNumber();
+      const nextNumber = await this.svc.getNextNumber(this.companyId);
       nextTab.salesNo = nextNumber;
       this.salesNo = nextNumber;
     } catch {
@@ -311,15 +322,12 @@ export class SalesEntryPage implements OnInit {
     tab.sourceId = this.sourceId;
     tab.sourceCode = this.sourceCode;
     tab.priceListId = this.priceListId;
+    tab.priceTypeId = this.priceTypeId;
     tab.taxTypeSystemId = this.taxTypeSystemId;
     tab.paymentTypeID = this.paymentTypeID;
     tab.paymentMethodID = this.paymentMethodID;
     tab.remarks = this.remarks;
-    tab.payAmount = this.payAmount;
-    tab.payTypeID = this.payTypeID;
-    tab.payMethodID = this.payMethodID;
-    tab.payReferenceNo = this.payReferenceNo;
-    tab.payRemarks = this.payRemarks;
+    tab.paymentLines = this.paymentLines.map((p) => ({ ...p }));
     tab.items = [...this.items()];
     tab.editingId = this.editingId;
     tab.isDirty = true;
@@ -338,15 +346,12 @@ export class SalesEntryPage implements OnInit {
       this.sourceId = null;
       this.sourceCode = 'SALES';
       this.priceListId = null;
+      this.priceTypeId = null;
       this.taxTypeSystemId = null;
       this.paymentTypeID = null;
       this.paymentMethodID = null;
       this.remarks = '';
-      this.payAmount = 0;
-      this.payTypeID = null;
-      this.payMethodID = null;
-      this.payReferenceNo = '';
-      this.payRemarks = '';
+      this.paymentLines = [this.newPaymentLine()];
       this.items.set([]);
       return;
     }
@@ -362,16 +367,16 @@ export class SalesEntryPage implements OnInit {
     this.sourceId = tab.sourceId;
     this.sourceCode = tab.sourceCode;
     this.priceListId = tab.priceListId;
+    this.priceTypeId = tab.priceTypeId;
     this.taxTypeSystemId = tab.taxTypeSystemId;
     this.paymentTypeID = tab.paymentTypeID;
     this.paymentMethodID = tab.paymentMethodID;
     this.remarks = tab.remarks;
-    this.payAmount = tab.payAmount;
-    this.payTypeID = tab.payTypeID;
-    this.payMethodID = tab.payMethodID;
-    this.payReferenceNo = tab.payReferenceNo;
-    this.payRemarks = tab.payRemarks;
+    this.paymentLines = tab.paymentLines.length
+      ? tab.paymentLines.map((p) => ({ ...p }))
+      : [this.newPaymentLine()];
     this.items.set(tab.items.length ? [...tab.items] : []);
+    void this.loadPriceTypesForPriceList(this.priceListId);
   }
 
   protected async newDoc(): Promise<void> {
@@ -382,7 +387,7 @@ export class SalesEntryPage implements OnInit {
     this.applyTabState(nextTab);
 
     try {
-      const nextNumber = await this.svc.getNextNumber();
+      const nextNumber = await this.svc.getNextNumber(this.companyId);
       nextTab.salesNo = nextNumber;
       this.salesNo = nextNumber;
     } catch {
@@ -411,15 +416,12 @@ export class SalesEntryPage implements OnInit {
       sourceId: defaultSource?.id ?? null,
       sourceCode: defaultSource ? defaultSource.code || defaultSource.name : 'SALES',
       priceListId: null,
+      priceTypeId: null,
       taxTypeSystemId: this.taxTypeSystems().length === 1 ? this.taxTypeSystems()[0].id : null,
       paymentTypeID: null,
       paymentMethodID: null,
       remarks: '',
-      payAmount: 0,
-      payTypeID: null,
-      payMethodID: null,
-      payReferenceNo: '',
-      payRemarks: '',
+      paymentLines: [this.newPaymentLine()],
       items: [],
       contextStoreName: '',
       contextCounterName: '',
@@ -459,6 +461,9 @@ export class SalesEntryPage implements OnInit {
     const priceRes = await safe(() => this.billing.priceLists.getPaged(1, 1000, ''));
     this.priceLists.set((priceRes?.items ?? []).filter((p) => p.isActive !== false));
 
+    const priceTypeRes = await safe(() => this.billing.priceTypes.getAll(true));
+    this.allPriceTypes.set((priceTypeRes ?? []).filter((pt) => pt.isActive !== false));
+
     const catRes = await safe(() => this.admin.productCategories.getPaged(1, 1000, ''));
     this.productCategories.set((catRes?.items ?? []).filter((c) => c.isActive !== false));
 
@@ -490,9 +495,102 @@ export class SalesEntryPage implements OnInit {
     this.markDirty();
   }
 
-  protected onPriceListChange(id: number | null): void {
-    this.priceListId = id;
+  /**
+   * A POS drawer fixes the company and branch that the sale must belong to, so
+   * those stay locked for drawer sales. A normal sale picks them freely.
+   */
+  protected get companyBranchLocked(): boolean {
+    return this.contextValidated();
+  }
+
+  protected async onCompanyChange(id: number | null): Promise<void> {
+    if (id == null || id === this.companyId) return;
+    this.companyId = id;
+
+    // Everything scoped to the company is now stale: branches, units, prices
+    // and the reserved next invoice number all belong to the old company.
+    this.branchId = null;
+    this.warehouseId = null;
+    this.priceListId = null;
+    this.priceTypeId = null;
+    this.priceTypes.set([]);
+    this.taxTypeSystemId = null;
+    this.items.set([]);
+
+    await this.refreshLookups(id);
+    this.branchId = this.lookups()?.branches?.[0]?.id ?? null;
+    this.warehouseId = this.lookups()?.warehouses?.[0]?.id ?? null;
+
+    try {
+      const nextNumber = await this.svc.getNextNumber(id);
+      this.salesNo = nextNumber;
+      const tab = this.activeTab;
+      if (tab) tab.salesNo = nextNumber;
+    } catch {
+      // keep the previous number rather than blanking the document
+    }
+
+    this.toast.warning(
+      'Company changed',
+      'Items were cleared. Tax and price-list masters still follow your signed-in company.');
     this.markDirty();
+  }
+
+  protected onBranchChange(id: number | null): void {
+    this.branchId = id;
+    this.warehouseId = null;
+    this.markDirty();
+  }
+
+  protected async onPriceListChange(id: number | null): Promise<void> {
+    this.priceListId = id;
+    await this.loadPriceTypesForPriceList(id);
+    this.markDirty();
+    if (this.productPanelOpen()) await this.loadPanelStockAndPrices();
+  }
+
+  protected async onPriceTypeChange(id: number | null): Promise<void> {
+    this.priceTypeId = id;
+    this.markDirty();
+    if (this.productPanelOpen()) await this.loadPanelStockAndPrices();
+  }
+
+  /**
+   * A price list is priced per price type (Sales, Retail, Wholesale, ...), so a
+   * product rate only means something once the price type is known. Junction rows
+   * win; the list's own price type columns are the fallback for lists that were
+   * never linked explicitly.
+   */
+  private async loadPriceTypesForPriceList(priceListId: number | null): Promise<void> {
+    if (!priceListId) {
+      this.priceTypes.set([]);
+      this.priceTypeId = null;
+      return;
+    }
+
+    let ids: number[] = [];
+    try {
+      const junction = await this.billing.priceLists.getPriceTypes(priceListId);
+      ids = (junction ?? []).filter((j) => j.isActive !== false).map((j) => j.priceTypeId);
+    } catch {
+      ids = [];
+    }
+
+    if (!ids.length) {
+      const list = this.priceLists().find((p) => p.priceListId === priceListId);
+      const csv = (list?.priceTypeIds ?? '')
+        .split(',')
+        .map((s) => Number(s.trim()))
+        .filter((n) => n > 0);
+      ids = csv.length ? csv : list?.priceTypeId ? [list.priceTypeId] : [];
+    }
+
+    const scoped = this.allPriceTypes()
+      .filter((pt) => ids.includes(pt.priceTypeId))
+      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+    this.priceTypes.set(scoped);
+    this.priceTypeId =
+      scoped.find((pt) => pt.priceTypeId === this.priceTypeId)?.priceTypeId ?? scoped[0]?.priceTypeId ?? null;
   }
 
   // ============================================================
@@ -659,6 +757,9 @@ export class SalesEntryPage implements OnInit {
 
   private onArrow(dir: 'up' | 'down' | 'left' | 'right', e: KeyboardEvent): void {
     if (this.productPanelOpen()) {
+      // Inside the panel search box ArrowUp/Down pick a result, but
+      // ArrowLeft/ArrowRight must still move the text caret.
+      if (dir === 'left' || dir === 'right') return;
       e.preventDefault();
       this.movePanelHi(dir === 'down' ? 1 : dir === 'up' ? -1 : 0);
       return;
@@ -677,7 +778,7 @@ export class SalesEntryPage implements OnInit {
 
   private onHomeEnd(which: 'home' | 'end', e: KeyboardEvent): void {
     if (this.productPanelOpen()) {
-      this.closeProductPanel();
+      if (!this.inPanelFilters(e.target)) this.closeProductPanel();
       return;
     }
     const cell = this.currentCell(e.target);
@@ -709,7 +810,7 @@ export class SalesEntryPage implements OnInit {
 
   private onGridTab(e: KeyboardEvent, back: boolean): void {
     if (this.productPanelOpen()) {
-      this.closeProductPanel();
+      if (!this.inPanelFilters(e.target)) this.closeProductPanel();
       return;
     }
     const cell = this.currentCell(e.target);
@@ -781,16 +882,28 @@ export class SalesEntryPage implements OnInit {
 
   private async loadPanelProducts(): Promise<void> {
     this.panelLoading.set(true);
+    this.panelError.set(null);
     try {
       const res = await this.admin.products.getPaged(1, 2000, '', this.companyId);
+      // Defensive: accept either a bare array or a paged envelope so a shape
+      // mismatch can never silently blank the grid.
+      const rows: ProductDto[] = Array.isArray(res) ? res : (res?.items ?? []);
       this.productById.clear();
-      for (const p of res.items ?? []) this.productById.set(p.id, p);
-      this.panelProducts.set(res.items ?? []);
+      for (const p of rows) this.productById.set(p.id, p);
+      this.panelProducts.set(rows);
       await this.loadPanelStockAndPrices();
       this.panelQuery();
-    } catch {
+      if (!rows.length) {
+        this.panelError.set(
+          `No products found${this.companyId ? ` for company #${this.companyId}` : ''}. Check that products exist and are active for this company.`,
+        );
+      }
+    } catch (e: any) {
       this.panelProducts.set([]);
       this.panelResults.set([]);
+      this.panelError.set(
+        e?.error?.message ?? e?.message ?? 'Unable to load products — please retry.',
+      );
     } finally {
       this.panelLoading.set(false);
     }
@@ -812,7 +925,11 @@ export class SalesEntryPage implements OnInit {
     try {
       if (this.priceListId) {
         const details = await this.billing.priceLists.getDetails(this.priceListId);
-        for (const d of details ?? []) priceMap.set(d.productId, d.price);
+        for (const d of details ?? []) {
+          if (d.isActive === false) continue;
+          if (this.priceTypeId != null && d.priceTypeId !== this.priceTypeId) continue;
+          priceMap.set(d.productId, d.price);
+        }
       }
     } catch {
       /* prices fall back to product master sales price */
@@ -855,6 +972,19 @@ export class SalesEntryPage implements OnInit {
     const n = this.panelResults().length;
     if (!n) return;
     this.panelHi = (this.panelHi + delta + n) % n;
+    this.scrollHighlightIntoView();
+  }
+
+  private scrollHighlightIntoView(): void {
+    const body = this.panelBody()?.nativeElement;
+    if (!body) return;
+    const rows = body.querySelectorAll<HTMLElement>('.panel-table tbody tr');
+    rows[this.panelHi]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  private inPanelFilters(target: EventTarget | null): boolean {
+    const el = target as HTMLElement | null;
+    return !!el?.closest('.panel-filters');
   }
 
   protected stockOf(p: ProductDto): string {
@@ -1228,8 +1358,44 @@ export class SalesEntryPage implements OnInit {
   // Payment
   // ============================================================
 
+  protected newPaymentLine(): DraftPayment {
+    return { amount: 0, paymentTypeID: null, paymentMethodID: null, referenceNo: '', remarks: '' };
+  }
+
+  /**
+   * Recorded tenders are settled against the invoice once it exists, so the
+   * lines are shown for reference but not re-edited.
+   */
+  protected get paymentLinesEditable(): boolean {
+    return this.editingId == null;
+  }
+
+  protected addPaymentLine(): void {
+    if (!this.paymentLinesEditable) return;
+    this.paymentLines = [...this.paymentLines, this.newPaymentLine()];
+    this.markDirty();
+  }
+
+  protected removePaymentLine(index: number): void {
+    if (!this.paymentLinesEditable) return;
+    if (this.paymentLines.length <= 1) return;
+    this.paymentLines = this.paymentLines.filter((_, i) => i !== index);
+    this.markDirty();
+  }
+
+  protected paymentMethodName(id: number | null): string {
+    if (id == null) return '';
+    const m = this.lookups()?.paymentMethods.find((x) => x.id === id);
+    return m?.name ?? '';
+  }
+
+  protected isCashMethod(id: number | null): boolean {
+    if (id == null) return false;
+    return this.paymentMethodName(id).toLowerCase().includes('cash');
+  }
+
   protected get amountPaid(): number {
-    return Math.max(0, this.payAmount || 0);
+    return round2(this.paymentLines.reduce((sum, p) => sum + (Number(p.amount) || 0), 0));
   }
 
   protected get balanceAmount(): number {
@@ -1238,12 +1404,6 @@ export class SalesEntryPage implements OnInit {
 
   protected get changeAmount(): number {
     return round2(Math.max(0, this.amountPaid - this.grandTotal));
-  }
-
-  protected get selectedPayMethodIsCash(): boolean {
-    if (this.payMethodID == null) return false;
-    const m = this.lookups()?.paymentMethods.find((x) => x.id === this.payMethodID);
-    return (m?.name ?? '').toLowerCase().includes('cash');
   }
 
   // ============================================================
@@ -1277,24 +1437,26 @@ export class SalesEntryPage implements OnInit {
       invoiceDate: this.invoiceDate,
       sourceType: this.sourceCode || 'SALES',
       priceListId: this.priceListId ?? null,
-      paymentTypeID: this.payTypeID ?? null,
-      paymentMethodID: this.payMethodID ?? null,
+      paymentTypeID: this.toPayments()[0]?.paymentTypeID ?? this.paymentTypeID ?? null,
+      paymentMethodID: this.toPayments()[0]?.paymentMethodID ?? this.paymentMethodID ?? null,
       remarks: this.remarks || null,
       items: this.toItems(),
-      payment: null,
+      payments: this.toPayments(),
     };
 
-    if (this.payAmount > 0) {
-      req.payment = {
-        amount: this.payAmount,
-        paymentTypeID: this.payTypeID ?? null,
-        paymentMethodID: this.payMethodID ?? null,
-        referenceNo: this.payReferenceNo || null,
-        remarks: this.payRemarks || null,
-      };
-    }
-
     return req;
+  }
+
+  private toPayments(): CreateSalesPaymentInput[] {
+    return this.paymentLines
+      .filter((p) => (Number(p.amount) || 0) > 0)
+      .map((p) => ({
+        amount: round2(Number(p.amount) || 0),
+        paymentTypeID: p.paymentTypeID ?? null,
+        paymentMethodID: p.paymentMethodID ?? null,
+        referenceNo: (p.referenceNo || '').trim() || null,
+        remarks: (p.remarks || '').trim() || null,
+      }));
   }
 
   private validate(): string | null {
@@ -1351,14 +1513,24 @@ export class SalesEntryPage implements OnInit {
       }
     }
 
-    if (this.payAmount > 0 && this.payMethodID == null) {
-      this.focusField('paymentMode');
-      this.toast.error('Select a Payment Mode');
-      return 'payment';
+    for (let i = 0; i < this.paymentLines.length; i++) {
+      const line = this.paymentLines[i];
+      if (!(Number(line.amount) > 0)) continue;
+      if (line.paymentMethodID == null) {
+        this.focusField('paymentMode');
+        this.toast.error(`Select a Payment Mode on payment line ${i + 1}`);
+        return 'payment';
+      }
+      if (!this.isCashMethod(line.paymentMethodID) && !(line.referenceNo || '').trim()) {
+        this.focusField('paymentReference');
+        this.toast.error(`Reference No is required on payment line ${i + 1}`);
+        return 'payment';
+      }
     }
-    if (this.payAmount > 0 && !this.selectedPayMethodIsCash && !(this.payReferenceNo || '').trim()) {
-      this.focusField('paymentReference');
-      this.toast.error('Reference No is required for this payment mode');
+
+    if (this.amountPaid > this.grandTotal) {
+      this.focusField('paymentAmount');
+      this.toast.error('Payment total cannot exceed the invoice total');
       return 'payment';
     }
 
@@ -1391,8 +1563,10 @@ export class SalesEntryPage implements OnInit {
           items: req.items,
         };
         await this.svc.update(tab.editingId, update);
+        this.lastSavedInvoiceId = tab.editingId;
       } else {
-        await this.svc.create(req);
+        const created = await this.svc.create(req);
+        this.lastSavedInvoiceId = created.salesInvoiceId;
       }
 
       tab.isDirty = false;
@@ -1410,8 +1584,17 @@ export class SalesEntryPage implements OnInit {
 
   protected async saveAndPrint(): Promise<void> {
     const ok = await this.save();
-    if (ok) window.print();
+    if (!ok) return;
+    // Render the published A4 template with the SAVED invoice from the DB —
+    // never the Angular form state.
+    await this.docPrint.openPreview(this.lastSavedInvoiceId, this.activeTab?.companyId ?? null, true);
   }
+
+  protected async previewSavedInvoice(p: SalesInvoiceDto): Promise<void> {
+    await this.docPrint.openPreview(p.salesInvoiceId, p.companyId, false);
+  }
+
+  private lastSavedInvoiceId = 0;
 
   protected async edit(p: SalesInvoiceDto): Promise<void> {
     await this.refreshLookups();
@@ -1429,6 +1612,16 @@ export class SalesEntryPage implements OnInit {
     tab.paymentTypeID = p.paymentTypeID ?? null;
     tab.paymentMethodID = p.paymentMethodID ?? null;
     tab.remarks = p.remarks ?? '';
+    const allocations = await this.svc.getPayments(p.salesInvoiceId).catch(() => []);
+    tab.paymentLines = allocations.length
+      ? allocations.map((a) => ({
+          amount: a.allocatedAmount,
+          paymentTypeID: p.paymentTypeID ?? null,
+          paymentMethodID: p.paymentMethodID ?? null,
+          referenceNo: '',
+          remarks: '',
+        }))
+      : [this.newPaymentLine()];
     tab.items = p.items.map((i) => ({
       productId: i.productId,
       unitID: i.unitID,
@@ -1507,8 +1700,8 @@ export class SalesEntryPage implements OnInit {
     }
   }
 
-  private async refreshLookups(): Promise<void> {
-    this.lookups.set(await this.svc.getLookups());
+  private async refreshLookups(companyId?: number | null): Promise<void> {
+    this.lookups.set(await this.svc.getLookups(companyId));
   }
 
   private async loadList(): Promise<void> {

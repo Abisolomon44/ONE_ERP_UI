@@ -1,7 +1,16 @@
+/* ============================================================
+   Report-shared base styles — used by purchase-register,
+   purchase-outstanding, supplier-ledger, stock-ledger,
+   gst-purchase-report and purchase-report-screen.
+   Token fix: legacy var(--card/--muted/--input/--primary) do not
+   exist as globals, so real global tokens now lead with the old
+   names kept as fallbacks. Dark mode now resolves correctly.
+   ============================================================ */
+
 .report {
-  background: var(--card, #fff);
+  background: var(--surface, var(--card, #fff));
   border: 1px solid var(--border, #e2e8f0);
-  border-radius: 6px;
+  border-radius: var(--radius, 10px);
   padding: 0.9rem 1rem;
   display: flex;
   flex-direction: column;
@@ -27,17 +36,17 @@
   flex-direction: column;
   gap: 0.2rem;
   font-size: 0.72rem;
-  color: var(--muted, #64748b);
+  color: var(--text-3, var(--muted, #64748b));
 }
 
 .filters select,
 .filters input {
   padding: 0.3rem 0.45rem;
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 4px;
+  border: 1px solid var(--border-strong, var(--border, #e2e8f0));
+  border-radius: var(--radius-sm, 4px);
   font-size: 0.8rem;
   height: 30px;
-  background: var(--input, #fff);
+  background: var(--surface, var(--input, #fff));
   color: var(--text, #0f172a);
 }
 
@@ -51,8 +60,8 @@
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--muted, #64748b);
-  background: #f8fafc;
+  color: var(--text-3, var(--muted, #64748b));
+  background: var(--surface-2, #f8fafc);
   text-align: left;
   padding: 0.35rem 0.4rem;
   border-bottom: 1px solid var(--border, #e2e8f0);
@@ -75,7 +84,7 @@
 }
 
 .empty {
-  color: var(--muted, #64748b);
+  color: var(--text-3, var(--muted, #64748b));
   font-size: 0.82rem;
   padding: 0.5rem 0;
 }

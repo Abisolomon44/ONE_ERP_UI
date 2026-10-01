@@ -225,137 +225,139 @@ export class InvoiceTemplateService {
   private readonly http = inject(HttpClient);
 
   // ------------------------------------------------------------
-  // Lookups
+  // Lookups — the backend serves these under /api/document-lookups
+  // (the old /api/invoice-template-lookups prefix is legacy).
   // ------------------------------------------------------------
   invoiceTypes(includeInactive = false): Promise<LookupOption[]> {
-    return this.get<LookupOption[]>('/api/invoice-template-lookups/invoice-types', { includeInactive });
+    return this.get<LookupOption[]>('/api/document-lookups/invoice-types', { includeInactive });
   }
 
   paperSizes(includeInactive = false): Promise<LookupOption[]> {
-    return this.get<LookupOption[]>('/api/invoice-template-lookups/paper-sizes', { includeInactive });
+    return this.get<LookupOption[]>('/api/document-lookups/paper-sizes', { includeInactive });
   }
 
   printerTypes(includeInactive = false): Promise<LookupOption[]> {
-    return this.get<LookupOption[]>('/api/invoice-template-lookups/printer-types', { includeInactive });
+    return this.get<LookupOption[]>('/api/document-lookups/printer-types', { includeInactive });
   }
 
   printerModels(printerTypeId?: number, includeInactive = false): Promise<LookupOption[]> {
-    return this.get<LookupOption[]>('/api/invoice-template-lookups/printer-models', {
+    return this.get<LookupOption[]>('/api/document-lookups/printer-models', {
       printerTypeId: printerTypeId ?? undefined,
       includeInactive,
     });
   }
 
   categories(includeInactive = false): Promise<LookupOption[]> {
-    return this.get<LookupOption[]>('/api/invoice-template-lookups/categories', { includeInactive });
+    return this.get<LookupOption[]>('/api/document-lookups/categories', { includeInactive });
   }
 
   components(includeInactive = false): Promise<LookupOptionWithCategory[]> {
-    return this.get<LookupOptionWithCategory[]>('/api/invoice-template-lookups/components', { includeInactive });
+    return this.get<LookupOptionWithCategory[]>('/api/document-lookups/components', { includeInactive });
   }
 
   variables(includeInactive = false): Promise<LookupOptionWithCategory[]> {
-    return this.get<LookupOptionWithCategory[]>('/api/invoice-template-lookups/variables', { includeInactive });
+    return this.get<LookupOptionWithCategory[]>('/api/document-lookups/variables', { includeInactive });
   }
 
   fonts(includeInactive = false): Promise<LookupOption[]> {
-    return this.get<LookupOption[]>('/api/invoice-template-lookups/fonts', { includeInactive });
+    return this.get<LookupOption[]>('/api/document-lookups/fonts', { includeInactive });
   }
 
   orientations(includeInactive = false): Promise<LookupOption[]> {
-    return this.get<LookupOption[]>('/api/invoice-template-lookups/orientations', { includeInactive });
+    return this.get<LookupOption[]>('/api/document-lookups/orientations', { includeInactive });
   }
 
   units(includeInactive = false): Promise<LookupOption[]> {
-    return this.get<LookupOption[]>('/api/invoice-template-lookups/units', { includeInactive });
+    return this.get<LookupOption[]>('/api/document-lookups/units', { includeInactive });
   }
 
   // ------------------------------------------------------------
   // Templates
   // ------------------------------------------------------------
   getPaged(page = 1, size = 50, search = ''): Promise<PaginatedResult<InvoiceTemplateListItem>> {
-    return this.get<PaginatedResult<InvoiceTemplateListItem>>('/api/invoice-templates', { page, size, search });
+    return this.get<PaginatedResult<InvoiceTemplateListItem>>('/api/document-templates', { page, size, search });
   }
 
   getById(id: number): Promise<InvoiceTemplateListItem> {
-    return this.get<InvoiceTemplateListItem>(`/api/invoice-templates/${id}`);
+    return this.get<InvoiceTemplateListItem>(`/api/document-templates/${id}`);
   }
 
   create(request: CreateInvoiceTemplateRequest): Promise<InvoiceTemplateListItem> {
-    return this.post<InvoiceTemplateListItem>('/api/invoice-templates', request);
+    return this.post<InvoiceTemplateListItem>('/api/document-templates', request);
   }
 
   update(id: number, request: UpdateInvoiceTemplateRequest): Promise<InvoiceTemplateListItem> {
-    return this.put<InvoiceTemplateListItem>(`/api/invoice-templates/${id}`, request);
+    return this.put<InvoiceTemplateListItem>(`/api/document-templates/${id}`, request);
   }
 
   remove(id: number): Promise<void> {
-    return this.delete(`/api/invoice-templates/${id}`);
+    return this.delete(`/api/document-templates/${id}`);
   }
 
   setDefault(id: number): Promise<void> {
-    return this.post<void>(`/api/invoice-templates/${id}/set-default`, {});
+    return this.post<void>(`/api/document-templates/${id}/set-default`, {});
   }
 
   // ------------------------------------------------------------
   // Versions
   // ------------------------------------------------------------
   versions(templateId: number): Promise<InvoiceTemplateVersionListItem[]> {
-    return this.get<InvoiceTemplateVersionListItem[]>(`/api/invoice-templates/${templateId}/versions`);
+    return this.get<InvoiceTemplateVersionListItem[]>(`/api/document-templates/${templateId}/versions`);
   }
 
   createVersion(templateId: number): Promise<InvoiceTemplateVersionListItem> {
-    return this.post<InvoiceTemplateVersionListItem>(`/api/invoice-templates/${templateId}/versions`, {});
+    return this.post<InvoiceTemplateVersionListItem>(`/api/document-templates/${templateId}/versions`, {});
   }
 
   getDesigner(versionId: number): Promise<DesignerVersionDto> {
-    return this.get<DesignerVersionDto>(`/api/invoice-templates/versions/${versionId}/designer`);
+    return this.get<DesignerVersionDto>(`/api/document-templates/versions/${versionId}/designer`);
   }
 
   saveDesigner(versionId: number, request: SaveDesignerVersionRequest): Promise<void> {
-    return this.put<void>(`/api/invoice-templates/versions/${versionId}/designer`, request);
+    return this.put<void>(`/api/document-templates/versions/${versionId}/designer`, request);
   }
 
+  /** GET preview (the backend renders the saved designer version). */
   preview(versionId: number): Promise<string> {
-    return this.post<string>(`/api/invoice-templates/versions/${versionId}/preview`, {});
+    return this.get<string>(`/api/document-templates/versions/${versionId}/preview`);
   }
 
   publish(versionId: number): Promise<void> {
-    return this.post<void>(`/api/invoice-templates/versions/${versionId}/publish`, {});
+    return this.post<void>(`/api/document-templates/versions/${versionId}/publish`, {});
   }
 
   cloneToDraft(versionId: number): Promise<InvoiceTemplateVersionListItem> {
-    return this.post<InvoiceTemplateVersionListItem>(`/api/invoice-templates/versions/${versionId}/clone`, {});
+    return this.post<InvoiceTemplateVersionListItem>(`/api/document-templates/versions/${versionId}/clone`, {});
   }
 
   // ------------------------------------------------------------
   // Printers
   // ------------------------------------------------------------
   printers(templateId: number): Promise<TemplatePrinterDto[]> {
-    return this.get<TemplatePrinterDto[]>(`/api/invoice-templates/${templateId}/printers`);
+    return this.get<TemplatePrinterDto[]>(`/api/document-templates/templates/${templateId}/printers`);
   }
 
   savePrinter(templateId: number, request: SaveTemplatePrinterRequest): Promise<TemplatePrinterDto> {
-    return this.post<TemplatePrinterDto>(`/api/invoice-templates/${templateId}/printers`, request);
+    return this.post<TemplatePrinterDto>(`/api/document-templates/templates/${templateId}/printers`, request);
   }
 
   deletePrinter(templateId: number, printerId: number): Promise<void> {
-    return this.delete(`/api/invoice-templates/${templateId}/printers/${printerId}`);
+    return this.delete(`/api/document-templates/templates/${templateId}/printers/${printerId}`);
   }
 
   // ------------------------------------------------------------
   // Assignments
   // ------------------------------------------------------------
   assignments(templateId: number): Promise<TemplateAssignmentDto[]> {
-    return this.get<TemplateAssignmentDto[]>(`/api/invoice-templates/${templateId}/assignments`);
+    return this.get<TemplateAssignmentDto[]>(`/api/document-templates/${templateId}/assignments`);
   }
 
   createAssignment(templateId: number, request: CreateTemplateAssignmentRequest): Promise<TemplateAssignmentDto> {
-    return this.post<TemplateAssignmentDto>(`/api/invoice-templates/${templateId}/assignments`, request);
+    return this.post<TemplateAssignmentDto>(`/api/document-templates/${templateId}/assignments`, request);
   }
 
   deleteAssignment(templateId: number, assignmentId: number): Promise<void> {
-    return this.delete(`/api/invoice-templates/${templateId}/assignments/${assignmentId}`);
+    return this.delete(`/api/document-templates/assignments/${assignmentId}`);
   }
 
   // ------------------------------------------------------------

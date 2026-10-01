@@ -1,0 +1,123 @@
+/* =====================================================================
+   DOCUMENT MASTER → TEMPLATE COMPONENTS
+   Reuses the Document Design hub's `dd-*` styling conventions so the
+   dedicated master screen matches the module's compact ERP look.
+   ===================================================================== */
+
+:host { display: block; }
+
+.dd-page {
+  --dd-border: color-mix(in srgb, currentColor 12%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-height: 100%;
+}
+
+/* ---------------- topbar ---------------- */
+.dd-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dd-brand { display: flex; align-items: center; gap: 10px; }
+.dd-logo {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #2563eb; color: #fff;
+}
+.dd-title { font-size: 15px; font-weight: 700; display: block; }
+.dd-subtitle { font-size: 11px; opacity: .65; display: block; }
+.dd-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ---------------- buttons ---------------- */
+.dd-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--dd-border);
+  background: transparent; color: inherit;
+  font-size: 12px; font-weight: 600;
+  transition: background .15s ease;
+}
+.dd-btn:hover:not(:disabled) { background: rgba(127, 127, 127, .12); }
+.dd-btn:disabled { opacity: .5; cursor: not-allowed; }
+.dd-btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+.dd-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.dd-btn-icon { padding: 7px 9px; }
+.dd-mini { padding: 3px 8px; font-size: 11px; border-radius: 6px; }
+.dd-danger { color: #dc2626; border-color: rgba(220, 38, 38, .4); }
+
+/* ---------------- tabs ---------------- */
+.dd-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dd-border); flex-wrap: wrap; }
+.dd-tab {
+  padding: 8px 16px; border: none; background: transparent; color: inherit;
+  font-size: 12px; font-weight: 600; cursor: pointer; opacity: .6;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.dd-tab.active { opacity: 1; border-bottom-color: #2563eb; }
+
+/* ---------------- card / filters / table ---------------- */
+.dd-card {
+  border: 1px solid var(--dd-border);
+  border-radius: 12px; padding: 14px; overflow-x: auto;
+  background: color-mix(in srgb, currentColor 2%, transparent);
+}
+.dd-filter-row {
+  display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.dd-search { display: flex; gap: 8px; max-width: 420px; flex: 1 1 260px; }
+.dd-search input { flex: 1; }
+.dd-status-filter { display: flex; align-items: center; gap: 8px; }
+.dd-select-label { font-size: 11px; font-weight: 600; opacity: .85; white-space: nowrap; }
+.dd-status-filter select { width: 130px; }
+
+.dd-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.dd-table th, .dd-table td {
+  text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--dd-border);
+  white-space: nowrap;
+}
+.dd-table th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
+.dd-table td.mono, .mono { font-family: ui-monospace, monospace; font-size: 11px; }
+.dd-table .muted { opacity: .55; white-space: normal; }
+.dd-row-actions { display: flex; gap: 5px; }
+td.desc { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dd-badge {
+  display: inline-block; padding: 1px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  background: rgba(127,127,127,.15);
+}
+.dd-badge.pub { background: rgba(22, 163, 74, .18); color: #16a34a; }
+.dd-badge.inactive { background: rgba(220, 38, 38, .15); color: #dc2626; }
+
+.dd-loading { font-size: 12px; opacity: .6; padding: 4px 2px; }
+
+input[type='text'], input[type='number'], select, textarea {
+  padding: 6px 9px; border-radius: 8px; border: 1px solid var(--dd-border);
+  background: transparent; color: inherit; font-size: 12px; width: 100%;
+  font-family: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: 1.5px solid #2563eb; }
+
+/* ---------------- modal ---------------- */
+.dd-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, .45);
+  display: flex; align-items: center; justify-content: center; z-index: 90;
+}
+.dd-modal {
+  width: min(680px, 94vw); max-height: 88vh; overflow-y: auto;
+  border-radius: 14px; padding: 18px;
+  background: var(--dd-modal-bg, #fff); color: var(--dd-modal-fg, #111);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
+}
+.dd-modal h3 { margin: 0 0 12px; font-size: 14px; }
+.dd-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.dd-form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; opacity: .85; }
+.dd-form-grid .span2 { grid-column: span 2; }
+.dd-form-grid label.chk { flex-direction: row; align-items: center; gap: 8px; }
+.dd-form-grid input[type='checkbox'] { width: auto; }
+.dd-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }

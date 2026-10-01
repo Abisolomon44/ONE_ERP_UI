@@ -1,0 +1,292 @@
+<div class="dd-page">
+  <!-- ================= toolbar ================= -->
+  <header class="dd-topbar">
+    <div class="dd-brand">
+      <span class="dd-logo"><lucide-icon name="file-text" size="16"></lucide-icon></span>
+      <div class="dd-brand-text">
+        <span class="dd-title">Document Design</span>
+        <span class="dd-subtitle">Templates · Versions · Designer · Masters</span>
+      </div>
+    </div>
+    <div class="dd-actions">
+      <button class="dd-btn dd-btn-primary" type="button" (click)="seedDefaultA4()" [disabled]="seeding()">
+        <lucide-icon name="sparkles" size="13"></lucide-icon>
+        {{ seeding() ? 'Setting up…' : 'Create Default A4 Sales Invoice' }}
+      </button>
+      @if (activeTab() === 'templates') {
+        <button class="dd-btn" type="button" (click)="newTemplate()" [disabled]="!canManage()">
+          <lucide-icon name="plus" size="13"></lucide-icon> New Template
+        </button>
+      }
+      @if (activeTab() === 'masters') {
+        <button class="dd-btn" type="button" (click)="newMaster()" [disabled]="!canManage()">
+          <lucide-icon name="plus" size="13"></lucide-icon> New Record
+        </button>
+      }
+      <button class="dd-btn dd-btn-icon" type="button" (click)="activeTab() === 'settings' ? loadAssignments() : (activeTab() === 'masters' ? loadMasterRows() : loadTemplates())">
+        <lucide-icon name="refresh-cw" size="13"></lucide-icon>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= tabs ================= -->
+  <nav class="dd-tabs">
+    <button type="button" class="dd-tab" [class.active]="activeTab() === 'templates'" (click)="switchTab('templates')">Templates</button>
+    <button type="button" class="dd-tab" [class.active]="activeTab() === 'settings'" (click)="switchTab('settings')">Template Assignments</button>
+    <button type="button" class="dd-tab" [class.active]="activeTab() === 'masters'" (click)="switchTab('masters')">Document Masters</button>
+  </nav>
+
+  @if (loading()) { <div class="dd-loading">Loading…</div> }
+
+  <!-- ================= templates ================= -->
+  @if (activeTab() === 'templates') {
+    <section class="dd-card">
+      <div class="dd-search">
+        <input type="text" placeholder="Search code or name…" [ngModel]="search()" (ngModelChange)="search.set($event)" (keyup.enter)="loadTemplates()" />
+        <button class="dd-btn" type="button" (click)="loadTemplates()">Search</button>
+      </div>
+      <table class="dd-table">
+        <thead>
+          <tr>
+            <th>Code</th><th>Name</th><th>Document Type</th><th>Paper</th><th>Orientation</th>
+            <th>Version</th><th>Status</th><th>Default</th><th>Active</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of templates(); track t.invoiceTemplateId) {
+            <tr>
+              <td class="mono">{{ t.code }}</td>
+              <td>{{ t.name }}</td>
+              <td>{{ t.invoiceTypeName }}</td>
+              <td>{{ t.paperSizeName }}</td>
+              <td>{{ t.orientationName }}</td>
+              <td>V{{ t.latestVersionNumber }}</td>
+              <td><span class="dd-badge" [class.pub]="t.hasPublishedVersion">{{ t.latestStatus || '—' }}</span></td>
+              <td>@if (t.isDefault) { <lucide-icon name="star" size="13"></lucide-icon> }</td>
+              <td>@if (t.isActive) { ✓ }</td>
+              <td class="dd-row-actions">
+                <button class="dd-btn dd-mini" type="button" (click)="toggleVersions(t)">Versions</button>
+                <button class="dd-btn dd-mini" type="button" (click)="editTemplate(t)" [disabled]="!canManage()">Edit</button>
+                @if (!t.isDefault) {
+                  <button class="dd-btn dd-mini" type="button" (click)="setDefault(t)" [disabled]="!canManage()">Set Default</button>
+                }
+                <button class="dd-btn dd-mini dd-danger" type="button" (click)="removeTemplate(t)" [disabled]="!canManage()">Delete</button>
+              </td>
+            </tr>
+            @if (versionsTemplateId() === t.invoiceTemplateId) {
+              <tr class="versions-row">
+                <td colspan="10">
+                  <div class="versions-box">
+                    <div class="versions-head">
+                      <strong>Versions</strong>
+                      <button class="dd-btn dd-mini" type="button" (click)="createVersion(t)" [disabled]="!canManage()">+ New Draft Version</button>
+                    </div>
+                    <table class="dd-table inner">
+                      <thead><tr><th>Version</th><th>Status</th><th>Created</th><th>Published</th><th></th></tr></thead>
+                      <tbody>
+                        @for (v of versions(); track v.templateVersionId) {
+                          <tr>
+                            <td>V{{ v.versionNumber }}</td>
+                            <td><span class="dd-badge" [class.pub]="v.isPublished">{{ v.status }}</span></td>
+                            <td>{{ v.createdAt ? (v.createdAt | slice:0:10) : '—' }}</td>
+                            <td>{{ v.publishedAt ? (v.publishedAt | slice:0:10) : '—' }}</td>
+                            <td class="dd-row-actions">
+                              <button class="dd-btn dd-mini dd-primary" type="button" (click)="openDesigner(v)">Designer</button>
+                              <button class="dd-btn dd-mini" type="button" (click)="previewVersion(v)">Preview</button>
+                              @if (v.status === 'PUBLISHED') {
+                                <button class="dd-btn dd-mini" type="button" (click)="cloneVersion(v)" [disabled]="!canManage()">Clone → Draft</button>
+                              } @else {
+                                <button class="dd-btn dd-mini dd-success" type="button" (click)="publishVersion(v)" [disabled]="!canManage()">Publish</button>
+                              }
+                            </td>
+                          </tr>
+                        } @empty {
+                          <tr><td colspan="5" class="muted">No versions yet.</td></tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr><td colspan="10" class="muted">No templates yet. Use “Create Default A4 Sales Invoice” above.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <!-- ================= assignments ================= -->
+  @if (activeTab() === 'settings') {
+    <section class="dd-card">
+      <table class="dd-table">
+        <thead>
+          <tr><th>Template</th><th>Company</th><th>Document Type</th><th>Paper Size</th><th>Default</th><th>Active</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (a of assignments(); track a.assignmentId) {
+            <tr>
+              <td>{{ a.templateName || a.invoiceTemplateId }}</td>
+              <td>{{ a.companyName || 'All companies' }}</td>
+              <td>{{ a.invoiceTypeName || 'Any' }}</td>
+              <td>{{ a.paperSizeName || 'Any' }}</td>
+              <td>@if (a.isDefault) { <lucide-icon name="star" size="13"></lucide-icon> }</td>
+              <td>@if (a.isActive) { ✓ }</td>
+              <td><button class="dd-btn dd-mini dd-danger" type="button" (click)="removeAssignment(a)" [disabled]="!canAssign()">Remove</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="muted">No assignments yet.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <!-- ================= masters ================= -->
+  @if (activeTab() === 'masters') {
+    <section class="dd-card">
+      <div class="dd-master-tabs">
+        @for (tab of masterTabs; track tab.kind) {
+          <button type="button" class="dd-mtab" [class.active]="activeMaster().kind === tab.kind" (click)="selectMaster(tab)">{{ tab.label }}</button>
+        }
+      </div>
+
+      <table class="dd-table">
+        <thead>
+          <tr><th>Code</th><th>Name</th>
+            @if (activeMaster().usesComponentType) { <th>Type</th> }
+            @if (activeMaster().usesBindingPath) { <th>Binding Path</th> }
+            @if (activeMaster().usesFontFamily) { <th>Font Family</th> }
+            @if (activeMaster().usesDimensions) { <th>Size</th> }
+            @if (activeMaster().usesPrinterType) { <th>Printer Type</th> }
+            <th>Order</th><th>Active</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of masterRows(); track row.id) {
+            <tr>
+              <td class="mono">{{ row.code }}</td>
+              <td>{{ row.name }}</td>
+              @if (activeMaster().usesComponentType) { <td>{{ row.componentType }}</td> }
+              @if (activeMaster().usesBindingPath) { <td class="mono">{{ row.bindingPath }}</td> }
+              @if (activeMaster().usesFontFamily) { <td>{{ row.fontFamily }}</td> }
+              @if (activeMaster().usesDimensions) { <td>{{ row.width }} × {{ row.height ?? '∞' }} {{ row.unit }}</td> }
+              @if (activeMaster().usesPrinterType) { <td>{{ row.printerTypeName || '—' }}</td> }
+              <td>{{ row.displayOrder }}</td>
+              <td>@if (row.isActive) { ✓ }</td>
+              <td class="dd-row-actions">
+                <button class="dd-btn dd-mini" type="button" (click)="editMaster(row)" [disabled]="!canManage()">Edit</button>
+                <button class="dd-btn dd-mini dd-danger" type="button" (click)="removeMaster(row)" [disabled]="!canManage()">Delete</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="10" class="muted">No records.</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <!-- ================= template entry ================= -->
+  @if (showTemplateEntry()) {
+    <div class="dd-modal-backdrop" (click)="cancelEntry()">
+      <div class="dd-modal" (click)="$event.stopPropagation()">
+        <h3>{{ editingTemplate() ? 'Edit Template' : 'New Document Template' }}</h3>
+        <div class="dd-form-grid">
+          <label>Template Code *<input type="text" [(ngModel)]="templateModel.code" [readonly]="!!editingTemplate()" maxlength="30" /></label>
+          <label>Template Name *<input type="text" [(ngModel)]="templateModel.name" maxlength="100" /></label>
+          <label class="span2">Description<textarea rows="2" [(ngModel)]="templateModel.description"></textarea></label>
+          <label>Document Type *
+            <select [(ngModel)]="templateModel.invoiceTypeId">
+              <option [ngValue]="0" disabled>Select…</option>
+              @for (t of invoiceTypes(); track t.id) { <option [ngValue]="t.id">{{ t.name }}</option> }
+            </select>
+          </label>
+          <label>Paper Size *
+            <select [(ngModel)]="templateModel.paperSizeId">
+              <option [ngValue]="0" disabled>Select…</option>
+              @for (p of paperSizes(); track p.id) { <option [ngValue]="p.id">{{ p.name }} ({{ p.width }}×{{ p.height ?? '—' }} {{ p.unit }})</option> }
+            </select>
+          </label>
+          <label>Orientation *
+            <select [(ngModel)]="templateModel.orientationId">
+              <option [ngValue]="0" disabled>Select…</option>
+              @for (o of orientations(); track o.id) { <option [ngValue]="o.id">{{ o.name }}</option> }
+            </select>
+          </label>
+          <label>Category
+            <select [(ngModel)]="templateModel.templateCategoryId">
+              <option [ngValue]="null">—</option>
+              @for (c of categories(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
+            </select>
+          </label>
+          <label>Width (mm)<input type="number" [(ngModel)]="templateModel.width" /></label>
+          <label>Height (mm)<input type="number" [(ngModel)]="templateModel.height" /></label>
+          <label class="chk"><input type="checkbox" [(ngModel)]="templateModel.isDefault" /> Default template</label>
+          <label class="chk"><input type="checkbox" [(ngModel)]="templateModel.isActive" /> Active</label>
+        </div>
+        <div class="dd-modal-actions">
+          <button class="dd-btn" type="button" (click)="cancelEntry()">Cancel</button>
+          <button class="dd-btn dd-btn-primary" type="button" (click)="saveTemplate()" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save Template' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ================= master entry ================= -->
+  @if (showMasterEntry()) {
+    <div class="dd-modal-backdrop" (click)="cancelEntry()">
+      <div class="dd-modal" (click)="$event.stopPropagation()">
+        <h3>{{ editingMasterId() ? 'Edit' : 'New' }} · {{ activeMaster().label }}</h3>
+        <div class="dd-form-grid">
+          <label>Code *<input type="text" [(ngModel)]="masterModel.code" maxlength="30" /></label>
+          <label>Name *<input type="text" [(ngModel)]="masterModel.name" maxlength="100" /></label>
+          <label class="span2">Description<textarea rows="2" [(ngModel)]="masterModel.description"></textarea></label>
+          @if (activeMaster().usesComponentType) {
+            <label>Component Type
+              <select [(ngModel)]="masterModel.componentType">
+                <option [ngValue]="null">—</option>
+                @for (t of ['TEXT','TABLE','IMAGE','QRCODE','BARCODE','DIVIDER']; track t) { <option [ngValue]="t">{{ t }}</option> }
+              </select>
+            </label>
+          }
+          @if (activeMaster().usesBindingPath) {
+            <label>Binding Path<input type="text" [(ngModel)]="masterModel.bindingPath" placeholder="Invoice.GrandTotal" /></label>
+            <label>Data Type
+              <select [(ngModel)]="masterModel.dataType">
+                <option [ngValue]="null">—</option>
+                @for (t of ['STRING','DECIMAL','DATETIME','NUMBER','BOOLEAN']; track t) { <option [ngValue]="t">{{ t }}</option> }
+              </select>
+            </label>
+          }
+          @if (activeMaster().usesFontFamily) {
+            <label>Font Family<input type="text" [(ngModel)]="masterModel.fontFamily" /></label>
+          }
+          @if (activeMaster().usesDimensions) {
+            <label>Width (mm)<input type="number" [(ngModel)]="masterModel.width" /></label>
+            <label>Height (mm)<input type="number" [(ngModel)]="masterModel.height" /></label>
+            <label>Unit<input type="text" [(ngModel)]="masterModel.unit" value="MM" /></label>
+            <label class="chk"><input type="checkbox" [(ngModel)]="masterModel.isThermal" /> Thermal roll</label>
+            <label class="chk"><input type="checkbox" [(ngModel)]="masterModel.isCustom" /> Custom size</label>
+          }
+          @if (activeMaster().usesPrinterType) {
+            <label>Printer Type *
+              <select [(ngModel)]="masterModel.printerTypeId">
+                <option [ngValue]="null" disabled>Select…</option>
+                @for (pt of masterPrinterTypes(); track pt.id) { <option [ngValue]="pt.id">{{ pt.name }}</option> }
+              </select>
+            </label>
+            <label>Manufacturer<input type="text" [(ngModel)]="masterModel.manufacturer" /></label>
+          }
+          <label>Display Order<input type="number" [(ngModel)]="masterModel.displayOrder" /></label>
+          <label class="chk"><input type="checkbox" [(ngModel)]="masterModel.isActive" /> Active</label>
+        </div>
+        <div class="dd-modal-actions">
+          <button class="dd-btn" type="button" (click)="cancelEntry()">Cancel</button>
+          <button class="dd-btn dd-btn-primary" type="button" (click)="saveMaster()" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

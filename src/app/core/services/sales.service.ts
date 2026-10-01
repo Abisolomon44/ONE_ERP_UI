@@ -124,6 +124,11 @@ export interface CreateSalesRequest {
   sourceType?: string;
   salesTypeId?: number | null;
   priceListId?: number | null;
+  /**
+   * Company fiscal period for this invoice. Left null the server resolves it
+   * from the invoice date and rejects closed or inactive periods.
+   */
+  financialYearId?: number | null;
   /** Set when raised inside a POS drawer session; drives cash reconciliation. */
   posSessionId?: number | null;
   referenceNo?: string | null;
@@ -132,6 +137,9 @@ export interface CreateSalesRequest {
   paymentMethodID?: number | null;
   remarks?: string | null;
   items: CreateSalesItemInput[];
+  /** Every tender line. Totals are derived from this on the server. */
+  payments?: CreateSalesPaymentInput[] | null;
+  /** @deprecated superseded by `payments`; still accepted for older clients. */
   payment?: CreateSalesPaymentInput | null;
 }
 
@@ -144,6 +152,8 @@ export interface UpdateSalesRequest {
   invoiceDate: string;
   salesTypeId?: number | null;
   priceListId?: number | null;
+  financialYearId?: number | null;
+  posSessionId?: number | null;
   referenceNo?: string | null;
   referenceDate?: string | null;
   paymentTypeID?: number | null;
@@ -197,12 +207,14 @@ export class SalesService {
     return firstValueFrom(this.http.get<PaginatedResult<SalesInvoiceDto>>('/api/sales', { params }));
   }
 
-  getLookups(): Promise<SalesLookupsDto> {
-    return firstValueFrom(this.http.get<SalesLookupsDto>('/api/sales/lookups'));
+  getLookups(companyId?: number | null): Promise<SalesLookupsDto> {
+    const params = companyId ? new HttpParams().set('companyId', companyId) : undefined;
+    return firstValueFrom(this.http.get<SalesLookupsDto>('/api/sales/lookups', { params }));
   }
 
-  getNextNumber(): Promise<string> {
-    return firstValueFrom(this.http.get<string>('/api/sales/next-number'));
+  getNextNumber(companyId?: number | null): Promise<string> {
+    const params = companyId ? new HttpParams().set('companyId', companyId) : undefined;
+    return firstValueFrom(this.http.get<string>('/api/sales/next-number', { params }));
   }
 
   getById(id: number): Promise<SalesInvoiceDto> {
@@ -221,8 +233,9 @@ export class SalesService {
     return firstValueFrom(this.http.get<StockTransactionDto[]>(`/api/sales/${id}/stock`));
   }
 
-  getProductStock(productId: number): Promise<ProductStockDto[]> {
-    return firstValueFrom(this.http.get<ProductStockDto[]>(`/api/sales/products/${productId}/stock`));
+  getProductStock(productId: number, companyId?: number | null): Promise<ProductStockDto[]> {
+    const params = companyId ? new HttpParams().set('companyId', companyId) : undefined;
+    return firstValueFrom(this.http.get<ProductStockDto[]>(`/api/sales/products/${productId}/stock`, { params }));
   }
 
   create(request: CreateSalesRequest): Promise<SalesInvoiceDto> {

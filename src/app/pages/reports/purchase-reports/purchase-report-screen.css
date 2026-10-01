@@ -1,131 +1,429 @@
+/* ============================================================
+   Purchase Report Screen — premium enterprise style
+   Token mapping: global tokens are aliased into .prs-* locals
+   which then feed the legacy var(--card/--muted/--input/...)
+   fallbacks used in report-shared.css and prs-bars.ts.
+   (Those old fallback names are NOT real globals — without this
+   mapping they resolve to light values even in dark theme.)
+   Local tokens prefixed --prs-* (view encapsulation).
+   ============================================================ */
+
+.report {
+  --prs-card: var(--surface);
+  --prs-muted: var(--text-3);
+  --prs-input: var(--surface);
+  --prs-text: var(--text);
+  --prs-primary: var(--accent);
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ---------- Header ---------- */
 .prs-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.prs-head-main {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.prs-head-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-soft-2);
 }
 
 .prs-head h2 {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+  color: var(--text);
 }
 
 .prs-head p {
-  margin: 0.15rem 0 0;
-  font-size: 0.75rem;
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .prs-head-actions {
   display: flex;
-  gap: 0.4rem;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
+/* ---------- Buttons (scoped; global .btn won't reach this component) ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 4px;
-  background: var(--input, #fff);
-  color: var(--text, #0f172a);
-  font-size: 0.78rem;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
+.btn:focus-visible {
+  outline: 2px solid var(--accent-soft-2);
+  outline-offset: 1px;
+}
+
 .btn-primary {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-contrast);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: var(--accent-active);
+}
+
+/* ---------- Filter panel ---------- */
+.prs-filterbox {
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 10px);
+  background: var(--surface-2);
+  padding: 12px 14px;
+}
+
+.prs-filterbox-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.prs-flabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--text-3);
+}
+
+.filters select,
+.filters input {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm, 6px);
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.filters select:focus,
+.filters input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.filters input::placeholder {
+  color: var(--text-3);
 }
 
 .prs-grow {
-  flex: 1 1 200px;
+  flex: 1 1 220px;
 }
 
+.prs-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ---------- KPI cards ---------- */
 .prs-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
 }
 
 .prs-kpi {
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 6px;
-  padding: 0.6rem 0.75rem;
-  background: var(--card, #fff);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 10px);
+  padding: 12px 14px;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 3px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.prs-kpi::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+.prs-kpi:hover {
+  border-color: var(--accent-soft-2);
+  box-shadow: var(--shadow-sm);
 }
 
 .prs-kpi-label {
-  font-size: 0.7rem;
+  font-size: 10.5px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--muted, #64748b);
+  letter-spacing: 0.6px;
+  color: var(--text-3);
 }
 
 .prs-kpi-value {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 19px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+  color: var(--text);
 }
 
+/* ---------- Charts ---------- */
 .prs-charts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
 }
 
 .prs-chart {
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 6px;
-  padding: 0.6rem 0.75rem;
-  background: var(--card, #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 10px);
+  padding: 12px 14px;
+  background: var(--surface);
 }
 
 .prs-chart h3 {
-  margin: 0 0 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-2);
 }
 
-.prs-clickable {
-  cursor: pointer;
+/* ---------- Table ---------- */
+.table-scroll {
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 10px);
+  overflow: auto;
+  background: var(--surface);
 }
 
-.prs-clickable:hover {
-  background: #f1f5f9;
+.prs-table {
+  min-width: 720px;
 }
 
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.report-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-3);
+  background: var(--surface-2);
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.report-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.report-table tbody tr:hover td {
+  background: var(--surface-hover);
+}
+
+.report-table tfoot td {
+  font-weight: 700;
+  background: var(--surface-2);
+  border-top: 2px solid var(--accent);
+  border-bottom: none;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Pager ---------- */
 .prs-pager {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: space-between;
+  gap: 10px;
   flex-wrap: wrap;
-  font-size: 0.8rem;
+  font-size: 12px;
+}
+
+.prs-pager .muted {
+  color: var(--text-3);
+  margin: 0;
+}
+
+.prs-pager-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.prs-pager-btn {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.prs-pager-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.prs-pager-btn.active:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: var(--accent-contrast);
 }
 
 .prs-size {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.75rem;
-  color: var(--muted, #64748b);
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .prs-size select {
-  padding: 0.2rem 0.35rem;
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 4px;
-  font-size: 0.8rem;
-  background: var(--input, #fff);
-  color: var(--text, #0f172a);
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm, 6px);
+  font-family: var(--font-family);
+  font-size: 12.5px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.prs-size select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ---------- Empty / states ---------- */
+.empty {
+  color: var(--text-3);
+  font-size: 12.5px;
+  padding: 14px 4px;
+  margin: 0;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 720px) {
+  .report {
+    padding: 12px;
+  }
+
+  .prs-head {
+    flex-wrap: wrap;
+  }
+
+  .prs-pager {
+    justify-content: center;
+  }
 }

@@ -21,7 +21,7 @@ import {
   standalone: true,
   imports: [FormsModule, LucideAngularModule, PrsBars],
   templateUrl: './purchase-report-screen.html',
-  styleUrls: ['./purchase-report-screen.css', '../report-shared.css'],
+  styleUrls: ['../report-shared.css', './purchase-report-screen.css'],
 })
 export class PurchaseReportScreen implements OnInit {
   readonly reportId = input.required<string>();

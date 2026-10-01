@@ -1,0 +1,177 @@
+<div class="dd-page">
+  <!-- ================= toolbar ================= -->
+  <header class="dd-topbar">
+    <div class="dd-brand">
+      <span class="dd-logo"><lucide-icon name="puzzle" size="16"></lucide-icon></span>
+      <div class="dd-brand-text">
+        <span class="dd-title">DOCUMENT MASTER</span>
+        <span class="dd-subtitle">{{ config().subtitle }}</span>
+        <span class="dd-subtitle">PRINT SETUP → PRINT CONFIGURATION → {{ config().label | uppercase }}</span>
+        <!-- tab strip intentionally shared across all ten masters -->
+      </div>
+    </div>
+
+    <div class="dd-actions">
+      <button class="dd-btn" type="button" (click)="load()" [disabled]="loading()">
+        <lucide-icon name="refresh-cw" size="13"></lucide-icon>
+        Refresh
+      </button>
+      <button class="dd-btn dd-btn-primary" type="button" (click)="newRecord()" [disabled]="!canManage()">
+        <lucide-icon name="plus" size="13"></lucide-icon>
+        + New {{ config().singular }}
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= document master tabs ================= -->
+  <nav class="dd-tabs">
+    @for (tab of masterTabs; track tab.kind) {
+      <button type="button" class="dd-tab" [class.active]="tab.kind === kind()" (click)="openTab(tab)">
+        {{ tab.label }}
+      </button>
+    }
+  </nav>
+
+  <!-- ================= list ================= -->
+  <section class="dd-card">
+    <div class="dd-filter-row">
+      <div class="dd-search">
+        <input
+          type="text"
+          placeholder="Search {{ labelLower() }}…"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+          [disabled]="loading()" />
+        <button class="dd-btn" type="button" (click)="load()" [disabled]="loading()">Search</button>
+      </div>
+      <div class="dd-status-filter">
+        <label class="dd-select-label" for="dm-status">Status</label>
+        <select id="dm-status" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    @if (loading()) { <div class="dd-loading">Loading…</div> }
+
+    <table class="dd-table">
+      <thead>
+        <tr>
+          @for (col of config().columns; track col.field) {
+            <th>{{ col.label }}</th>
+          }
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of filteredRows(); track row.id) {
+          <tr>
+            @for (col of config().columns; track col.field) {
+              @switch (col.type) {
+                @case ('mono') {
+                  <td class="mono">{{ row[col.field] || '—' }}</td>
+                }
+                @case ('badge') {
+                  <td><span class="dd-badge type">{{ row[col.field] || '—' }}</span></td>
+                }
+                @case ('bool') {
+                  <td>
+                    <span class="dd-badge" [class.pub]="row[col.field]" [class.inactive]="!row[col.field]">
+                      {{ row[col.field] ? 'Yes' : 'No' }}
+                    </span>
+                  </td>
+                }
+                @case ('status') {
+                  <td>
+                    <span class="dd-badge" [class.pub]="row.isActive" [class.inactive]="!row.isActive">
+                      {{ row.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                }
+                @default {
+                  <td class="desc" [title]="titleOf(row, col.field)">{{ row[col.field] || '—' }}</td>
+                }
+              }
+            }
+            <td class="dd-row-actions">
+              <button class="dd-btn dd-mini" type="button" (click)="editRecord(row)" [disabled]="!canManage()">Edit</button>
+              <button class="dd-btn dd-mini dd-danger" type="button" (click)="remove(row)" [disabled]="!canDelete()">Delete</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td class="muted" [attr.colspan]="config().columns.length + 1">No {{ labelLower() }} found.</td></tr>
+          <tr><td class="muted" [attr.colspan]="config().columns.length + 1">Adjust the search or status filter, or click “+ New {{ config().singular }}”.</td></tr>
+        }
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<!-- ================= create / edit dialog ================= -->
+@if (showEntry()) {
+  <div class="dd-modal-backdrop" (click)="cancel()">
+    <div class="dd-modal" (click)="$event.stopPropagation()">
+      <h3>{{ (editingId() ? 'Edit ' : 'New ') + config().singular }}</h3>
+      <div class="dd-form-grid">
+        @for (f of config().fields; track f.name) {
+          @switch (f.type) {
+            @case ('select') {
+              <label>
+                {{ f.label }}{{ f.required ? ' *' : '' }}
+                @if (f.name === 'printerTypeId') {
+                  <select [(ngModel)]="model.printerTypeId" name="printerTypeId">
+                    <option [ngValue]="null">— Select printer type —</option>
+                    @for (pt of printerTypes(); track pt.id) {
+                      <option [ngValue]="pt.id">{{ pt.name }}</option>
+                    }
+                  </select>
+                } @else {
+                  <select [(ngModel)]="model[f.name]" [name]="f.name">
+                    <option [ngValue]="null">— Select —</option>
+                    @for (opt of f.options ?? []; track opt) {
+                      <option [value]="opt">{{ opt }}</option>
+                    }
+                  </select>
+                }
+              </label>
+            }
+            @case ('textarea') {
+              <label class="span2">
+                {{ f.label }}{{ f.required ? ' *' : '' }}
+                <textarea rows="2" [(ngModel)]="model[f.name]" [name]="f.name" [maxLength]="f.maxLength ?? 300"></textarea>
+              </label>
+            }
+            @case ('checkbox') {
+              <label class="chk"><input type="checkbox" [(ngModel)]="model[f.name]" [name]="f.name" /> {{ f.label }}</label>
+            }
+            @case ('number') {
+              <label>
+                {{ f.label }}{{ f.required ? ' *' : '' }}
+                <input type="number" [(ngModel)]="model[f.name]" [name]="f.name" [placeholder]="f.placeholder ?? ''" />
+              </label>
+            }
+            @default {
+              <label>
+                {{ f.label }}{{ f.required ? ' *' : '' }}
+                <input
+                  type="text"
+                  [(ngModel)]="model[f.name]"
+                  [name]="f.name"
+                  [maxLength]="f.maxLength ?? 100"
+                  [placeholder]="f.placeholder ?? ''" />
+              </label>
+            }
+          }
+        }
+      </div>
+      <div class="dd-modal-actions">
+        <button class="dd-btn" type="button" (click)="cancel()">Cancel</button>
+        <button class="dd-btn dd-btn-primary" type="button" (click)="save()" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

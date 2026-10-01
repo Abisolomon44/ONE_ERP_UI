@@ -602,6 +602,204 @@ export const routes: Routes = [
             (m) => m.InvoiceTemplatePage
           ),
       },
+
+      // ===========================
+      // Document Design module
+      // ===========================
+
+      {
+        path: 'document-design',
+        title: 'Document Design',
+        loadComponent: () =>
+          import('./pages/document-design/document-design').then(
+            (m) => m.DocumentDesignPage
+          ),
+      },
+      {
+        path: 'document-designer',
+        title: 'Document Designer',
+        loadComponent: () =>
+          import('./pages/document-design/document-designer').then(
+            (m) => m.DocumentDesignerPage
+          ),
+      },
+      {
+        path: 'document-design/preview',
+        title: 'Document Preview',
+        loadComponent: () =>
+          import('./pages/document-design/document-preview').then(
+            (m) => m.DocumentPreviewPage
+          ),
+      },
+      {
+        path: 'document-design/master/template-components',
+        title: 'Template Components',
+        loadComponent: () =>
+          import('./pages/document-design/master/template-components/template-components-master.component').then(
+            (m) => m.TemplateComponentsMasterComponent
+          ),
+      },
+
+      // ===========================
+      // Document Master screens (Print Setup → Print Configuration).
+      // Each DB-seeded screen URL gets its own route plus a
+      // /document-design/master/* alias; both render the same generic,
+      // config-driven master CRUD page (data.master = backend kind).
+      // ===========================
+      {
+        path: 'invoice-types',
+        title: 'Invoice Types',
+        data: { master: 'types' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/types',
+        title: 'Document Types',
+        data: { master: 'types' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'invoice-paper-sizes',
+        title: 'Paper Sizes',
+        data: { master: 'paper-sizes' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/paper-sizes',
+        title: 'Paper Sizes',
+        data: { master: 'paper-sizes' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'invoice-template-categories',
+        title: 'Template Categories',
+        data: { master: 'categories' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/categories',
+        title: 'Template Categories',
+        data: { master: 'categories' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'invoice-template-variables',
+        title: 'Template Variables',
+        data: { master: 'variables' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/variables',
+        title: 'Template Variables',
+        data: { master: 'variables' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'invoice-fonts',
+        title: 'Fonts',
+        data: { master: 'fonts' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/fonts',
+        title: 'Fonts',
+        data: { master: 'fonts' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'print-orientations',
+        title: 'Print Orientations',
+        data: { master: 'orientations' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/orientations',
+        title: 'Print Orientations',
+        data: { master: 'orientations' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/units',
+        title: 'Print Units',
+        data: { master: 'units' },
+        // Alias only — no DB screen seed exists for print units.
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'printer-types',
+        title: 'Printer Types',
+        data: { master: 'printer-types' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/printer-types',
+        title: 'Printer Types',
+        data: { master: 'printer-types' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'printer-models',
+        title: 'Printer Models',
+        data: { master: 'printer-models' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
+      {
+        path: 'document-design/master/printer-models',
+        title: 'Printer Models',
+        data: { master: 'printer-models' },
+        loadComponent: () =>
+          import('./pages/document-design/master/document-master-page/document-master-page.component').then(
+            (m) => m.DocumentMasterPageComponent
+          ),
+      },
     ],
   },
 

@@ -1,0 +1,315 @@
+<div class="dsg">
+  <!-- ================= top toolbar ================= -->
+  <header class="dsg-topbar">
+    <div class="dsg-brand">
+      <span class="dsg-logo"><lucide-icon name="layout-template" size="15"></lucide-icon></span>
+      <div class="dsg-brand-text">
+        <span class="dsg-title">Document Designer</span>
+        <span class="dsg-subtitle">
+          @if (design(); as d) {
+            {{ d.status }} · Version {{ d.versionNumber }} · {{ pageW }} × {{ pageH }} mm
+          } @else { A4 · 210 × 297 mm }
+        </span>
+      </div>
+      @if (dirty()) { <span class="dsg-dirty" title="Unsaved changes">● unsaved</span> }
+    </div>
+
+    <div class="dsg-modes" role="tablist">
+      <button type="button" [class.on]="mode() === 'design'" (click)="setMode('design')">
+        <lucide-icon name="pencil-ruler" size="12"></lucide-icon> Design
+      </button>
+      <button type="button" [class.on]="mode() === 'preview'" (click)="setMode('preview')">
+        <lucide-icon name="eye" size="12"></lucide-icon> Preview
+      </button>
+    </div>
+
+    <div class="dsg-actions">
+      @if (mode() === 'design') {
+        <div class="dsg-zoom">
+          <button type="button" (click)="zoomOut()" title="Zoom out"><lucide-icon name="minus" size="12"></lucide-icon></button>
+          <span>{{ (zoom() * 100) | number: '1.0-0' }}%</span>
+          <button type="button" (click)="zoomIn()" title="Zoom in"><lucide-icon name="plus" size="12"></lucide-icon></button>
+          <button type="button" (click)="zoomReset()" title="Reset zoom">100%</button>
+        </div>
+        <button class="dsg-btn" type="button" (click)="addSection()" [disabled]="!canEdit()">
+          <lucide-icon name="plus" size="12"></lucide-icon> Section
+        </button>
+        <button class="dsg-btn" type="button" (click)="save()" [disabled]="!canEdit() || saving()">
+          <lucide-icon name="save" size="12"></lucide-icon> {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+      } @else {
+        <button class="dsg-btn" type="button" (click)="refreshPreview()" [disabled]="previewLoading()">
+          <lucide-icon name="refresh-cw" size="12"></lucide-icon> Refresh
+        </button>
+        <button class="dsg-btn" type="button" (click)="printPreview()" [disabled]="!previewHtml()">
+          <lucide-icon name="printer" size="12"></lucide-icon> Print
+        </button>
+      }
+      <button class="dsg-btn dsg-btn-success" type="button" (click)="publish()" [disabled]="design()?.status !== 'DRAFT'">
+        <lucide-icon name="rocket" size="12"></lucide-icon> Publish
+      </button>
+      <button class="dsg-btn" type="button" (click)="backToHub()">Back</button>
+    </div>
+  </header>
+
+  @if (loading()) { <div class="dsg-loading">Loading design…</div> }
+
+  <div class="dsg-body" [class.is-preview]="mode() === 'preview'">
+    @if (mode() === 'design') {
+      <!-- ================= LEFT palette ================= -->
+      <aside class="dsg-palette">
+        <h4>Components</h4>
+        <input
+          class="dsg-search" type="text" placeholder="Search components…"
+          [ngModel]="paletteSearch()" (ngModelChange)="paletteSearch.set($event)"
+        />
+        @for (item of filteredPalette(); track item.code) {
+          <button
+            type="button" class="dsg-pal" draggable="true"
+            (dragstart)="paletteDragStart($event, item)"
+            (click)="addElement(item)" [disabled]="!canEdit()"
+          >
+            <span class="dsg-pal-label">{{ item.label }}</span>
+            <span class="dsg-pal-code">{{ item.code }}</span>
+          </button>
+        }
+        <p class="dsg-hint">Drag a component onto the canvas (or click) to add it.</p>
+
+        <h4>Sections</h4>
+        @for (s of design()?.sections ?? []; track s.sectionCode) {
+          <div class="dsg-sec-chip" [class.sel]="isSectionSelected(s)" (click)="selectSection(s)">
+            {{ s.sectionName }}
+            <button type="button" class="dsg-sec-del" (click)="removeSection(s); $event.stopPropagation()" [disabled]="!canEdit()">×</button>
+          </div>
+        }
+      </aside>
+
+      <!-- ================= CENTER A4 canvas ================= -->
+      <main class="dsg-canvas-wrap" [class.dropping]="canvasDragOver()">
+        <div
+          class="dsg-canvas"
+          [style.width.px]="pageW * px()" [style.height.px]="pageH * px()"
+          (dragover)="onCanvasDragOver($event)" (dragleave)="onCanvasDragLeave()"
+          (drop)="onCanvasDrop($event)" (mousedown)="startPan($event)"
+        >
+          @for (section of design()?.sections ?? []; track section.sectionCode) {
+            @if (section.isVisible) {
+              <div
+                class="dsg-section"
+                [class.sel]="isSectionSelected(section)"
+                [style]="sectionStyle(section)"
+                (click)="selectSection(section)"
+              >
+                <span class="dsg-sec-name">{{ section.sectionName }}</span>
+                @for (element of section.elements; track $index; let zi = $index) {
+                  @if (element.isVisible) {
+                    <div
+                      class="dsg-el"
+                      [class.sel]="isElementSelected(section, element)"
+                      [style]="elementStyle(element, zi + 1)"
+                      (mousedown)="startElementDrag($event, section, element)"
+                      (click)="selectElement(section, element); $event.stopPropagation()"
+                    >
+                      @if (element.itemColumns.length) {
+                        <span class="dsg-el-table">{{ elementPreview(element) }}</span>
+                      } @else {
+                        <span class="dsg-el-text">{{ elementPreview(element) }}</span>
+                      }
+                      @if (isElementSelected(section, element) && canEdit()) {
+                        @for (d of resizeDirs; track d) {
+                          <span [class]="'dsg-rz rz-' + d" (mousedown)="startResize($event, section, element, d)"></span>
+                        }
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            }
+          } @empty {
+            <div class="dsg-empty">
+              <p><strong>No sections yet.</strong></p>
+              <p>Add a section, then drag components from the palette.</p>
+            </div>
+          }
+        </div>
+      </main>
+
+      <!-- ================= RIGHT properties ================= -->
+      <aside class="dsg-props">
+        @if (selectedKind() === 'element' && selectedElement(); as el) {
+          @if (selectedSection(); as sec) {
+            <h4>Element Properties</h4>
+            <label>Name<input type="text" [(ngModel)]="el.elementName" (ngModelChange)="markDirty()" /></label>
+            <div class="dsg-grid2">
+              <label>X (mm)<input type="number" [(ngModel)]="el.x" (ngModelChange)="markDirty()" /></label>
+              <label>Y (mm)<input type="number" [(ngModel)]="el.y" (ngModelChange)="markDirty()" /></label>
+              <label>Width (mm)<input type="number" [(ngModel)]="el.width" (ngModelChange)="markDirty()" /></label>
+              <label>Height (mm)<input type="number" [(ngModel)]="el.height" (ngModelChange)="markDirty()" /></label>
+            </div>
+            <label class="dsg-chk"><input type="checkbox" [(ngModel)]="el.isVisible" (ngModelChange)="markDirty()" /> Visible</label>
+
+            <h5>Arrangement</h5>
+            <div class="dsg-oprow">
+              <button type="button" class="dsg-btn dsg-sm" title="Duplicate (Ctrl+D)" (click)="duplicateElement(sec, el)" [disabled]="!canEdit()">
+                <lucide-icon name="copy" size="11"></lucide-icon> Duplicate
+              </button>
+              <button type="button" class="dsg-btn dsg-sm dsg-danger" title="Delete (Del)" (click)="removeElement(sec, el)" [disabled]="!canEdit()">
+                <lucide-icon name="trash-2" size="11"></lucide-icon> Delete
+              </button>
+            </div>
+            <div class="dsg-oprow">
+              <button type="button" class="dsg-btn dsg-sm" title="Bring to front" (click)="moveLayer(sec, el, 'front')" [disabled]="!canEdit()">⤒ Front</button>
+              <button type="button" class="dsg-btn dsg-sm" title="Bring forward" (click)="moveLayer(sec, el, 'forward')" [disabled]="!canEdit()">↑ Fwd</button>
+              <button type="button" class="dsg-btn dsg-sm" title="Send backward" (click)="moveLayer(sec, el, 'backward')" [disabled]="!canEdit()">↓ Back</button>
+              <button type="button" class="dsg-btn dsg-sm" title="Send to back" (click)="moveLayer(sec, el, 'back')" [disabled]="!canEdit()">⤓ Bottom</button>
+            </div>
+
+            <h5>Style</h5>
+            @if (el.style; as st) {
+              <div class="dsg-grid2">
+                <label>Font
+                  <select [(ngModel)]="st.fontId" (ngModelChange)="markDirty()">
+                    <option [ngValue]="null">—</option>
+                    @for (f of fonts(); track f.id) { <option [ngValue]="f.id">{{ f.name }}</option> }
+                  </select>
+                </label>
+                <label>Font Size (mm)<input type="number" step="0.2" [(ngModel)]="st.fontSize" (ngModelChange)="markDirty()" /></label>
+                <label>Weight
+                  <select [(ngModel)]="st.fontWeight" (ngModelChange)="markDirty()">
+                    <option [ngValue]="null">normal</option>
+                    <option value="bold">bold</option>
+                  </select>
+                </label>
+                <label>Font Style
+                  <select [(ngModel)]="st.fontStyle" (ngModelChange)="markDirty()">
+                    <option [ngValue]="null">normal</option>
+                    <option value="italic">italic</option>
+                  </select>
+                </label>
+                <label>Align
+                  <select [(ngModel)]="st.textAlign" (ngModelChange)="markDirty()">
+                    <option value="LEFT">Left</option>
+                    <option value="CENTER">Center</option>
+                    <option value="RIGHT">Right</option>
+                  </select>
+                </label>
+                <label>V-Align
+                  <select [(ngModel)]="st.verticalAlign" (ngModelChange)="markDirty()">
+                    <option [ngValue]="null">Top</option>
+                    <option value="MIDDLE">Middle</option>
+                    <option value="BOTTOM">Bottom</option>
+                  </select>
+                </label>
+              </div>
+
+              <h5>Colors</h5>
+              <div class="dsg-colors">
+                <label>Text
+                  <span class="dsg-color-cell">
+                    <input type="color" [ngModel]="colorOf(st.textColor, '#000000')" (ngModelChange)="setColor(st, 'textColor', $event)" />
+                    <button type="button" class="dsg-x" title="Clear text color" (click)="clearColor(st, 'textColor')">×</button>
+                  </span>
+                </label>
+                <label>Background
+                  <span class="dsg-color-cell">
+                    <input type="color" [ngModel]="colorOf(st.backgroundColor, '#ffffff')" (ngModelChange)="setColor(st, 'backgroundColor', $event)" />
+                    <button type="button" class="dsg-x" title="Clear background" (click)="clearColor(st, 'backgroundColor')">×</button>
+                  </span>
+                </label>
+                <label>Border
+                  <span class="dsg-color-cell">
+                    <input type="color" [ngModel]="colorOf(st.borderColor, '#444444')" (ngModelChange)="setColor(st, 'borderColor', $event)" />
+                    <button type="button" class="dsg-x" title="Clear border color" (click)="clearColor(st, 'borderColor')">×</button>
+                  </span>
+                </label>
+              </div>
+
+              <h5>Padding / Border</h5>
+              <div class="dsg-grid2">
+                <label>Pad Top<input type="number" step="0.5" [(ngModel)]="st.paddingTop" (ngModelChange)="markDirty()" /></label>
+                <label>Pad Left<input type="number" step="0.5" [(ngModel)]="st.paddingLeft" (ngModelChange)="markDirty()" /></label>
+                <label>Pad Bottom<input type="number" step="0.5" [(ngModel)]="st.paddingBottom" (ngModelChange)="markDirty()" /></label>
+                <label>Pad Right<input type="number" step="0.5" [(ngModel)]="st.paddingRight" (ngModelChange)="markDirty()" /></label>
+              </div>
+              <div class="dsg-borders">
+                <label class="dsg-chk"><input type="checkbox" [(ngModel)]="st.borderTop" (ngModelChange)="markDirty()" /> Top</label>
+                <label class="dsg-chk"><input type="checkbox" [(ngModel)]="st.borderRight" (ngModelChange)="markDirty()" /> Right</label>
+                <label class="dsg-chk"><input type="checkbox" [(ngModel)]="st.borderBottom" (ngModelChange)="markDirty()" /> Bottom</label>
+                <label class="dsg-chk"><input type="checkbox" [(ngModel)]="st.borderLeft" (ngModelChange)="markDirty()" /> Left</label>
+              </div>
+            }
+
+            @if (el.elementType === 'variable' || el.fields.length) {
+              <h5>Mapped Variables</h5>
+              @for (f of el.fields; track $index; let i = $index) {
+                <div class="dsg-field-row">
+                  <select [ngModel]="f.variableId" (ngModelChange)="onFieldVariable(el, i, $event)">
+                    <option [ngValue]="0" disabled>Select variable…</option>
+                    @for (v of variables(); track v.id) { <option [ngValue]="v.id">{{ v.name }} ({{ v.bindingPath }})</option> }
+                  </select>
+                  <input type="text" placeholder="Label (optional)" [(ngModel)]="f.label" (ngModelChange)="markDirty()" class="dsg-mini-input" />
+                  <span class="dsg-row-ops">
+                    <button type="button" class="dsg-updown" title="Move up" (click)="moveField(el, i, -1)" [disabled]="!canEdit()">▲</button>
+                    <button type="button" class="dsg-updown" title="Move down" (click)="moveField(el, i, 1)" [disabled]="!canEdit()">▼</button>
+                    <button type="button" class="dsg-x" (click)="removeField(el, i)" [disabled]="!canEdit()">×</button>
+                  </span>
+                </div>
+              }
+              <button type="button" class="dsg-btn dsg-sm" (click)="addField(el)" [disabled]="!canEdit()">+ Add Field</button>
+              <p class="dsg-hint">Add / remove fields, change the variable, reorder with ▲▼.</p>
+            }
+
+            @if (el.itemColumns.length || el.elementType === 'item-column') {
+              <h5>Item Columns</h5>
+              @for (c of el.itemColumns; track $index; let i = $index) {
+                <div class="dsg-col-row">
+                  <select [ngModel]="c.fieldName" (ngModelChange)="onItemFieldChange(el, i, $event)" class="dsg-mini-input">
+                    <option value="" disabled>Field…</option>
+                    @for (k of knownItemFields; track k) { <option [value]="k">{{ k }}</option> }
+                  </select>
+                  <input type="text" placeholder="Header" [(ngModel)]="c.headerText" (ngModelChange)="markDirty()" class="dsg-mini-input" />
+                  <input type="number" placeholder="W" [(ngModel)]="c.width" (ngModelChange)="markDirty()" class="dsg-mini-num" />
+                  <select [(ngModel)]="c.alignment" (ngModelChange)="markDirty()" class="dsg-mini-num">
+                    <option value="LEFT">L</option><option value="CENTER">C</option><option value="RIGHT">R</option>
+                  </select>
+                  <span class="dsg-row-ops">
+                    <button type="button" class="dsg-updown" title="Move left" (click)="moveItemColumn(el, i, -1)" [disabled]="!canEdit()">▲</button>
+                    <button type="button" class="dsg-updown" title="Move right" (click)="moveItemColumn(el, i, 1)" [disabled]="!canEdit()">▼</button>
+                    <button type="button" class="dsg-x" (click)="removeItemColumn(el, i)" [disabled]="!canEdit()">×</button>
+                  </span>
+                </div>
+              }
+              <button type="button" class="dsg-btn dsg-sm" (click)="addItemColumn(el)" [disabled]="!canEdit()">+ Add Column</button>
+              <p class="dsg-hint">Known fields: {{ knownItemFields.join(', ') }}</p>
+            }
+          }
+        } @else if (selectedKind() === 'section' && selectedSection(); as sec) {
+          <h4>Section Properties</h4>
+          <label>Name<input type="text" [(ngModel)]="sec.sectionName" (ngModelChange)="markDirty()" /></label>
+          <label>Code<input type="text" [(ngModel)]="sec.sectionCode" (ngModelChange)="markDirty()" /></label>
+          <div class="dsg-grid2">
+            <label>X (mm)<input type="number" [(ngModel)]="sec.x" (ngModelChange)="markDirty()" /></label>
+            <label>Y (mm)<input type="number" [(ngModel)]="sec.y" (ngModelChange)="markDirty()" /></label>
+            <label>Width (mm)<input type="number" [(ngModel)]="sec.width" (ngModelChange)="markDirty()" /></label>
+            <label>Height (mm)<input type="number" [(ngModel)]="sec.height" (ngModelChange)="markDirty()" /></label>
+          </div>
+          <label class="dsg-chk"><input type="checkbox" [(ngModel)]="sec.isVisible" (ngModelChange)="markDirty()" /> Visible</label>
+        } @else {
+          <h4>Properties</h4>
+          <p class="dsg-hint">Select a section or element on the canvas to edit its properties.</p>
+        }
+      </aside>
+    } @else {
+      <!-- ================= SAME-PAGE PREVIEW ================= -->
+      <main class="dsg-preview-main">
+        @if (previewLoading()) {
+          <div class="dsg-loading">Rendering preview…</div>
+        } @else if (previewHtml(); as html) {
+          <iframe class="dsg-frame" [srcdoc]="previewHtmlSafe" title="A4 document preview"></iframe>
+        } @else {
+          <div class="dsg-loading">Click Refresh to render the preview.</div>
+        }
+      </main>
+    }
+  </div>
+</div>
