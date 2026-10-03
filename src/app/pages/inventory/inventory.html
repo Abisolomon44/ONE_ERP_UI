@@ -1,0 +1,252 @@
+<div class="page">
+  <header class="page-head">
+    <div>
+      <h1>Inventory</h1>
+      <p class="muted">Stock dashboard, adjustments, transfers, counts and reconciliation.</p>
+    </div>
+  </header>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view inventory.</div>
+  } @else {
+    <nav class="inv-tabs">
+      @for (t of tabs; track t) {
+        <button type="button" [class.active]="tab() === t" (click)="setTab(t)">
+          {{ t === 'low-stock' ? 'Low Stock' : (t | titlecase) }}
+        </button>
+      }
+    </nav>
+
+    @if (loading()) {
+      <div class="empty">Loading…</div>
+    } @else {
+      <!-- ============ Dashboard ============ -->
+      @if (tab() === 'dashboard') {
+        @if (dash(); as d) {
+          <div class="inv-kpis">
+            <div class="inv-kpi"><span>Stock Value</span><strong>{{ d.stockValue | number: '1.2-2' }}</strong></div>
+            <div class="inv-kpi"><span>Products With Stock</span><strong>{{ d.productsWithStock }}</strong></div>
+            <div class="inv-kpi"><span>Out Of Stock</span><strong>{{ d.outOfStockCount }}</strong></div>
+            <div class="inv-kpi"><span>Low Stock</span><strong>{{ d.lowStockCount }}</strong></div>
+            <div class="inv-kpi"><span>Qty In Today</span><strong>{{ d.qtyInToday | number: '1.3-3' }}</strong></div>
+            <div class="inv-kpi"><span>Qty Out Today</span><strong>{{ d.qtyOutToday | number: '1.3-3' }}</strong></div>
+            <div class="inv-kpi"><span>Transactions Today</span><strong>{{ d.transactionsToday }}</strong></div>
+          </div>
+        }
+      }
+
+      <!-- ============ Document tabs (Adjustment / Transfer / Count) ============ -->
+      @if (tab() === 'adjustment' || tab() === 'transfer' || tab() === 'count') {
+        @if (canManage()) {
+          <section class="card">
+            <h2>New {{ tab() === 'adjustment' ? 'Adjustment' : tab() === 'transfer' ? 'Transfer' : 'Stock Count' }}</h2>
+            <div class="inv-form">
+              <label><span>Date</span><input type="date" [(ngModel)]="docDate" /></label>
+              <label>
+                <span>{{ tab() === 'transfer' ? 'From Warehouse' : 'Warehouse' }}</span>
+                <select [(ngModel)]="warehouseId">
+                  <option [ngValue]="null">Select…</option>
+                  @for (w of lookups()!.warehouses; track w.id) {
+                    <option [ngValue]="w.id">{{ w.name }}</option>
+                  }
+                </select>
+              </label>
+              @if (tab() === 'transfer') {
+                <label>
+                  <span>To Warehouse</span>
+                  <select [(ngModel)]="toWarehouseId">
+                    <option [ngValue]="null">Select…</option>
+                    @for (w of lookups()!.warehouses; track w.id) {
+                      <option [ngValue]="w.id">{{ w.name }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              @if (tab() !== 'transfer') {
+                <label>
+                  <span>Branch</span>
+                  <select [(ngModel)]="branchId">
+                    <option [ngValue]="null">Select…</option>
+                    @for (b of lookups()!.branches; track b.id) {
+                      <option [ngValue]="b.id">{{ b.name }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              @if (tab() === 'adjustment') {
+                <label><span>Reason</span><input [(ngModel)]="reason" /></label>
+              }
+              <label class="inv-grow"><span>Remarks</span><input [(ngModel)]="remarks" /></label>
+            </div>
+
+            <table class="inv-lines">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>UOM</th>
+                  @if (tab() === 'adjustment') {
+                    <th class="num">Qty Δ (+/−)</th>
+                  } @else {
+                    <th class="num">{{ tab() === 'count' ? 'Counted Qty' : 'Qty' }}</th>
+                  }
+                  <th class="num">Rate</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (l of lines(); track $index; let i = $index) {
+                  <tr>
+                    <td>
+                      <select [(ngModel)]="l.productId">
+                        <option [ngValue]="0">Select…</option>
+                        @for (p of lookups()!.products; track p.id) {
+                          <option [ngValue]="p.id">{{ p.name }} ({{ p.code }})</option>
+                        }
+                      </select>
+                    </td>
+                    <td>
+                      <select [(ngModel)]="l.unitId">
+                        <option [ngValue]="0">Select…</option>
+                        @for (u of lookups()!.units; track u.id) {
+                          <option [ngValue]="u.id">{{ u.name }}</option>
+                        }
+                      </select>
+                    </td>
+                    <td class="num">
+                      <input
+                        type="number"
+                        step="0.001"
+                        [ngModel]="tab() === 'adjustment' ? l.delta : l.quantity"
+                        (ngModelChange)="setLineValue(l, tab() === 'adjustment' ? 'delta' : 'quantity', $event)"
+                      />
+                    </td>
+                    <td class="num"><input type="number" step="0.01" [(ngModel)]="l.rate" /></td>
+                    <td><button type="button" class="btn ghost" (click)="removeLine(i)">✕</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <div class="inv-actions">
+              <button class="btn ghost" type="button" (click)="addLine()">+ Add Line</button>
+              <button class="btn primary" type="button" (click)="save()">Save Draft</button>
+            </div>
+          </section>
+        }
+
+        <section class="card">
+          <h2>{{ tab() === 'adjustment' ? 'Adjustments' : tab() === 'transfer' ? 'Transfers' : 'Stock Counts' }}</h2>
+          <table class="inv-list">
+            <thead>
+              <tr><th>Number</th><th>Date</th><th>Info</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              @for (d of docs(); track d.id) {
+                <tr>
+                  <td>{{ d.number }}</td>
+                  <td>{{ d.date ? (d.date | slice: 0 : 10) : '' }}</td>
+                  <td>{{ d.extra }}</td>
+                  <td>{{ d.status }}</td>
+                  <td>
+                    @if (d.status === 'DRAFT' && canManage()) {
+                      <button type="button" (click)="post(d.id)">Post</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      <!-- ============ Reconciliation ============ -->
+      @if (tab() === 'reconciliation') {
+        <section class="card">
+          <h2>Stock Reconciliation (book vs ledger)</h2>
+          <div class="inv-form">
+            <label>
+              <span>Warehouse</span>
+              <select [(ngModel)]="warehouseId" (ngModelChange)="loadRecon()">
+                <option [ngValue]="null">All</option>
+                @for (w of lookups()!.warehouses; track w.id) {
+                  <option [ngValue]="w.id">{{ w.name }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <table class="inv-list">
+            <thead>
+              <tr><th>Code</th><th>Product</th><th class="num">Book</th><th class="num">Ledger</th><th class="num">Variance</th></tr>
+            </thead>
+            <tbody>
+              @for (r of recon(); track $index) {
+                <tr [class.inv-bad]="r.variance !== 0">
+                  <td>{{ r.productCode }}</td>
+                  <td>{{ r.productName }}</td>
+                  <td class="num">{{ r.bookQuantity | number: '1.3-3' }}</td>
+                  <td class="num">{{ r.ledgerQuantity | number: '1.3-3' }}</td>
+                  <td class="num">{{ r.variance | number: '1.3-3' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      <!-- ============ Valuation ============ -->
+      @if (tab() === 'valuation') {
+        <section class="card">
+          <h2>Stock Valuation <span class="inv-total">{{ valuationTotal() | number: '1.2-2' }}</span></h2>
+          <div class="inv-form">
+            <label>
+              <span>Warehouse</span>
+              <select [(ngModel)]="warehouseId" (ngModelChange)="loadValuation()">
+                <option [ngValue]="null">All</option>
+                @for (w of lookups()!.warehouses; track w.id) {
+                  <option [ngValue]="w.id">{{ w.name }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <table class="inv-list">
+            <thead>
+              <tr><th>Code</th><th>Product</th><th class="num">Qty</th><th class="num">Unit Cost</th><th class="num">Value</th></tr>
+            </thead>
+            <tbody>
+              @for (r of valuation(); track $index) {
+                <tr>
+                  <td>{{ r.productCode }}</td>
+                  <td>{{ r.productName }}</td>
+                  <td class="num">{{ r.quantity | number: '1.3-3' }}</td>
+                  <td class="num">{{ r.unitCost | number: '1.2-2' }}</td>
+                  <td class="num">{{ r.value | number: '1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      <!-- ============ Low stock ============ -->
+      @if (tab() === 'low-stock') {
+        <section class="card">
+          <h2>Low Stock / Reorder</h2>
+          <table class="inv-list">
+            <thead>
+              <tr><th>Code</th><th>Product</th><th class="num">Available</th><th class="num">Reorder Level</th></tr>
+            </thead>
+            <tbody>
+              @for (r of low(); track $index) {
+                <tr>
+                  <td>{{ r.productCode }}</td>
+                  <td>{{ r.productName }}</td>
+                  <td class="num">{{ r.availableQuantity | number: '1.3-3' }}</td>
+                  <td class="num">{{ r.reorderLevel | number: '1.3-3' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+    }
+  }
+</div>

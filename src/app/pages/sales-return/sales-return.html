@@ -1,0 +1,120 @@
+<div class="page">
+  <header class="page-head">
+    <div>
+      <h1>Sales Returns</h1>
+      <p class="muted">Take goods back from customers and restore stock.</p>
+    </div>
+    @if (canManage()) {
+      <button class="btn primary" (click)="newReturn()"><lucide-icon name="plus"></lucide-icon> New Return</button>
+    }
+  </header>
+
+  @if (!canView()) {
+    <div class="empty">You do not have permission to view sales returns.</div>
+  } @else if (showForm()) {
+    <section class="card">
+      <h2>New Sales Return</h2>
+      <div class="grid">
+        <label>
+          <span>Invoice ID *</span>
+          <input [(ngModel)]="sourceId" placeholder="e.g. 1" (keyup.enter)="loadSource()" />
+        </label>
+        <label>
+          <span>Return Date</span>
+          <input type="date" [(ngModel)]="returnDate" />
+        </label>
+        <label>
+          <span>Reason</span>
+          <input [(ngModel)]="reason" />
+        </label>
+        <label>
+          <span>Remarks</span>
+          <input [(ngModel)]="remarks" />
+        </label>
+        <label>
+          <span>Refund Amount (optional)</span>
+          <input type="number" min="0" [(ngModel)]="refundAmount" />
+        </label>
+      </div>
+      <button class="btn ghost" (click)="loadSource()">Load Invoice</button>
+
+      @if (source) {
+        <p class="muted">
+          Invoice <strong>{{ source.salesInvoiceNo }}</strong> — {{ source.customerNameSnapshot }}
+        </p>
+        <div class="table-scroll">
+          <table class="items">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="num">Billed Qty</th>
+                <th class="num">Return Qty</th>
+                <th class="num">Rate</th>
+                <th class="num">GST %</th>
+                <th class="num">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (it of draft(); track it.salesInvoiceItemId) {
+                <tr>
+                  <td>{{ it.productName }}</td>
+                  <td class="num">{{ it.originalQty | number: '1.3-3' }}</td>
+                  <td class="num">
+                    <input type="number" min="0" step="0.01" [(ngModel)]="it.returnQuantity" (input)="onQtyChange()" />
+                  </td>
+                  <td class="num">{{ it.rate | number: '1.2-2' }}</td>
+                  <td class="num">{{ it.gstPercent | number: '1.2-2' }}</td>
+                  <td class="num">{{ it.lineTotal | number: '1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="totals">
+          <div class="grand"><span>Return Total</span><strong>{{ grandTotal() | number: '1.2-2' }}</strong></div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" (click)="submit()" [disabled]="saving()">
+            <lucide-icon name="save"></lucide-icon> {{ saving() ? 'Saving…' : 'Save Return' }}
+          </button>
+          <button class="btn ghost" (click)="closeForm()">Cancel</button>
+        </div>
+      }
+    </section>
+  } @else {
+    @if (loading()) {
+      <div class="empty">Loading…</div>
+    } @else if (!returns().length) {
+      <div class="empty">No sales returns yet.</div>
+    } @else {
+      <table class="list">
+        <thead>
+          <tr>
+            <th>Return No</th>
+            <th>Date</th>
+            <th>Invoice</th>
+            <th>Customer</th>
+            <th class="num">Total</th>
+            <th class="num">Refund</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of returns(); track r.salesReturnId) {
+            <tr>
+              <td>{{ r.returnNumber }}</td>
+              <td>{{ r.returnDate ? (r.returnDate | slice: 0 : 10) : '' }}</td>
+              <td>{{ r.salesInvoiceId }}</td>
+              <td>{{ r.customerNameSnapshot || r.customerId }}</td>
+              <td class="num">{{ r.grandTotal | number: '1.2-2' }}</td>
+              <td class="num">{{ r.refundAmount | number: '1.2-2' }}</td>
+              <td>
+                <button type="button" (click)="cancelReturn(r)" [disabled]="!canManage()">Cancel</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+</div>

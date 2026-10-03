@@ -281,6 +281,17 @@ export const routes: Routes = [
           import('./pages/purchase-management/purchase-management').then((m) => m.PurchaseManagementPage),
       },
       {
+        path: 'sales-return',
+        title: 'Sales Returns',
+        loadComponent: () =>
+          import('./pages/sales-return/sales-return').then((m) => m.SalesReturnPage),
+      },
+      {
+        path: 'inventory',
+        title: 'Inventory',
+        loadComponent: () => import('./pages/inventory/inventory').then((m) => m.InventoryPage),
+      },
+      {
         path: 'purchase-returns',
         title: 'Purchase Returns',
         loadComponent: () =>

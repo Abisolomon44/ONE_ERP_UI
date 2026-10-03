@@ -4,12 +4,24 @@
       <span class="rp-head-icon"><lucide-icon name="bar-chart-3" [size]="18"></lucide-icon></span>
       <div class="rp-head-text">
         <h1>Reports</h1>
-        <p class="muted">Purchase analytics.</p>
+        <p class="muted">Sales and purchase analytics.</p>
       </div>
     </div>
+    <nav class="rp-module-tabs">
+      <button class="rp-module-tab" type="button" [class.active]="module() === 'sales'" (click)="setModule('sales')">
+        Sales
+      </button>
+      <button class="rp-module-tab" type="button" [class.active]="module() === 'purchase'" (click)="setModule('purchase')">
+        Purchase
+      </button>
+    </nav>
   </header>
 
   <section class="rp-content">
-    <app-purchase-reports-workspace></app-purchase-reports-workspace>
+    @if (module() === 'sales') {
+      <app-sales-reports-workspace></app-sales-reports-workspace>
+    } @else {
+      <app-purchase-reports-workspace></app-purchase-reports-workspace>
+    }
   </section>
 </div>

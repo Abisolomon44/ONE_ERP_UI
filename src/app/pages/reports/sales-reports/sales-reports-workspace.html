@@ -1,0 +1,19 @@
+<div class="prp">
+  <nav class="rp-tabs">
+    <span class="rp-tabs-caption">Report Types</span>
+    @for (c of configs; track c.id) {
+      <button class="rp-tab" type="button" [class.active]="active() === c.id" (click)="setActive(c.id)">
+        <lucide-icon [name]="c.icon" [size]="15"></lucide-icon>
+        <span>{{ c.label }}</span>
+      </button>
+    }
+  </nav>
+
+  <section class="rp-content">
+    @for (c of configs; track c.id) {
+      <div class="prp-pane" [class.hidden]="active() !== c.id">
+        <app-sales-report-screen [reportId]="c.id"></app-sales-report-screen>
+      </div>
+    }
+  </section>
+</div>
