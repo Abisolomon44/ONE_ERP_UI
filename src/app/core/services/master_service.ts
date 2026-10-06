@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Currency, IndustryType, GstRegistrationType, Language, TimeZone } from '../models';
@@ -1357,10 +1357,16 @@ export interface ProductLookupItem extends LookupItem {
   hsnCode?: string | null;
   gstRate?: number | null;
   barcode?: string | null;
+  purchasePrice?: number | null;
+  salesPrice?: number | null;
+}
+
+export interface SupplierLookupItem extends LookupItem {
+  priceListId?: number | null;
 }
 
 export interface PurchaseLookupsDto {
-  suppliers: LookupItem[];
+  suppliers: SupplierLookupItem[];
   products: ProductLookupItem[];
   units: LookupItem[];
   paymentTypes: LookupItem[];
@@ -1368,6 +1374,9 @@ export interface PurchaseLookupsDto {
   branches: LookupItem[];
   warehouses: LookupItem[];
   companies: LookupItem[];
+  priceLists: LookupItem[];
+  priceListRates: Record<string, number>;
+  priceListId?: number | null;
   currentCompanyId: number;
 }
 
@@ -1457,6 +1466,7 @@ export interface PurchaseDto {
   purchaseTypeId?: number | null;
   accountingYearId?: number | null;
   taxId?: number | null;
+  priceListId?: number | null;
   isGSTInclusive?: boolean | null;
   cancelledByUserID?: number | null;
   cancelledAt?: string | null;
@@ -1532,6 +1542,7 @@ export interface CreatePurchaseRequest {
   items: CreatePurchaseItemInput[];
   payment?: CreatePurchasePaymentInput | null;
   companyId: number;
+  priceListId?: number | null;
 }
 
 export interface UpdatePurchaseRequest {
@@ -1549,6 +1560,7 @@ export interface UpdatePurchaseRequest {
   remarks?: string | null;
   items: CreatePurchaseItemInput[];
   companyId: number;
+  priceListId?: number | null;
   supplierPoNumber?: string | null;
   referenceNumber?: string | null;
   currencyId?: number | null;
@@ -1568,8 +1580,13 @@ export class PurchaseService {
     return firstValueFrom(this.http.get<PaginatedResult<PurchaseDto>>('/api/purchases', { params }));
   }
 
-  getLookups(): Promise<PurchaseLookupsDto> {
-    return firstValueFrom(this.http.get<PurchaseLookupsDto>('/api/purchases/lookups'));
+  // T060 — the company context is authorized server-side; pass it when the user
+  // selects a company so suppliers/branches/warehouses match that company.
+  getLookups(companyId?: number | null, priceListId?: number | null): Promise<PurchaseLookupsDto> {
+    let params = new HttpParams();
+    if (companyId && companyId > 0) params = params.set('companyId', companyId);
+    if (priceListId && priceListId > 0) params = params.set('priceListId', priceListId);
+    return firstValueFrom(this.http.get<PurchaseLookupsDto>('/api/purchases/lookups', { params }));
   }
 
   getNextNumber(): Promise<string> {
@@ -1592,8 +1609,9 @@ export class PurchaseService {
     return firstValueFrom(this.http.get<StockTransactionDto[]>(`/api/purchases/${id}/stock`));
   }
 
-  create(request: CreatePurchaseRequest): Promise<PurchaseDto> {
-    return firstValueFrom(this.http.post<PurchaseDto>('/api/purchases', request));
+  create(request: CreatePurchaseRequest, idempotencyKey?: string): Promise<PurchaseDto> {
+    const headers = idempotencyKey ? new HttpHeaders({ 'Idempotency-Key': idempotencyKey }) : undefined;
+    return firstValueFrom(this.http.post<PurchaseDto>('/api/purchases', request, { headers }));
   }
 
   update(id: number, request: UpdatePurchaseRequest): Promise<PurchaseDto> {
@@ -1834,8 +1852,9 @@ export class PurchaseReturnService {
     return firstValueFrom(this.http.get<PurchaseReturnDto>(`/api/purchase-returns/${id}`));
   }
 
-  create(request: CreatePurchaseReturnRequest): Promise<PurchaseReturnDto> {
-    return firstValueFrom(this.http.post<PurchaseReturnDto>('/api/purchase-returns', request));
+  create(request: CreatePurchaseReturnRequest, idempotencyKey?: string): Promise<PurchaseReturnDto> {
+    const headers = idempotencyKey ? new HttpHeaders({ 'Idempotency-Key': idempotencyKey }) : undefined;
+    return firstValueFrom(this.http.post<PurchaseReturnDto>('/api/purchase-returns', request, { headers }));
   }
 
   update(id: number, request: UpdatePurchaseReturnRequest): Promise<PurchaseReturnDto> {

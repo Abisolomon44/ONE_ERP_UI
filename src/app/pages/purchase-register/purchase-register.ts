@@ -7,6 +7,7 @@ import { PurchaseService, PurchaseDto, PurchaseLookupsDto } from '../../core/ser
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { PurchaseHubService } from '../../core/purchase-hub.service';
+import { DocumentPrintService } from '../../core/services/document-print.service';
 
 @Component({
   selector: 'app-purchase-register',
@@ -22,6 +23,7 @@ export class PurchaseRegisterPage implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly hub = inject(PurchaseHubService);
+  private readonly docPrint = inject(DocumentPrintService);
 
   protected readonly canView = signal(false);
   protected readonly canCreate = signal(false);
@@ -114,7 +116,8 @@ export class PurchaseRegisterPage implements OnInit {
   }
 
   protected printPurchase(id: number): void {
-    this.router.navigate(['/purchase-print', id]);
+    const purchase = this.rows().find((row) => row.purchaseId === id);
+    if (purchase) void this.docPrint.openPurchasePreview(id, purchase.companyId, 'PURCHASE');
   }
 
   protected loadPage(page: number): void {

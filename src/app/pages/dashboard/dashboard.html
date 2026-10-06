@@ -1,0 +1,293 @@
+<div class="dash">
+  <div class="dash-head">
+    <div class="dash-heading">
+      <div class="dash-eyebrow"><span class="dash-eyebrow-mark"></span> WORKSPACE OVERVIEW</div>
+      <h1>{{ greeting() }}{{ data()?.user?.fullName ? ', ' + data()!.user.fullName : '' }}</h1>
+      <p class="dash-sub">A clear view of sales, collections, and stock across your business.</p>
+      <div class="dash-head-meta">
+        <span class="dash-date"><lucide-icon name="calendar-days" [size]="15"></lucide-icon>{{ todayLabel }}</span>
+        <span class="dash-live"><span></span> Live workspace data</span>
+      </div>
+    </div>
+    <div class="dash-head-actions">
+      @if (canSales()) {
+        <button class="btn btn-primary" type="button" (click)="go('/sales-entry')">
+          <lucide-icon name="plus" [size]="15"></lucide-icon>
+          New Sale
+        </button>
+      }
+      <button class="btn dash-refresh" type="button" (click)="reload()" [disabled]="loading()">
+        <lucide-icon name="refresh-cw" [size]="14"></lucide-icon>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="dash-section-heading">
+      <div><span class="dash-section-kicker">AT A GLANCE</span><h2>Business overview</h2></div>
+    </div>
+    <div class="dash-kpis">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="card stat-card dash-kpi">
+          <div class="stat-icon accent"><lucide-icon name="loader" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="stat-label">Loading…</div>
+            <div class="stat-value">—</div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- ============ KPI CARDS ============ -->
+    <div class="dash-section-heading">
+      <div><span class="dash-section-kicker">AT A GLANCE</span><h2>Business overview</h2></div>
+      <span class="dash-section-note">Key metrics for today</span>
+    </div>
+    <div class="dash-kpis">
+      @if (canSales()) {
+        <div class="card stat-card dash-kpi clickable" (click)="go('/reports')">
+          <div class="stat-icon accent"><lucide-icon name="shopping-cart" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="stat-label">Sales Today</div>
+            <div class="stat-value">{{ salesToday() }}</div>
+            <div class="stat-hint">{{ invoicesToday() }} invoices</div>
+          </div>
+        </div>
+        <div class="card stat-card dash-kpi clickable" (click)="go('/reports')">
+          <div class="stat-icon success"><lucide-icon name="wallet" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="stat-label">Collection Today</div>
+            <div class="stat-value">{{ collectionToday() }}</div>
+            <div class="stat-hint">payments received</div>
+          </div>
+        </div>
+        <div class="card stat-card dash-kpi clickable" (click)="go('/reports')">
+          <div class="stat-icon warning"><lucide-icon name="hourglass" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="stat-label">Outstanding</div>
+            <div class="stat-value">{{ outstanding() }}</div>
+            <div class="stat-hint">all unpaid invoices</div>
+          </div>
+        </div>
+      }
+      @if (canStock()) {
+        <div class="card stat-card dash-kpi clickable" (click)="go('/inventory')">
+          <div class="stat-icon info"><lucide-icon name="boxes" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="stat-label">Stock Value</div>
+            <div class="stat-value">{{ inv() ? fmtMoney(inv()!.stockValue) : '—' }}</div>
+            <div class="stat-hint">
+              @if (inv(); as v) {
+                {{ v.productsWithStock }} products · {{ v.lowStockCount }} low · {{ v.outOfStockCount }} out
+              }
+            </div>
+          </div>
+        </div>
+      }
+      @if (!canSales() && !canStock()) {
+        <p class="empty">You do not have permission to view business data.</p>
+      }
+    </div>
+
+    <!-- ============ ANALYTICS ROW ============ -->
+    @if (canSales()) {
+      <div class="dash-section-heading dash-section-spaced">
+        <div><span class="dash-section-kicker">PERFORMANCE</span><h2>Sales analytics</h2></div>
+        <span class="dash-section-note">Trends and product contribution</span>
+      </div>
+      <div class="dash-grid dash-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Sales Trend</h3>
+            <span class="card-sub">by period</span>
+          </div>
+          <div class="card-body">
+            @if (trend().length > 0) {
+              <prs-bars [points]="trend()"></prs-bars>
+            } @else {
+              <p class="empty">No sales recorded yet.</p>
+            }
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Top Selling Products</h3>
+            <span class="card-sub">by sales amount</span>
+          </div>
+          <div class="card-body">
+            @if (topProducts().length > 0) {
+              <prs-bars [points]="topProducts()"></prs-bars>
+            } @else {
+              <p class="empty">No product sales yet.</p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ============ PAYMENT SUMMARY + CUSTOMER OUTSTANDING ============ -->
+    @if (canSales()) {
+      <div class="dash-section-heading dash-section-spaced">
+        <div><span class="dash-section-kicker">CASH FLOW</span><h2>Collections & receivables</h2></div>
+        <span class="dash-section-note">Payment methods and customer balances</span>
+      </div>
+      <div class="dash-grid dash-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h3>Payment Summary</h3>
+            <span class="card-sub">collections today by method</span>
+          </div>
+          <div class="card-body">
+            @if (paymentSummary().length > 0) {
+              <prs-bars [points]="paymentSummary()"></prs-bars>
+            } @else {
+              <p class="empty">No collections recorded today.</p>
+            }
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Customer Outstanding</h3>
+            <span class="card-sub">top balances</span>
+          </div>
+          <div class="card-body">
+            @if (customerOutstanding().length > 0) {
+              <prs-bars [points]="customerOutstanding()"></prs-bars>
+            } @else {
+              <p class="empty">No outstanding balances.</p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ============ LOW STOCK + RECENT SALES ============ -->
+    @if (canStock() || canSales()) {
+      <div class="dash-section-heading dash-section-spaced">
+        <div><span class="dash-section-kicker">OPERATIONS</span><h2>Recent activity</h2></div>
+        <span class="dash-section-note">Inventory alerts and latest invoices</span>
+      </div>
+    }
+    <div class="dash-grid dash-grid-2">
+      @if (canStock()) {
+        <div class="card">
+          <div class="card-header">
+            <h3>Low Stock Alerts</h3>
+            <span class="card-sub">at or below reorder level</span>
+          </div>
+          <div class="card-body card-body-flush">
+            @if (lowStock().length > 0) {
+              <table class="dash-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th class="num">Current</th>
+                    <th class="num">Reorder</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of lowStock(); track r.productId + '-' + r.warehouseId) {
+                    <tr>
+                      <td>{{ r.productName || r.productCode || ('#' + r.productId) }}</td>
+                      <td class="num danger-text">{{ fmtQty(r.availableQuantity) }}</td>
+                      <td class="num">{{ fmtQty(r.reorderLevel) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <p class="empty">All stock levels are healthy.</p>
+            }
+          </div>
+        </div>
+      }
+      @if (canSales()) {
+        <div class="card">
+          <div class="card-header">
+            <h3>Recent Sales</h3>
+            <span class="card-sub">latest invoices</span>
+            <div class="card-actions">
+              <button class="btn btn-sm" type="button" (click)="go('/sales')">View all</button>
+            </div>
+          </div>
+          <div class="card-body card-body-flush">
+            @if (recentSales().length > 0) {
+              <table class="dash-table">
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Customer</th>
+                    <th class="num">Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of recentSales(); track s.salesInvoiceId) {
+                    <tr class="clickable" (click)="go('/sales')">
+                      <td class="mono">{{ s.salesInvoiceNo }}</td>
+                      <td>{{ s.customerNameSnapshot || '—' }}</td>
+                      <td class="num">{{ fmtMoney(s.grandTotal) }}</td>
+                      <td><base-pill [status]="s.invoiceStatus" [label]="s.invoiceStatus"></base-pill></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <p class="empty">No invoices yet — create your first sale.</p>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ============ QUICK ACTIONS ============ -->
+  <div class="dash-section-heading dash-section-spaced">
+    <div><span class="dash-section-kicker">SHORTCUTS</span><h2>Get things done</h2></div>
+    <span class="dash-section-note">Frequently used workspace tools</span>
+  </div>
+  <div class="dash-grid dash-grid-2 dash-actions">
+    <div class="card">
+      <div class="card-header">
+        <h3>Quick Actions</h3>
+        <span class="card-sub">billing</span>
+      </div>
+      <div class="card-body card-body-flush">
+        @for (a of billingActions(); track a.route) {
+          <button class="action-row" type="button" (click)="go(a.route)">
+            <span class="action-icon"><lucide-icon [name]="a.icon" [size]="16"></lucide-icon></span>
+            <span class="action-label">{{ a.label }}</span>
+            <lucide-icon class="action-chevron" name="chevron-right" [size]="15"></lucide-icon>
+          </button>
+        }
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3>Manage</h3>
+        <span class="card-sub">administration</span>
+      </div>
+      <div class="card-body card-body-flush">
+        @for (a of manageActions(); track a.route) {
+          <button class="action-row" type="button" (click)="go(a.route)">
+            <span class="action-icon"><lucide-icon [name]="a.icon" [size]="16"></lucide-icon></span>
+            <span class="action-label">{{ a.label }}</span>
+            <lucide-icon class="action-chevron" name="chevron-right" [size]="15"></lucide-icon>
+          </button>
+        }
+        @if (data()?.user; as u) {
+          <div class="dash-admin">
+            <span class="dash-avatar">{{ initials(u.fullName) }}</span>
+            <div>
+              <div class="dash-admin-name">{{ u.fullName }}</div>
+              <div class="dash-admin-sub">
+                {{ u.username }} @if (data()?.tenantName) { · {{ data()!.tenantName }} }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

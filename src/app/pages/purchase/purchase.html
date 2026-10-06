@@ -29,6 +29,10 @@
   </aside>
 
   <section class="pu-content">
+    @if (tab() === 'dashboard') {
+      <!-- T059 — reuses the existing purchase report screen (Report=dashboard); no duplicated API or screen -->
+      <app-purchase-report-screen reportId="dashboard"></app-purchase-report-screen>
+    }
     @if (tab() === 'entry') {
       <app-purchase-entry></app-purchase-entry>
     }

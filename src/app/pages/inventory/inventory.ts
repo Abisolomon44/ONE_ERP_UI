@@ -53,6 +53,8 @@ export class InventoryPage implements OnInit {
     branches: [],
     warehouses: [],
     companies: [],
+    priceLists: [],
+    priceListRates: {},
     currentCompanyId: 0,
   });
 

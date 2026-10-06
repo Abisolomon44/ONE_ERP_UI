@@ -144,6 +144,9 @@ export class DocumentPreviewPage implements OnInit {
 
   protected readonly versionId = signal(0);
   protected readonly salesInvoiceId = signal<number | null>(null);
+  protected readonly purchaseId = signal<number | null>(null);
+  protected readonly purchaseReturnId = signal<number | null>(null);
+  private debitNote = false;
   /* Save & Print flow: /document-design/preview?...&autoprint=1 fires the
      print dialog as soon as the backend HTML has rendered. */
   private autoPrint = false;
@@ -163,12 +166,17 @@ export class DocumentPreviewPage implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.queryParamMap.get('versionId'));
     const inv = Number(this.route.snapshot.queryParamMap.get('salesInvoiceId'));
+    const purchase = Number(this.route.snapshot.queryParamMap.get('purchaseId'));
+    const purchaseReturn = Number(this.route.snapshot.queryParamMap.get('purchaseReturnId'));
     if (!Number.isFinite(id) || id <= 0) {
       this.toast.error('No template version selected', 'Open the preview from the Document Design hub.');
       return;
     }
     this.versionId.set(id);
     if (Number.isFinite(inv) && inv > 0) this.salesInvoiceId.set(inv);
+    if (Number.isFinite(purchase) && purchase > 0) this.purchaseId.set(purchase);
+    if (Number.isFinite(purchaseReturn) && purchaseReturn > 0) this.purchaseReturnId.set(purchaseReturn);
+    this.debitNote = this.route.snapshot.queryParamMap.get('debitNote') === '1';
     this.autoPrint = this.route.snapshot.queryParamMap.get('autoprint') === '1';
     void this.load();
   }
@@ -178,7 +186,11 @@ export class DocumentPreviewPage implements OnInit {
     try {
       const [design, html] = await Promise.all([
         this.svc.designer(this.versionId()),
-        this.svc.preview(this.versionId(), this.salesInvoiceId() ?? undefined),
+        this.svc.preview(this.versionId(), this.salesInvoiceId() ?? undefined, {
+          purchaseId: this.purchaseId() ?? undefined,
+          purchaseReturnId: this.purchaseReturnId() ?? undefined,
+          debitNote: this.debitNote,
+        }),
       ]);
       this.design.set(design);
       this.previewHtml.set(html);

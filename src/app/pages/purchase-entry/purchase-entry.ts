@@ -49,6 +49,7 @@ interface PurchaseTab {
   label: string;
   isDirty: boolean;
   isSaved: boolean;
+  idempotencyKey: string | null;
   editingId: number | null;
   purchaseNumber: string;
   supplierId: number | null;
@@ -212,6 +213,7 @@ export class PurchaseEntryPage implements OnInit {
       label: 'Purchase',
       isDirty: false,
       isSaved: editingId != null,
+      idempotencyKey: null,
       editingId,
       purchaseNumber: '',
       branchId: lookups?.branches?.[0]?.id ?? null,
@@ -552,6 +554,12 @@ export class PurchaseEntryPage implements OnInit {
     if (p.uomId != null) it.unitID = p.uomId;
     it.hsnCode = p.hsnCode ?? null;
     if (p.gstRate != null) this.onGstChange(it, p.gstRate);
+    // T062 — seed the rate: price list first, then product master purchase price.
+    if (!(it.purchaseRate > 0)) {
+      const listRate = (this.lookups()?.priceListRates ?? {})[String(p.id)];
+      const seeded = listRate ?? (p.purchasePrice ?? 0);
+      if (seeded > 0) it.purchaseRate = round2(seeded);
+    }
     const tab = this.activeTab();
     if (tab) {
       const dupIdx = tab.items.findIndex((x, i) => i !== row && x.productId === p.id);
@@ -631,10 +639,71 @@ export class PurchaseEntryPage implements OnInit {
   /* =========================================================
       Data loading
       ========================================================= */
-  private async refreshLookups(): Promise<void> {
-    const lookups = await this.svc.getLookups();
+  private async refreshLookups(companyId?: number | null, priceListId?: number | null): Promise<void> {
+    const lookups = await this.svc.getLookups(companyId, priceListId);
     this.lookups.set(lookups);
     this.buildPaymentTypeCodeMap(lookups);
+  }
+
+  /**
+   * T060 — company is the top of the context chain. Changing it invalidates the
+   * company-scoped context (suppliers, branches, warehouses), so reload the
+   * lookups for the new company and clear the stale selections. The server
+   * re-authorizes the company on save.
+   */
+  protected async onCompanyChange(tab: PurchaseTab): Promise<void> {
+    tab.supplierId = null;
+    tab.branchId = null;
+    tab.warehouseId = null;
+    tab.priceListId = ''; // price lists are company-scoped
+    this.markDirty();
+    try {
+      await this.refreshLookups(tab.companyId);
+    } catch (e: any) {
+      this.toast.error('Failed to load company context', e?.error?.message ?? e?.message ?? '');
+      return;
+    }
+    const lookups = this.lookups();
+    tab.branchId = lookups?.branches?.[0]?.id ?? null;
+    tab.warehouseId = lookups?.warehouses?.[0]?.id ?? null;
+    this.tabs.update((arr) => [...arr]);
+  }
+
+  /**
+   * T062 — supplier-specific pricing: picking a supplier defaults the price list
+   * from the supplier master and reloads the lookups with that list's rates.
+   */
+  protected async onSupplierChange(tab: PurchaseTab): Promise<void> {
+    this.markDirty();
+    const supplier = (this.lookups()?.suppliers ?? []).find((s) => s.id === tab.supplierId);
+    const supplierListId = supplier?.priceListId ?? null;
+    const nextListId = supplierListId != null && supplierListId > 0 ? String(supplierListId) : tab.priceListId;
+    if (nextListId !== tab.priceListId) tab.priceListId = nextListId;
+    await this.onPriceListChange(tab);
+  }
+
+  /** Reload lookups with the selected price list so product rates can be seeded. */
+  protected async onPriceListChange(tab: PurchaseTab): Promise<void> {
+    this.markDirty();
+    const listId = Number(tab.priceListId) || null;
+    try {
+      await this.refreshLookups(tab.companyId, listId);
+    } catch (e: any) {
+      this.toast.error('Failed to load price list rates', e?.error?.message ?? e?.message ?? '');
+      return;
+    }
+    // Seed rates into rows the user has not priced yet (0 or unset).
+    const rates = this.lookups()?.priceListRates ?? {};
+    if (listId != null && Object.keys(rates).length) {
+      for (const it of tab.items) {
+        if (it.productId != null && !(it.purchaseRate > 0)) {
+          const seeded = rates[String(it.productId)];
+          if (seeded != null && seeded > 0) it.purchaseRate = round2(seeded);
+        }
+      }
+      this.onItemChange(tab);
+    }
+    this.tabs.update((arr) => [...arr]);
   }
 
   private buildPaymentTypeCodeMap(lookups: PurchaseLookupsDto): void {
@@ -747,6 +816,7 @@ export class PurchaseEntryPage implements OnInit {
     t.paymentTypeID = p.paymentTypeID ?? null;
     t.paymentMethodID = p.paymentMethodID ?? null;
     t.taxMode = p.isGSTInclusive ? 'inclusive' : 'exclusive';
+    t.priceListId = p.priceListId != null ? String(p.priceListId) : '';
     t.paidAmount = p.paidAmount ?? 0;
     t.balanceAmount = p.balanceAmount ?? p.grandTotal;
     t.remarks = p.remarks ?? '';
@@ -1087,6 +1157,7 @@ export class PurchaseEntryPage implements OnInit {
       remarks: tab.remarks || null,
       items: this.toItems(tab),
       payment: paymentObj,
+      priceListId: Number(tab.priceListId) || null,
     };
   }
 
@@ -1192,6 +1263,10 @@ export class PurchaseEntryPage implements OnInit {
           purchaseDate: req.purchaseDate,
           supplierInvoiceNumber: req.supplierInvoiceNumber,
           supplierInvoiceDate: req.supplierInvoiceDate,
+          // Preserve PO/reference on edit — omitting them would null them out server-side.
+          supplierPoNumber: req.supplierPoNumber,
+          referenceNumber: req.referenceNumber,
+          priceListId: req.priceListId,
           isGSTInclusive: req.isGSTInclusive,
           paymentTypeID: req.paymentTypeID,
           paymentMethodID: req.paymentMethodID,
@@ -1202,7 +1277,9 @@ export class PurchaseEntryPage implements OnInit {
         };
         await this.svc.update(tab.editingId, up);
       } else {
-        await this.svc.create(req);
+        tab.idempotencyKey ??= globalThis.crypto?.randomUUID?.() ?? `purchase-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        await this.svc.create(req, tab.idempotencyKey);
+        tab.idempotencyKey = null;
       }
       this.toast.success('Purchase saved');
       tab.isSaved = true;

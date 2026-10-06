@@ -13,6 +13,7 @@ import {
 } from '../../core/services/master_service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { DocumentPrintService } from '../../core/services/document-print.service';
 
 interface ReturnDraft {
   purchaseItemId: number;
@@ -50,6 +51,7 @@ export class PurchaseReturnPage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
   private readonly router = inject(Router);
+  private readonly docPrint = inject(DocumentPrintService);
 
   protected readonly canView = signal(false);
   protected readonly canManage = signal(false);
@@ -84,6 +86,10 @@ export class PurchaseReturnPage implements OnInit {
 
   protected newReturn(): void {
     this.router.navigate(['/purchase-returns/new']);
+  }
+
+  protected printReturn(r: PurchaseReturnDto, debitNote = false): void {
+    void this.docPrint.openPurchasePreview(r.purchaseReturnId, r.companyId, debitNote ? 'DEBIT_NOTE' : 'PURCHASE_RETURN');
   }
 
   private async load(): Promise<void> {

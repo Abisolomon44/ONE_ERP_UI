@@ -19,7 +19,7 @@ export class PurchaseRegisterToolbar implements OnInit {
   private readonly router = inject(Router);
 
   protected canCreate = signal(false);
-  protected lookups: PurchaseLookupsDto = { suppliers: [], products: [], units: [], companies: [], branches: [], warehouses: [], paymentTypes: [], paymentMethods: [], currentCompanyId: 0 };
+  protected lookups: PurchaseLookupsDto = { suppliers: [], products: [], units: [], companies: [], branches: [], warehouses: [], paymentTypes: [], paymentMethods: [], priceLists: [], priceListRates: {}, currentCompanyId: 0 };
 
   ngOnInit(): void {
     this.canCreate.set(this.perm.has(['purchases.create', 'purchases.manage']));

@@ -4,6 +4,7 @@ import { DecimalPipe, SlicePipe } from '@angular/common';
 import { PurchaseService, PurchaseDto } from '../../core/services/master_service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { DocumentPrintService } from '../../core/services/document-print.service';
 
 @Component({
   selector: 'app-purchase-view',
@@ -18,6 +19,7 @@ export class PurchaseViewPage implements OnInit {
   private readonly perm = inject(PermissionService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly docPrint = inject(DocumentPrintService);
 
   protected loading = signal(false);
   protected purchase: PurchaseDto | null = null;
@@ -78,6 +80,6 @@ export class PurchaseViewPage implements OnInit {
   }
 
   protected printPurchase(): void {
-    this.router.navigate(['/purchase-print', this.purchaseId]);
+    if (this.purchase) void this.docPrint.openPurchasePreview(this.purchaseId, this.purchase.companyId, 'PURCHASE');
   }
 }

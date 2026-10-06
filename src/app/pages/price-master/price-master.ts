@@ -25,6 +25,7 @@ import { Currency } from '../../core/models';
 import { OrganizationService, BranchDto, WarehouseDto } from '../../core/services/organization_service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 export interface DropdownOption {
   value: any;
@@ -66,6 +67,7 @@ export class PriceMasterPage implements OnInit {
   private readonly org = inject(OrganizationService);
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
+  protected readonly theme = inject(ThemeService);
 
   // ===================== Signals =====================
   protected readonly canView = signal(false);

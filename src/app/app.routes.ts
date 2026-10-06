@@ -230,7 +230,7 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/purchase-entry/purchase-entry').then((m) => m.PurchaseEntryPage),
       },
       {
-        path: 'purchase',
+        path: 'purchase-register',
         title: 'Purchase Register',
         loadComponent: () => import('./pages/purchase-register/purchase-register').then((m) => m.PurchaseRegisterPage),
       },

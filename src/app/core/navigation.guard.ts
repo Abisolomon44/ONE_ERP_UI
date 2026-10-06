@@ -30,6 +30,7 @@ async function canEnter(url: string, nav: NavigationStoreService, router: Router
   if (
     path === '/purchases' ||
     path.startsWith('/purchases/') ||
+    path === '/purchase-register' ||
     path === '/purchase-returns/new' ||
     path.startsWith('/purchase-returns/') ||
     path === '/purchase-entry'

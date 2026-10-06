@@ -459,9 +459,12 @@ export class DocumentDesignService {
   }
 
   /** GET preview. Pass salesInvoiceId to render real invoice data. */
-  preview(versionId: number, salesInvoiceId?: number): Promise<string> {
+  preview(versionId: number, salesInvoiceId?: number, transaction?: { purchaseId?: number; purchaseReturnId?: number; debitNote?: boolean }): Promise<string> {
     return this.get<string>(`/api/document-templates/versions/${versionId}/preview`, {
       salesInvoiceId: salesInvoiceId ?? undefined,
+      purchaseId: transaction?.purchaseId,
+      purchaseReturnId: transaction?.purchaseReturnId,
+      debitNote: transaction?.debitNote ? true : undefined,
     });
   }
 

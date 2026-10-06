@@ -98,6 +98,8 @@
               <td>{{ r.supplierNameSnapshot || r.supplierId }}</td>
               <td class="num">{{ r.grandTotal | number: '1.2-2' }}</td>
               <td>
+                <button type="button" (click)="printReturn(r)">Print Return</button>
+                <button type="button" (click)="printReturn(r, true)">Print Debit Note</button>
                 <button type="button" (click)="open(r, 'view')" [disabled]="!canView()">View</button>
                 <button type="button" (click)="open(r, 'edit')" [disabled]="!canEdit()">Edit</button>
                 <button type="button" (click)="open(r, 'cancel')" [disabled]="!canCancel()">Cancel</button>

@@ -7,6 +7,16 @@
       </div>
       <div class="header-right">
         <button
+          class="btn btn-secondary theme-toggle-btn"
+          type="button"
+          (click)="theme.toggleMode()"
+          [title]="(theme.mode() === 'light' ? 'Switch to dark mode' : 'Switch to light mode')"
+          [attr.aria-label]="theme.mode() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+        >
+          <i-lucide [name]="theme.mode() === 'light' ? 'moon' : 'sun'" [size]="16"></i-lucide>
+          <span class="theme-toggle-text">{{ theme.mode() === 'light' ? 'Dark' : 'Light' }}</span>
+        </button>
+        <button
           class="btn btn-secondary"
           type="button"
           (click)="refresh()"

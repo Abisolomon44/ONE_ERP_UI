@@ -1,8 +1,113 @@
+/* ============================================================
+   ONE ERP - Price Master (theme-aware styles)
+
+   Theme engine:
+     - Default (light) tokens are declared on .price-master-page.
+       NOTE: this is an Angular component stylesheet using the
+       default (Emulated) view encapsulation, so a bare `:root`
+       block would be rewritten by the compiler and never match.
+     - Dark tokens are applied through the app's existing theme
+       attribute `[data-theme='dark']` on <html>
+       (see core/services/theme.service.ts).
+
+   All colors below are token-driven so both themes are supported
+   without duplicating component rules.
+   ============================================================ */
+
 .price-master-page {
+  /* ---------- Light theme tokens ---------- */
+  --pm-bg: #f8fafc;
+  --pm-surface: #ffffff;
+  --pm-surface-2: #f1f5f9;
+  --pm-surface-3: #e2e8f0;
+  --pm-surface-hover: #f1f5f9;
+
+  --pm-text: #0f172a;
+  --pm-text-2: #334155;
+  --pm-text-3: #64748b;
+
+  --pm-border: #e2e8f0;
+  --pm-border-strong: #cbd5e1;
+
+  --pm-primary: var(--accent, #2563eb);
+  --pm-primary-hover: var(--accent-hover, #1d4ed8);
+  --pm-primary-soft: var(--accent-soft, rgba(37, 99, 235, 0.1));
+
+  --pm-success: #16a34a;
+  --pm-success-soft: rgba(22, 163, 74, 0.1);
+  --pm-success-border: rgba(22, 163, 74, 0.25);
+
+  --pm-danger: #dc2626;
+  --pm-danger-soft: rgba(220, 38, 38, 0.1);
+  --pm-danger-border: rgba(220, 38, 38, 0.25);
+
+  --pm-warning: #d97706;
+  --pm-warning-soft: rgba(217, 119, 6, 0.1);
+
+  --pm-info: #0284c7;
+  --pm-info-soft: rgba(2, 132, 199, 0.1);
+
+  --pm-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --pm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+
+  --pm-radius-sm: 6px;
+  --pm-radius-md: 8px;
+  --pm-radius-lg: 10px;
+
+  --pm-transition: 160ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---------- Page shell ---------- */
+  min-height: 100%;
   padding: 20px 24px;
-  min-height: 100vh;
-  background: #0f172a;
+  color: var(--pm-text);
+  background: var(--pm-bg);
+  transition:
+    background-color var(--pm-transition),
+    color var(--pm-transition);
 }
+
+/* ------------------------------------------------------------
+   Dark theme token overrides (app-wide `[data-theme='dark']`)
+   ------------------------------------------------------------ */
+[data-theme='dark'] .price-master-page {
+  --pm-bg: #0f172a;
+  --pm-surface: #111827;
+  --pm-surface-2: #1e293b;
+  --pm-surface-3: #273248;
+  --pm-surface-hover: #1e293b;
+
+  --pm-text: #f8fafc;
+  --pm-text-2: #cbd5e1;
+  --pm-text-3: #94a3b8;
+
+  --pm-border: #334155;
+  --pm-border-strong: #475569;
+
+  --pm-primary: var(--accent, #3b82f6);
+  --pm-primary-hover: var(--accent-hover, #60a5fa);
+  --pm-primary-soft: var(--accent-soft, rgba(59, 130, 246, 0.14));
+
+  --pm-success: #22c55e;
+  --pm-success-soft: rgba(34, 197, 94, 0.12);
+  --pm-success-border: rgba(34, 197, 94, 0.28);
+
+  --pm-danger: #ef4444;
+  --pm-danger-soft: rgba(239, 68, 68, 0.12);
+  --pm-danger-border: rgba(239, 68, 68, 0.28);
+
+  --pm-warning: #f59e0b;
+  --pm-warning-soft: rgba(245, 158, 11, 0.12);
+
+  --pm-info: #38bdf8;
+  --pm-info-soft: rgba(56, 189, 248, 0.12);
+
+  --pm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --pm-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================
+   Page header
+   ============================================================ */
 
 .price-master-page .page-header {
   display: flex;
@@ -12,7 +117,9 @@
   gap: 16px;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-bottom: 1px solid var(--pm-border);
+  transition: border-color var(--pm-transition);
 }
 
 .price-master-page .header-left h1 {
@@ -20,21 +127,23 @@
   align-items: center;
   gap: 10px;
   margin: 0 0 4px;
-  color: var(--text);
+  color: var(--pm-text);
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.01em;
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .header-left h1 i-lucide {
   flex-shrink: 0;
-  color: var(--accent);
+  color: var(--pm-primary);
 }
 
 .price-master-page .header-description {
   margin: 0;
-  color: var(--text-3);
+  color: var(--pm-text-3);
   font-size: 13.5px;
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .header-right {
@@ -42,26 +151,78 @@
   gap: 10px;
 }
 
+.price-master-page .theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  color: var(--pm-text);
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border-strong);
+  border-radius: var(--pm-radius-sm);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color var(--pm-transition),
+    border-color var(--pm-transition),
+    color var(--pm-transition);
+}
+
+.price-master-page .theme-toggle-btn:hover:not(:disabled) {
+  color: var(--pm-primary);
+  background: var(--pm-primary-soft);
+  border-color: var(--pm-primary);
+}
+
+.price-master-page .theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--pm-primary-soft);
+  outline-offset: 1px;
+}
+
+.price-master-page .theme-toggle-btn i-lucide {
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Layout
+   ============================================================ */
+
 .price-master-page .main-layout {
   display: flex;
   align-items: flex-start;
   gap: 20px;
 }
 
+/* ============================================================
+   Filter sidebar
+   ============================================================ */
+
 .price-master-page .filter-sidebar {
   position: sticky;
-  top: 0;
+  top: 20px;
   display: flex;
   flex: 0 0 300px;
   flex-direction: column;
   gap: 12px;
   width: 300px;
-  height: 100vh;
+  height: calc(100vh - 40px);
   padding: 16px;
   overflow-y: auto;
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 10px;
+  color: var(--pm-text);
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-lg);
+  box-shadow: var(--pm-shadow-sm);
+  transition:
+    background-color var(--pm-transition),
+    border-color var(--pm-transition),
+    color var(--pm-transition),
+    box-shadow var(--pm-transition);
 }
 
 .price-master-page .filter-card {
@@ -69,15 +230,18 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px;
-  background: #273248;
-  border: 1px solid #334155;
-  border-radius: 8px;
+  background: var(--pm-surface-2);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md);
+  transition:
+    background-color var(--pm-transition),
+    border-color var(--pm-transition);
 }
 
 .price-master-page .sidebar-section {
   margin: 0 0 2px;
   padding: 0;
-  color: #94a3b8;
+  color: var(--pm-text-3);
   background: transparent;
   border: none;
   font-size: 11px;
@@ -85,6 +249,7 @@
   line-height: 1.25;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .sidebar-field {
@@ -95,52 +260,81 @@
 }
 
 .price-master-page .sidebar-field label {
-  color: #94a3b8;
+  color: var(--pm-text-2);
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .sidebar-field .required {
   margin-left: 2px;
-  color: #f87171;
+  color: var(--pm-danger);
 }
+
+/* ============================================================
+   Sidebar inputs / selects
+   ============================================================ */
 
 .price-master-page .sidebar-input {
   width: 100%;
   height: 36px;
   padding: 0 10px;
-  color: #e2e8f0;
-  background: #1e293b;
-  border: 1px solid #475569;
-  border-radius: 6px;
+  color: var(--pm-text);
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border-strong);
+  border-radius: var(--pm-radius-sm);
   outline: none;
   font-family: var(--font-family);
   font-size: 13px;
   transition:
-    border-color var(--transition-fast, var(--transition)),
-    box-shadow var(--transition-fast, var(--transition));
+    border-color var(--pm-transition),
+    background-color var(--pm-transition),
+    color var(--pm-transition),
+    box-shadow var(--pm-transition);
 }
 
-.price-master-page .sidebar-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
+.price-master-page .sidebar-input:focus,
 .price-master-page .sidebar-input:focus-visible {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  border-color: var(--pm-primary);
+  box-shadow: 0 0 0 3px var(--pm-primary-soft);
 }
 
 .price-master-page .sidebar-input:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
-  color: #64748b;
-  background: #1a2332;
+  opacity: 0.65;
+  color: var(--pm-text-3);
+  background: var(--pm-surface-3);
 }
 
 .price-master-page .sidebar-input::placeholder {
-  color: #64748b;
+  color: var(--pm-text-3);
+}
+
+/* Native select: keep the dropdown list legible in both themes */
+.price-master-page select.sidebar-input {
+  color-scheme: light;
+}
+
+[data-theme='dark'] .price-master-page select.sidebar-input {
+  color-scheme: dark;
+}
+
+.price-master-page select.sidebar-input option {
+  color: var(--pm-text);
+  background: var(--pm-surface);
+}
+
+/* Native date picker indicator */
+.price-master-page input[type='date'].sidebar-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  filter: none;
+}
+
+[data-theme='dark'] .price-master-page
+  input[type='date'].sidebar-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
 }
 
 .price-master-page .sidebar-input-display {
@@ -148,12 +342,16 @@
   align-items: center;
   height: 36px;
   padding: 0 10px;
-  color: #94a3b8;
-  background: #1a2332;
-  border: 1px solid #334155;
-  border-radius: 6px;
+  color: var(--pm-text-3);
+  background: var(--pm-surface-3);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-sm);
   font-size: 13px;
   font-weight: 500;
+  transition:
+    background-color var(--pm-transition),
+    border-color var(--pm-transition),
+    color var(--pm-transition);
 }
 
 .price-master-page .sidebar-search-wrapper {
@@ -164,7 +362,7 @@
   position: absolute;
   top: 50%;
   left: 10px;
-  color: #64748b;
+  color: var(--pm-text-3);
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -172,6 +370,10 @@
 .price-master-page .sidebar-search-input {
   padding-left: 32px !important;
 }
+
+/* ============================================================
+   Sidebar actions
+   ============================================================ */
 
 .price-master-page .sidebar-actions {
   display: flex;
@@ -188,15 +390,15 @@
   height: 38px;
   gap: 8px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--pm-radius-sm);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   transition:
-    background var(--transition-fast, var(--transition)),
-    border-color var(--transition-fast, var(--transition)),
-    box-shadow var(--transition-fast, var(--transition));
+    background-color var(--pm-transition),
+    border-color var(--pm-transition),
+    box-shadow var(--pm-transition);
 }
 
 .price-master-page .sidebar-actions .btn:disabled {
@@ -205,28 +407,32 @@
 }
 
 .price-master-page .sidebar-actions .btn:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.3);
+  outline: 2px solid var(--pm-primary-soft);
   outline-offset: 1px;
 }
 
 .price-master-page .sidebar-actions .btn-primary {
   color: #ffffff;
-  background: #2563eb;
+  background: var(--pm-primary);
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.3);
 }
 
 .price-master-page .sidebar-actions .btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--pm-primary-hover);
 }
 
 .price-master-page .sidebar-actions .btn-success {
   color: #ffffff;
-  background: #16a34a;
+  background: var(--pm-success);
 }
 
 .price-master-page .sidebar-actions .btn-success:hover:not(:disabled) {
-  background: #15803d;
+  filter: brightness(0.92);
 }
+
+/* ============================================================
+   Content column
+   ============================================================ */
 
 .price-master-page .product-content {
   display: flex;
@@ -236,25 +442,33 @@
   gap: 16px;
 }
 
+/* ============================================================
+   Price type legend
+   ============================================================ */
+
 .price-master-page .price-type-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: var(--accent-soft);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: var(--pm-primary-soft);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md);
+  transition:
+    background-color var(--pm-transition),
+    border-color var(--pm-transition);
 }
 
 .price-master-page .legend-label {
   margin-right: 4px;
-  color: var(--text-3);
+  color: var(--pm-text-3);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .legend-item {
@@ -262,32 +476,64 @@
   align-items: center;
   gap: 5px;
   padding: 3px 10px;
-  color: var(--text-2);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  color: var(--pm-text-2);
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   transition:
-    border-color var(--transition-fast, var(--transition)),
-    color var(--transition-fast, var(--transition));
+    border-color var(--pm-transition),
+    background-color var(--pm-transition),
+    color var(--pm-transition);
 }
 
 .price-master-page .legend-item:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--pm-primary);
+  background: var(--pm-primary-soft);
+  border-color: var(--pm-primary);
 }
 
 .price-master-page .legend-item i-lucide {
   flex-shrink: 0;
 }
 
+/* Legend actions */
+.price-master-page .legend-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.price-master-page .legend-actions .btn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.price-master-page .legend-actions .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.price-master-page .legend-actions .btn:focus-visible {
+  outline: 2px solid var(--pm-primary-soft);
+  outline-offset: 1px;
+}
+
+/* ============================================================
+   Table section
+   ============================================================ */
+
 .price-master-page .table-section {
   overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-lg);
+  transition:
+    background-color var(--pm-transition),
+    border-color var(--pm-transition);
 }
 
 .price-master-page .table-wrapper {
@@ -307,30 +553,37 @@
   top: 0;
   z-index: 10;
   padding: 11px 8px;
-  color: var(--text-3);
-  background: var(--surface-2);
-  border-bottom: 2px solid var(--border);
+  color: var(--pm-text-3);
+  background: var(--pm-surface-2);
+  border-bottom: 2px solid var(--pm-border);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-align: left;
   text-transform: uppercase;
   white-space: nowrap;
+  transition:
+    background-color var(--pm-transition),
+    border-color var(--pm-transition),
+    color var(--pm-transition);
 }
 
 .price-master-page .price-table tbody tr {
-  transition: background var(--transition-fast, var(--transition));
+  transition: background-color var(--pm-transition);
 }
 
 .price-master-page .price-table tbody tr:hover {
-  background: var(--surface-hover);
+  background: var(--pm-surface-hover);
 }
 
 .price-master-page .price-table td {
   padding: 9px 8px;
-  color: var(--text);
+  color: var(--pm-text);
   vertical-align: middle;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--pm-border);
+  transition:
+    border-color var(--pm-transition),
+    color var(--pm-transition);
 }
 
 .price-master-page .col-product {
@@ -339,7 +592,7 @@
 }
 
 .price-master-page .col-code {
-  color: var(--text-2);
+  color: var(--pm-text-2);
   font-family: monospace;
   font-size: 12px;
   font-weight: 600;
@@ -350,7 +603,7 @@
   max-width: 300px;
   min-width: 200px;
   overflow: hidden;
-  color: var(--text);
+  color: var(--pm-text);
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -359,8 +612,18 @@
 .price-master-page .col-unit {
   width: 80px;
   min-width: 80px;
-  color: var(--text-2);
+  color: var(--pm-text-2);
   font-size: 12px;
+  white-space: nowrap;
+}
+
+.price-master-page .col-stock {
+  width: 110px;
+  min-width: 100px;
+  color: var(--pm-text-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -380,25 +643,43 @@
 .price-master-page .price-th-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 4px;
   margin-top: 6px;
 }
+
+.price-master-page .price-th-actions .btn {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.price-master-page .price-th-actions .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ============================================================
+   Price / qty inputs
+   ============================================================ */
 
 .price-master-page .price-input,
 .price-master-page .qty-input {
   width: 100%;
   padding: 5px 8px;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  color: var(--pm-text);
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-sm);
   outline: none;
   font-family: var(--font-family);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   text-align: right;
   transition:
-    border-color var(--transition-fast, var(--transition)),
-    box-shadow var(--transition-fast, var(--transition));
+    border-color var(--pm-transition),
+    background-color var(--pm-transition),
+    color var(--pm-transition),
+    box-shadow var(--pm-transition);
 }
 
 .price-master-page .price-input {
@@ -413,21 +694,21 @@
 .price-master-page .price-input:focus-visible,
 .price-master-page .qty-input:focus,
 .price-master-page .qty-input:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--pm-primary);
+  box-shadow: 0 0 0 3px var(--pm-primary-soft);
 }
 
 .price-master-page .price-input:disabled,
 .price-master-page .qty-input:disabled {
   cursor: not-allowed;
-  color: var(--text-3);
-  background: var(--surface-2);
+  color: var(--pm-text-3);
+  background: var(--pm-surface-2);
 }
 
 .price-master-page .price-input:read-only {
   cursor: default;
-  color: var(--text);
-  background: var(--surface);
+  color: var(--pm-text);
+  background: transparent;
   border-color: transparent;
   font-weight: 500;
 }
@@ -437,18 +718,9 @@
   box-shadow: none;
 }
 
-/* Legend actions */
-.price-master-page .legend-actions {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.price-master-page .legend-actions .btn {
-  height: 30px;
-  padding: 0 12px;
-  font-size: 12px;
-}
+/* ============================================================
+   Quantity / status columns
+   ============================================================ */
 
 .price-master-page .col-qty {
   width: 80px;
@@ -470,26 +742,34 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  transition:
+    color var(--pm-transition),
+    background-color var(--pm-transition),
+    border-color var(--pm-transition);
 }
 
 .price-master-page .status-badge.active {
-  color: var(--success);
-  background: var(--success-soft);
-  border: 1px solid var(--success-border, rgba(22, 163, 74, 0.25));
+  color: var(--pm-success);
+  background: var(--pm-success-soft);
+  border: 1px solid var(--pm-success-border);
 }
 
 .price-master-page .status-badge.inactive {
-  color: var(--danger);
-  background: var(--danger-soft);
-  border: 1px solid var(--danger-border, rgba(220, 38, 38, 0.25));
+  color: var(--pm-danger);
+  background: var(--pm-danger-soft);
+  border: 1px solid var(--pm-danger-border);
 }
 
 .price-master-page .empty-row {
   padding: 40px 20px !important;
-  color: var(--text-3);
+  color: var(--pm-text-3);
   font-style: italic;
   text-align: center;
 }
+
+/* ============================================================
+   Loading / empty states
+   ============================================================ */
 
 .price-master-page .table-loading,
 .price-master-page .table-empty {
@@ -499,29 +779,33 @@
   justify-content: center;
   gap: 12px;
   padding: 60px 20px;
-  color: var(--text-3);
+  color: var(--pm-text-3);
   font-size: 13.5px;
   text-align: center;
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .table-loading .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
+  border: 3px solid var(--pm-border);
+  border-top-color: var(--pm-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  transition: border-color var(--pm-transition);
 }
 
 .price-master-page .table-empty i-lucide {
-  opacity: 0.4;
+  color: var(--pm-text-3);
+  opacity: 0.55;
 }
 
 .price-master-page .table-empty h5 {
   margin: 0;
-  color: var(--text-2);
+  color: var(--pm-text-2);
   font-size: 15px;
   font-weight: 600;
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .table-empty p {
@@ -531,9 +815,13 @@
 }
 
 .price-master-page .empty-hint {
-  color: var(--text-3) !important;
+  color: var(--pm-text-3) !important;
   font-size: 12.5px !important;
 }
+
+/* ============================================================
+   Table footer
+   ============================================================ */
 
 .price-master-page .table-footer {
   display: flex;
@@ -541,11 +829,15 @@
   justify-content: space-between;
   padding: 12px 16px;
   margin-top: 0;
-  color: var(--text-2);
-  background: var(--surface-2);
-  border-top: 1px solid var(--border);
-  border-radius: 0 0 10px 10px;
+  color: var(--pm-text-2);
+  background: var(--pm-surface-2);
+  border-top: 1px solid var(--pm-border);
+  border-radius: 0 0 var(--pm-radius-lg) var(--pm-radius-lg);
   font-size: 12.5px;
+  transition:
+    color var(--pm-transition),
+    background-color var(--pm-transition),
+    border-color var(--pm-transition);
 }
 
 .price-master-page .footer-stats {
@@ -557,12 +849,19 @@
 
 .price-master-page .pl-badge {
   padding: 2px 10px;
-  color: var(--accent);
-  background: var(--accent-soft);
+  color: var(--pm-primary);
+  background: var(--pm-primary-soft);
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 600;
+  transition:
+    color var(--pm-transition),
+    background-color var(--pm-transition);
 }
+
+/* ============================================================
+   Permission denied
+   ============================================================ */
 
 .price-master-page .permission-denied {
   display: flex;
@@ -572,37 +871,46 @@
   min-height: 400px;
   padding: 40px;
   text-align: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: var(--shadow-sm);
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-lg);
+  box-shadow: var(--pm-shadow-sm);
+  transition:
+    background-color var(--pm-transition),
+    border-color var(--pm-transition),
+    box-shadow var(--pm-transition);
 }
 
 .price-master-page .permission-icon {
   margin-bottom: 16px;
-  color: var(--danger);
-  opacity: 0.8;
+  color: var(--pm-danger);
+  opacity: 0.85;
 }
 
 .price-master-page .permission-denied h4 {
   margin: 0 0 8px;
-  color: var(--text);
+  color: var(--pm-text);
   font-size: 18px;
   font-weight: 700;
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .permission-denied p {
   margin: 0 0 12px;
-  color: var(--text-2);
+  color: var(--pm-text-2);
+  transition: color var(--pm-transition);
 }
 
 .price-master-page .permission-hint {
   padding: 8px 16px;
-  color: var(--text-3);
-  background: var(--surface-2);
-  border-radius: 6px;
+  color: var(--pm-text-3);
+  background: var(--pm-surface-2);
+  border-radius: var(--pm-radius-sm);
   font-family: monospace;
   font-size: 13px;
+  transition:
+    color var(--pm-transition),
+    background-color var(--pm-transition);
 }
 
 .price-master-page .spin {
@@ -614,6 +922,38 @@
     transform: rotate(360deg);
   }
 }
+
+/* ============================================================
+   Scrollbars (desktop)
+   ============================================================ */
+
+.price-master-page ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.price-master-page ::-webkit-scrollbar-track {
+  background: var(--pm-surface-2);
+}
+
+.price-master-page ::-webkit-scrollbar-thumb {
+  background: var(--pm-border-strong);
+  border-radius: 999px;
+}
+
+.price-master-page ::-webkit-scrollbar-thumb:hover {
+  background: var(--pm-text-3);
+}
+
+.price-master-page .filter-sidebar,
+.price-master-page .table-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pm-border-strong) var(--pm-surface-2);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
 
 @media (max-width: 1200px) {
   .price-master-page {
@@ -651,6 +991,10 @@
     justify-content: flex-start;
   }
 
+  .price-master-page .header-right .btn {
+    flex: 1 1 auto;
+  }
+
   .price-master-page .main-layout {
     flex-direction: column;
   }
@@ -664,6 +1008,7 @@
   }
 
   .price-master-page .product-content {
+    width: 100%;
     min-width: 0;
   }
 
@@ -685,6 +1030,11 @@
     padding: 10px;
   }
 
+  .price-master-page .sidebar-input,
+  .price-master-page .sidebar-input-display {
+    height: 38px;
+  }
+
   .price-master-page .table-footer {
     flex-direction: column;
     gap: 8px;
@@ -696,9 +1046,23 @@
   }
 }
 
+/* ============================================================
+   Print
+   ============================================================ */
+
 @media print {
+  .price-master-page {
+    min-height: 0;
+    padding: 0;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+
   .price-master-page .filter-sidebar,
-  .price-master-page .sidebar-actions {
+  .price-master-page .sidebar-actions,
+  .price-master-page .theme-toggle-btn,
+  .price-master-page .legend-actions,
+  .price-master-page .price-th-actions {
     display: none !important;
   }
 
@@ -716,14 +1080,35 @@
 
   .price-master-page .price-table thead th {
     position: static;
-    background: var(--surface-2) !important;
+    color: #000000 !important;
+    background: #f1f1f1 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
+  .price-master-page .price-table td {
+    color: #000000 !important;
+  }
+
   .price-master-page .price-input,
   .price-master-page .qty-input {
-    background: transparent;
-    border: none;
+    padding: 0;
+    color: #000000 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .price-master-page .table-section,
+  .price-master-page .permission-denied {
+    border: 1px solid #cccccc !important;
+    box-shadow: none !important;
+  }
+
+  .price-master-page .table-footer {
+    color: #000000 !important;
+    background: transparent !important;
   }
 }

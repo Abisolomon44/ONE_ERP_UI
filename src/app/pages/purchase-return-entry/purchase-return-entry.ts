@@ -74,6 +74,7 @@ export class PurchaseReturnEntryPage implements OnInit {
   protected returnDate = new Date().toISOString().slice(0, 10);
   protected reason = '';
   protected remarks = '';
+  private idempotencyKey: string | null = null;
 
   protected readonly grandTotal = computed(() =>
     Math.round(this.rows().reduce((s, r) => s + r.lineTotal, 0) * 100) / 100,
@@ -463,13 +464,15 @@ export class PurchaseReturnEntryPage implements OnInit {
 
     this.saving.set(true);
     try {
+      this.idempotencyKey ??= globalThis.crypto?.randomUUID?.() ?? `purchase-return-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       await this.svc.create({
         purchaseId: src.purchaseId,
         returnDate: this.returnDate,
         reason: this.reason || null,
         remarks: this.remarks || null,
         items,
-      });
+      }, this.idempotencyKey);
+      this.idempotencyKey = null;
       this.toast.success('Purchase return created');
       await this.router.navigate(['/purchase'], { queryParams: { tab: 'returns' } });
     } catch (e: any) {

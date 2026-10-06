@@ -52,7 +52,7 @@
           <div class="info-group-title"><lucide-icon name="users" size="12"></lucide-icon>Supplier</div>
           <label>
             <span>Supplier *</span>
-            <select data-field="supplier" [(ngModel)]="tab.supplierId" (ngModelChange)="markDirty()" [disabled]="!canManage()">
+            <select data-field="supplier" [(ngModel)]="tab.supplierId" (ngModelChange)="onSupplierChange(tab)" [disabled]="!canManage()">
               <option [ngValue]="null">— Select —</option>
               @for (s of lookups()?.suppliers ?? []; track s.id) {
                 <option [ngValue]="s.id">{{ s.name }} ({{ s.code }})</option>
@@ -77,7 +77,7 @@
           <div class="info-group-title"><lucide-icon name="building-2" size="12"></lucide-icon>Organization</div>
           <label>
             <span>Company *</span>
-            <select data-field="company" [(ngModel)]="tab.companyId" (ngModelChange)="markDirty()" [disabled]="!canManage()">
+            <select data-field="company" [(ngModel)]="tab.companyId" (ngModelChange)="onCompanyChange(tab)" [disabled]="!canManage()">
               <option [ngValue]="null">— Select —</option>
               @for (c of lookups()?.companies ?? []; track c.id) {
                 <option [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
@@ -135,6 +135,15 @@
             <select data-field="taxMode" [(ngModel)]="tab.taxMode" (ngModelChange)="onTaxModeChange(tab)" [disabled]="!canManage()">
               <option value="exclusive">GST Exclusive</option>
               <option value="inclusive">GST Inclusive</option>
+            </select>
+          </label>
+          <label>
+            <span>Price List</span>
+            <select data-field="priceList" [(ngModel)]="tab.priceListId" (ngModelChange)="onPriceListChange(tab)" [disabled]="!canManage()">
+              <option value="">— None —</option>
+              @for (pl of ($any(lookups())?.priceLists ?? []); track pl.id) {
+                <option [value]="pl.id">{{ pl.name }}</option>
+              }
             </select>
           </label>
           <label>
