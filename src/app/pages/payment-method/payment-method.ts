@@ -25,6 +25,7 @@ export class PaymentMethodPage implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly canView = signal(false);
+  protected readonly canViewDetails = signal(false);
   protected readonly canManage = signal(false);
   protected readonly loading = signal(false);
   protected readonly rows = signal<PaymentMethodDto[]>([]);
@@ -43,6 +44,7 @@ export class PaymentMethodPage implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.canView.set(this.perm.has('payment-methods.view'));
+    this.canViewDetails.set(this.perm.has('payment-method-details.view'));
     this.canManage.set(this.perm.has('payment-methods.manage'));
     if (this.canView()) await this.load();
   }
@@ -95,6 +97,12 @@ export class PaymentMethodPage implements OnInit {
   protected async save(): Promise<void> {
     try {
       const f = this.form();
+      if (!f.code.trim() || f.code.trim().length > 30 || !f.name.trim() || f.name.trim().length > 100 ||
+          !f.paymentCategory.trim() || f.paymentCategory.trim().length > 50 ||
+          !Number.isInteger(f.displayOrder) || f.displayOrder < 0) {
+        this.toast.error('Enter a code (max 30), name (max 100), category (max 50), and a non-negative whole display order');
+        return;
+      }
       if (this.editing()) {
         const req: UpdatePaymentMethodRequest = {
           code: f.code.trim(),

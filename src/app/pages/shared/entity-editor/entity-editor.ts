@@ -127,6 +127,16 @@ export class EntityEditorComponent implements OnInit {
       if (this.entityId != null) {
         body = await firstValueFrom(this.http.put(`/api/entities/${this.entityId}/${urlKey}`, rows));
       } else {
+        // Orphan guard: when used inside a Company/product entry form, standalone entity
+        // creation here would race with the parent save (which now submits the entity
+        // payload atomically with the parent row). Only create standalone entities when no
+        // parent form context (companyName/companyCode) is present.
+        const isStandalone = !this.model['companyName'] && !this.model['companyCode'];
+        if (!isStandalone) {
+          this.model[key] = rows;
+          return;
+        }
+
         const entityName = this.model['entityName'] ?? this.model['companyName'] ?? this.model['productName'] ?? this.model['branchName'] ?? '';
         const entityCode = this.model['entityCode'] ?? this.model['companyCode'] ?? this.model['productCode'] ?? '';
         body = await firstValueFrom(this.http.post('/api/entities', {

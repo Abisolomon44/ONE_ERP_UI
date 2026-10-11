@@ -10,6 +10,20 @@ export const routes: Routes = [
     title: 'Login',
     loadComponent: () => import('./pages/login/login').then((m) => m.LoginPage),
   },
+  {
+    path: 'forgot-password',
+    canActivate: [guestGuard],
+    title: 'Forgot Password',
+    loadComponent: () =>
+      import('./pages/forgot-password/forgot-password').then((m) => m.ForgotPasswordPage),
+  },
+  {
+    path: 'change-password',
+    canActivate: [authGuard],
+    title: 'Change Password',
+    loadComponent: () =>
+      import('./pages/change-password/change-password').then((m) => m.ChangePasswordPage),
+  },
 
   // Shown when the signed-in user has no workspace screens assigned
   {
@@ -138,6 +152,14 @@ export const routes: Routes = [
         title: 'Products',
         loadComponent: () => import('./pages/product/product').then((m) => m.ProductPage),
       },
+      { path: 'product-variants', title: 'Product Variants', data: { batchAKey: 'variants' }, loadComponent: () => import('./pages/batch-a-master/batch-a-master').then((m) => m.BatchAMasterPage) },
+      { path: 'product-models', title: 'Product Models', data: { batchAKey: 'models' }, loadComponent: () => import('./pages/batch-a-master/batch-a-master').then((m) => m.BatchAMasterPage) },
+      { path: 'product-specifications', title: 'Product Specifications', data: { batchAKey: 'specifications' }, loadComponent: () => import('./pages/batch-a-master/batch-a-master').then((m) => m.BatchAMasterPage) },
+      { path: 'product-unit-mappings', title: 'Product Unit Mappings', data: { batchAKey: 'unit-mappings' }, loadComponent: () => import('./pages/batch-a-master/batch-a-master').then((m) => m.BatchAMasterPage) },
+      { path: 'product-serials', title: 'Serial / IMEI', data: { batchAKey: 'serials' }, loadComponent: () => import('./pages/batch-a-master/batch-a-master').then((m) => m.BatchAMasterPage) },
+      { path: 'product-batches', title: 'Batches / Expiry', data: { batchAKey: 'batches' }, loadComponent: () => import('./pages/batch-a-master/batch-a-master').then((m) => m.BatchAMasterPage) },
+      { path: 'product-warranties', title: 'Warranties', data: { batchAKey: 'warranties' }, loadComponent: () => import('./pages/batch-a-master/batch-a-master').then((m) => m.BatchAMasterPage) },
+      { path: 'batch-a-tools', title: 'Batch A Tools', loadComponent: () => import('./pages/batch-a-tools/batch-a-tools').then((m) => m.BatchAToolsPage) },
       {
         path: 'tax-type-systems',
         title: 'Tax Type Systems',
@@ -482,6 +504,36 @@ export const routes: Routes = [
         path: 'settings',
         title: 'Settings',
         loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsPage),
+      },
+
+      // Purchase Settings (Billing / ERP workflow mode)
+      {
+        path: 'settings/purchase',
+        title: 'Purchase Settings',
+        loadComponent: () =>
+          import('./pages/purchase-settings/purchase-settings').then((m) => m.PurchaseSettingsPage),
+      },
+
+      // Purchase workflow (ERP Mode): Purchase Orders + Goods Receipts
+      {
+        path: 'purchase-orders',
+        title: 'Purchase Orders',
+        loadComponent: () =>
+          import('./pages/purchase-orders/purchase-orders').then((m) => m.PurchaseOrdersPage),
+      },
+      {
+        path: 'goods-receipts',
+        title: 'Goods Receipts',
+        loadComponent: () =>
+          import('./pages/goods-receipts/goods-receipts').then((m) => m.GoodsReceiptsPage),
+      },
+
+      // Profile
+      {
+        path: 'my-profile',
+        title: 'My Profile',
+        loadComponent: () =>
+          import('./pages/my-profile/my-profile').then((m) => m.MyProfilePage),
       },
 
       // ===========================

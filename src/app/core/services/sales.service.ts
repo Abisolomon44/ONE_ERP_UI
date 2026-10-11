@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { PaginatedResult } from './crud';
 
@@ -238,8 +238,9 @@ export class SalesService {
     return firstValueFrom(this.http.get<ProductStockDto[]>(`/api/sales/products/${productId}/stock`, { params }));
   }
 
-  create(request: CreateSalesRequest): Promise<SalesInvoiceDto> {
-    return firstValueFrom(this.http.post<SalesInvoiceDto>('/api/sales', request));
+  create(request: CreateSalesRequest, idempotencyKey?: string): Promise<SalesInvoiceDto> {
+    const headers = idempotencyKey ? new HttpHeaders({ 'X-Idempotency-Key': idempotencyKey }) : undefined;
+    return firstValueFrom(this.http.post<SalesInvoiceDto>('/api/sales', request, { headers }));
   }
 
   update(id: number, request: UpdateSalesRequest): Promise<SalesInvoiceDto> {

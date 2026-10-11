@@ -43,7 +43,7 @@
               @else { <span class="badge off">Inactive</span> }
             </td>
             <td class="row-actions">
-              <button class="icon" title="View Details" (click)="openDetails(r)"><lucide-icon name="list"></lucide-icon></button>
+              <button class="icon" title="View Details" (click)="openDetails(r)" [disabled]="!canViewDetails()"><lucide-icon name="list"></lucide-icon></button>
               <button class="icon" (click)="openEdit(r)" [disabled]="!canManage()"><lucide-icon name="pencil"></lucide-icon></button>
               <button class="icon danger" (click)="remove(r)" [disabled]="!canManage()"><lucide-icon name="trash-2"></lucide-icon></button>
             </td>
@@ -58,10 +58,10 @@
   <div class="overlay" (click)="dialogOpen.set(false)">
     <div class="modal" (click)="$event.stopPropagation()">
       <h2>{{ editing() ? 'Edit Payment Method' : 'New Payment Method' }}</h2>
-      <label><span>Code *</span><input [(ngModel)]="form().code" /></label>
-      <label><span>Name *</span><input [(ngModel)]="form().name" /></label>
+      <label><span>Code *</span><input [(ngModel)]="form().code" maxlength="30" required /></label>
+      <label><span>Name *</span><input [(ngModel)]="form().name" maxlength="100" required /></label>
       <label><span>Category</span>
-        <select [(ngModel)]="form().paymentCategory">
+        <select [(ngModel)]="form().paymentCategory" required>
           <option value="CASH">CASH</option>
           <option value="DIGITAL">DIGITAL</option>
           <option value="BANK">BANK</option>
@@ -71,7 +71,7 @@
       <label class="check"><input type="checkbox" [(ngModel)]="form().isCash" /> Is Cash</label>
       <label class="check"><input type="checkbox" [(ngModel)]="form().isCredit" /> Is Credit</label>
       <label class="check"><input type="checkbox" [(ngModel)]="form().requiresReferenceNo" /> Requires Reference No</label>
-      <label><span>Display Order</span><input type="number" [(ngModel)]="form().displayOrder" /></label>
+      <label><span>Display Order</span><input type="number" min="0" step="1" [(ngModel)]="form().displayOrder" /></label>
       <label class="check"><input type="checkbox" [(ngModel)]="form().isActive" /> Active</label>
       <div class="actions">
         <button class="btn primary" (click)="save()">Save</button>

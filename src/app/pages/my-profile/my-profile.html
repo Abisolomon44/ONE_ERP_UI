@@ -1,0 +1,316 @@
+<div class="page my-profile-page">
+  <div class="page-header">
+    <div class="page-title">
+      <span class="page-icon"><i-lucide name="user" [size]="22"></i-lucide></span>
+      <div>
+        <h1>My Profile</h1>
+        <div class="page-sub">View and manage your personal account details, photo and password.</div>
+      </div>
+    </div>
+    <div class="page-actions">
+      @if (!loading()) {
+        <base-button variant="outline" (click)="loadProfile()">
+          <i-lucide name="refresh-cw" [size]="16"></i-lucide>
+          Refresh
+        </base-button>
+      }
+    </div>
+  </div>
+
+  <div class="profile-grid">
+    <!-- ---------------------------------------------------------------- -->
+    <!-- 1. PERSONAL INFORMATION                                          -->
+    <!-- ---------------------------------------------------------------- -->
+    <div class="profile-card">
+      <div class="card-header">
+        <span class="card-title">Personal Information</span>
+        @if (!editingPersonal()) {
+          <base-button variant="ghost" size="sm" [disabled]="loading()" (click)="startEdit()">
+            Edit
+          </base-button>
+        } @else {
+          <base-button variant="primary" size="sm" [disabled]="saving() || !canSave()" (click)="savePersonal()">
+            <span class="spinner-wrap"><span class="spinner" [style.width.px]="14" [style.height.px]="14"></span></span>
+            Save
+          </base-button>
+          <base-button variant="ghost" size="sm" [disabled]="loading()" (click)="cancelPersonal()">Cancel</base-button>
+        }
+      </div>
+
+      <div class="photo-section">
+        @if (!editingPersonal()) {
+          <div class="photo-card">
+            @if (photoUrl()) {
+              <img [src]="photoUrl()" alt="Profile photo" />
+            } @else {
+              <div class="initials">{{ fullName().slice(0, 2).toUpperCase() || 'U' }}</div>
+            }
+            <div class="photo-actions">
+              <span class="photo-label">Profile Photo</span>
+              <base-button variant="ghost" size="sm" (click)="startEdit()">
+                <i-lucide name="camera" [size]="14"></i-lucide>
+                Change Photo
+              </base-button>
+            </div>
+          </div>
+        } @else {
+          <div class="photo-card">
+            @if (photoPreview()) {
+              <img [src]="photoPreview()" alt="Preview" class="preview" />
+            } @else if (photoUrl()) {
+              <img [src]="photoUrl()" alt="Current photo" class="preview" />
+            } @else {
+              <div class="initials">{{ fullName().slice(0, 2).toUpperCase() || 'U' }}</div>
+            }
+            <div class="photo-actions photo-actions-edit">
+              <span class="photo-label">Current Photo</span>
+              <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Full Name</label>
+          @if (!editingPersonal()) {
+            <div class="read-only">{{ fullName() || '—' }}</div>
+          } @else {
+            <input class="input" type="text" [ngModel]="personalNewName()" (ngModelChange)="personalNewName.set($event)" name="fullName" autocomplete="off" />
+          } @if (editingPersonal() && !personalNewName()) {
+            <span class="field-error">Full name is required.</span>
+          } @else if (editingPersonal() && error() && !fullName()) {
+            <span class="field-error">{{ error() }}</span>
+          } @else if (editingPersonal() && error()) {
+            <span class="field-error">{{ error() }}</span>
+          } @else if (!editingPersonal()) {
+            <span class="field-hint">{{ fullName() || 'Not provided' }}</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field-label">Email</label>
+          @if (!editingPersonal()) {
+            <div class="read-only">{{ email() || '—' }}</div>
+          } @else {
+            <input class="input" type="email" [ngModel]="personalNewEmail()" (ngModelChange)="personalNewEmail.set($event)" name="email" autocomplete="off" />
+          } @if (editingPersonal() && !personalNewEmail()) {
+            <span class="field-error">Email is required.</span>
+          }
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Mobile Number</label>
+          @if (!editingPersonal()) {
+            <div class="read-only">{{ mobile() || '—' }}</div>
+          } @else {
+            <input class="input" type="tel" [ngModel]="personalNewMobile()" (ngModelChange)="personalNewMobile.set($event)" name="mobile" autocomplete="off" />
+          } @if (editingPersonal() && !personalNewMobile()) {
+            <span class="field-error">Mobile number is required.</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field-label">Username</label>
+          @if (!editingPersonal()) {
+            <div class="read-only">{{ username() || '—' }}</div>
+          } @else {
+            <input class="input" type="text" [ngModel]="personalNewUsername()" (ngModelChange)="personalNewUsername.set($event)" name="username" autocomplete="off" />
+          } @if (editingPersonal() && !personalNewUsername()) {
+            <span class="field-error">Username is required.</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------------------- -->
+    <!-- 2. EMPLOYEE INFORMATION (READ ONLY)                              -->
+    <!-- ---------------------------------------------------------------- -->
+    <div class="profile-card">
+      <div class="card-header">
+        <span class="card-title">Employee Information</span>
+        <span class="card-badge">Read Only</span>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Employee ID</label>
+          <div class="read-only">{{ employeeId() }}</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Department</label>
+          <div class="read-only">{{ department() }}</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Designation</label>
+          <div class="read-only">{{ designation() }}</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Status</label>
+          <div class="read-only">{{ status() }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------------------- -->
+    <!-- 3. ACCOUNT INFORMATION (READ ONLY)                               -->
+    <!-- ---------------------------------------------------------------- -->
+    <div class="profile-card">
+      <div class="card-header">
+        <span class="card-title">Account Information</span>
+        <span class="card-badge">Read Only</span>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Role</label>
+          <div class="read-only">{{ role() }}</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Username</label>
+          @if (!editingPersonal()) {
+            <div class="read-only">{{ username() || '—' }}</div>
+          } @else {
+            <input class="input" type="text" [ngModel]="personalNewUsername()" (ngModelChange)="personalNewUsername.set($event)" name="username" autocomplete="off" />
+          } @if (editingPersonal() && !personalNewUsername()) {
+            <span class="field-error">Username is required.</span>
+          }
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Status</label>
+          <div class="read-only">{{ status() }}</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Company ID</label>
+          <div class="read-only">{{ companyCode() }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------------------- -->
+    <!-- 4. COMPANY & BRANCH SCOPE (READ ONLY)                            -->
+    <!-- ---------------------------------------------------------------- -->
+    <div class="profile-card">
+      <div class="card-header">
+        <span class="card-title">Company & Branch Scope</span>
+        <span class="card-badge">Read Only</span>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Company Name</label>
+          <div class="read-only">{{ companyName() }}</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Company Code</label>
+          <div class="read-only">{{ companyCode() }}</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Default Company</label>
+          <div class="read-only">{{ defaultCompany() }}</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Default Branch</label>
+          <div class="read-only">{{ defaultBranch() }}</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Allowed Companies</label>
+          <div class="read-only">
+            <span class="tag-list">
+              @for (company of allowedCompanies(); track $index) {
+                <span class="tag">{{ company }}</span>
+              } @if (allowedCompanies().length === 0) {
+                <span class="field-hint">—</span>
+              }
+            </span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Allowed Branches</label>
+          <div class="read-only">
+            <span class="tag-list">
+              @for (branch of allowedBranches(); track $index) {
+                <span class="tag">{{ branch }}</span>
+              } @if (allowedBranches().length === 0) {
+                <span class="field-hint">—</span>
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------------------------------------------------------- -->
+  <!-- 5. CHANGE PASSWORD                                               -->
+  <!-- ---------------------------------------------------------------- -->
+  <div class="profile-card change-password-card">
+    <div class="card-header">
+      <span class="card-title">Change Password</span>
+      @if (!editingPassword()) {
+        <base-button variant="ghost" size="sm" [disabled]="loading()" (click)="startChangePassword()">
+          Change Password
+        </base-button>
+      } @else {
+        <base-button variant="primary" size="sm" [disabled]="savingPassword() || !canSavePassword()" (click)="changePassword()">
+          <span class="spinner-wrap"><span class="spinner" [style.width.px]="14" [style.height.px]="14"></span></span>
+          Update Password
+        </base-button>
+        <base-button variant="ghost" size="sm" [disabled]="loading()" (click)="cancelPassword()">Cancel</base-button>
+      }
+    </div>
+
+    @if (editingPassword()) {
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Current Password</label>
+          <input class="input" [type]="showCurrentPassword() ? 'text' : 'password'" [ngModel]="currentPassword()" (ngModelChange)="currentPassword.set($event)" name="current" autocomplete="current-password" />
+          <i-lucide class="password-toggle" [name]="showCurrentPassword() ? 'eye-off' : 'eye'" [size]="16" (click)="showCurrentPassword.set(!showCurrentPassword())"></i-lucide>
+          @if (currentPassword()) {
+            <span class="field-hint">Your current password will not be shown.</span>
+          } @if (pwdError()) {
+            <span class="field-error">{{ pwdError() }}</span>
+          }
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">New Password</label>
+          <input class="input" [type]="showNewPassword() ? 'text' : 'password'" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" name="new" autocomplete="new-password" />
+          <i-lucide class="password-toggle" [name]="showNewPassword() ? 'eye-off' : 'eye'" [size]="16" (click)="showNewPassword.set(!showNewPassword())"></i-lucide>
+          @if (passwordValidity().valid) {
+            <span class="field-hint">Strong</span>
+          } @else {
+            <span class="field-error">{{ passwordValidity().messages[0] }}</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field-label">Confirm Password</label>
+          <input class="input" [type]="showConfirmPassword() ? 'text' : 'password'" [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)" name="confirm" autocomplete="new-password" />
+          <i-lucide class="password-toggle" [name]="showConfirmPassword() ? 'eye-off' : 'eye'" [size]="16" (click)="showConfirmPassword.set(!showConfirmPassword())"></i-lucide>
+          @if (confirmPassword() && newPassword() !== confirmPassword()) {
+            <span class="field-error">Passwords do not match.</span>
+          } @if (confirmPassword() && !newPassword()) {
+            <span class="field-error">Confirm password is required.</span>
+          }
+        </div>
+      </div>
+      <ul class="pwd-requirements">
+        <li [class.ok]="passwordRequirements().minLength">✓ Minimum 8 characters</li>
+        <li [class.ok]="passwordRequirements().hasUppercase">✓ Uppercase letter</li>
+        <li [class.ok]="passwordRequirements().hasLowercase">✓ Lowercase letter</li>
+        <li [class.ok]="passwordRequirements().hasNumber">✓ Number</li>
+        <li [class.ok]="passwordRequirements().hasSpecial">✓ Special character</li>
+        <li [class.ok]="passwordRequirements().noSpaces">✓ No spaces</li>
+      </ul>
+      @if (pwdError()) {
+        <span class="field-error global-error">{{ pwdError() }}</span>
+      }
+    }
+  </div>
+</div>

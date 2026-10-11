@@ -113,6 +113,7 @@ export class AppShell {
       screens: 'Screens',
       fields: 'Fields',
       settings: 'Settings',
+      'my-profile': 'My Profile',
       'enterprise-permissions': 'Enterprise Permissions',
       'business-master': 'Business Master',
     };

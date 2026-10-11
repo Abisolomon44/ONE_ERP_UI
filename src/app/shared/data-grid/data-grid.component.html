@@ -1,0 +1,42 @@
+<div class="oneerp-grid" [class.is-loading]="loading">
+  @if (loading) {
+    <div class="grid-state"><div class="spinner-lg spinner"></div><span>Loading records…</span></div>
+  } @else if (error) {
+    <div class="grid-state grid-error"><span>{{ error }}</span><button class="btn btn-secondary" type="button" (click)="retry.emit()">Retry</button></div>
+  } @else if (!pagedRows.length) {
+    <div class="grid-state"><i-lucide name="Inbox" [size]="40" class="empty-icon"></i-lucide><h5>{{ noAccess ? 'No Access' : emptyMessage }}</h5><span>{{ noAccess ? 'Assign a data scope for this role to load records.' : (searchText ? 'Try adjusting your search' : '') }}</span></div>
+  } @else {
+    <div class="grid-scroll" tabindex="0" role="region" aria-label="Data grid">
+      <table class="btable">
+        <thead><tr>
+          @for (column of columns; track column.field) {
+            <th [style.width]="column.width || null" [attr.aria-sort]="sort?.field === column.field ? sort?.direction : 'none'">
+              <button class="grid-header" type="button" [disabled]="column.sortable === false" (click)="sortBy(column)">{{ column.header }} @if (sort?.field === column.field) { <span aria-hidden="true">{{ sort?.direction === 'asc' ? '↑' : '↓' }}</span> }</button>
+            </th>
+          }
+          @if (actions.length) { <th class="cell-actions">Action</th> }
+        </tr></thead>
+        <tbody>
+          @for (row of pagedRows; track trackRow($index, row)) {
+            <tr>
+              @for (column of columns; track column.field) {
+                <td>
+                  @switch (column.type) {
+                    @case ('checkbox') { <span class="pill" [class.success]="cellValue(column,row)" [class.danger]="!cellValue(column,row)">{{ cellValue(column,row) ? 'Yes' : 'No' }}</span> }
+                    @case ('currency') { <span class="currency">{{ numericValue(column,row) | number:'1.2-2' }}</span> }
+                    @case ('badge') { <span class="badge">{{ cellText(column,row) }}</span> }
+                    @default { {{ cellText(column,row) }} }
+                  }
+                </td>
+              }
+              @if (actions.length) { <td class="cell-actions"><div class="grid-actions">@for (item of actions; track item.code) { @if (!item.visible || item.visible(row)) { <button class="btn btn-sm" [class.btn-danger-soft]="item.variant === 'danger-soft'" [class.btn-secondary]="item.variant !== 'danger-soft'" type="button" [attr.aria-label]="item.label" (click)="fire(item.code,row)"><i-lucide [name]="item.icon || 'CircleDot'" [size]="13"></i-lucide></button> } }</div></td> }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+@if (!loading && !error && sortedRows.length) {
+  <div class="grid-pagination"><span>Showing <strong>{{ pageStart }}–{{ pageEnd }}</strong> of <strong>{{ sortedRows.length }}</strong> records</span><div class="grid-page-controls"><select class="input page-size-select" [value]="pageSize" (change)="setPageSize($any($event.target).value)" aria-label="Rows per page">@for (size of pageSizes; track size) { <option [value]="size">{{ size }} / page</option> }</select><button class="icon-btn" type="button" [disabled]="currentPage === 1" (click)="previousPage()" aria-label="Previous page"><i-lucide name="ChevronLeft" [size]="16"></i-lucide></button><span>{{ currentPage }} / {{ totalPages }}</span><button class="icon-btn" type="button" [disabled]="currentPage === totalPages" (click)="nextPage()" aria-label="Next page"><i-lucide name="ChevronRight" [size]="16"></i-lucide></button></div></div>
+}

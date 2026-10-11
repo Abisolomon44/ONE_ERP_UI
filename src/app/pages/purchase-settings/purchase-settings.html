@@ -1,0 +1,232 @@
+<div class="page-header">
+  <div>
+    <h1>Purchase Settings</h1>
+    <div class="page-sub">Configure the purchase workflow: Billing Mode (direct bill entry) or ERP Mode (PO → approval → GRN → matching).</div>
+  </div>
+  @if (dirty()) {
+    <span class="badge" style="background: var(--warning-soft, #fef3c7); color: #b45309">Unsaved changes</span>
+  }
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="card-body text-muted">Loading purchase settings…</div></div>
+} @else {
+  <div class="card" style="margin-bottom: 20px">
+    <div class="card-header">
+      <i-lucide name="git-branch" [size]="18" style="color: var(--accent)"></i-lucide>
+      <div>
+        <h3>Workflow Mode</h3>
+        <div class="card-sub">Controls how purchases are entered and posted for this company</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="field-label mb-1">Mode</div>
+      <div style="display:flex; flex-direction:column; gap:10px">
+        @for (opt of modeOptions; track opt.value) {
+          <label style="display:flex; gap:10px; align-items:flex-start; cursor:pointer">
+            <input type="radio" name="purchaseMode" [value]="opt.value" [checked]="mode() === opt.value"
+                   [disabled]="!canEdit()" (change)="setMode(opt.value)" style="margin-top:3px" />
+            <div>
+              <div style="font-weight:600">{{ opt.label.split('—')[0] }}</div>
+              <div class="text-muted" style="font-size:13px">{{ opt.label.split('—')[1] }}</div>
+            </div>
+          </label>
+        }
+      </div>
+      @if (mode() === 'BILLING') {
+        <div class="field-hint" style="margin-top:12px">
+          Billing Mode keeps the existing Purchase Entry / Register / Returns flow unchanged. ERP-only controls below are disabled but their saved values are kept.
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="align-items:start; gap:20px">
+    <div style="display:flex; flex-direction:column; gap:20px">
+      <div class="card">
+        <div class="card-header">
+          <i-lucide name="clipboard-list" [size]="18" style="color: var(--accent)"></i-lucide>
+          <div>
+            <h3>Document Rules</h3>
+            <div class="card-sub">Mandatory documents before a purchase bill can be posted</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <label class="setting-row">
+            <input type="checkbox" [checked]="requirePo()" [disabled]="!canEdit() || !isErp()"
+                   (change)="requirePo.set($any($event.target).checked); touch()" />
+            <div>
+              <div class="setting-title">Require Purchase Order</div>
+              <div class="setting-hint">
+                @if (!isErp()) { Disabled in Billing Mode. } Direct bills are rejected; every purchase must start as a PO.
+              </div>
+            </div>
+          </label>
+          <label class="setting-row">
+            <input type="checkbox" [checked]="requireGrn()" [disabled]="!canEdit() || !isErp()"
+                   (change)="requireGrn.set($any($event.target).checked); touch()" />
+            <div>
+              <div class="setting-title">Require Goods Receipt (GRN)</div>
+              <div class="setting-hint">
+                @if (!isErp()) { Disabled in Billing Mode. } Stock enters the warehouse only through a posted GRN.
+              </div>
+            </div>
+          </label>
+          <label class="setting-row">
+            <input type="checkbox" [checked]="requireApproval()" [disabled]="!canEdit()"
+                   (change)="requireApproval.set($any($event.target).checked); touch()" />
+            <div>
+              <div class="setting-title">Require Purchase Approval</div>
+              <div class="setting-hint">POs must be approved by the configured role before receiving.</div>
+            </div>
+          </label>
+          <label class="setting-row">
+            <input type="checkbox" [checked]="requireMatching()" [disabled]="!canEdit() || !isErp()"
+                   (change)="requireMatching.set($any($event.target).checked); touch()" />
+            <div>
+              <div class="setting-title">Require Invoice Matching</div>
+              <div class="setting-hint">
+                @if (!isErp()) { Disabled in Billing Mode. } Supplier invoice quantities/values are matched against PO and GRN.
+              </div>
+            </div>
+          </label>
+          <label class="setting-row">
+            <input type="checkbox" [checked]="requireReturnApproval()" [disabled]="!canEdit()"
+                   (change)="requireReturnApproval.set($any($event.target).checked); touch()" />
+            <div>
+              <div class="setting-title">Require Purchase Return Approval</div>
+              <div class="setting-hint">Purchase returns above the configured bands need approval.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i-lucide name="package-check" [size]="18" style="color: var(--accent)"></i-lucide>
+          <div>
+            <h3>Receipt Rules</h3>
+            <div class="card-sub">Partial and excess receipt policy for GRNs</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <label class="setting-row">
+            <input type="checkbox" [checked]="allowPartial()" [disabled]="!canEdit() || !isErp()"
+                   (change)="allowPartial.set($any($event.target).checked); touch()" />
+            <div>
+              <div class="setting-title">Allow Partial Receipt</div>
+              <div class="setting-hint">
+                @if (!isErp()) { Disabled in Billing Mode. } Receive less than the ordered quantity in one GRN.
+              </div>
+            </div>
+          </label>
+          <label class="setting-row">
+            <input type="checkbox" [checked]="allowExcess()" [disabled]="!canEdit() || !isErp()"
+                   (change)="allowExcess.set($any($event.target).checked); touch()" />
+            <div>
+              <div class="setting-title">Allow Excess Receipt</div>
+              <div class="setting-hint">
+                @if (!isErp()) { Disabled in Billing Mode. } Receive more than the ordered quantity (within tolerance).
+              </div>
+            </div>
+          </label>
+          <div style="max-width: 260px; margin-top: 8px">
+            <base-input label="Excess Receipt Tolerance %" type="number" icon="percent"
+                        [disabled]="!canEdit() || !isErp() || !allowExcess()"
+                        [error]="toleranceError()"
+                        [hint]="!allowExcess() ? 'Only applies when excess receipt is allowed' : ''"
+                        [(value)]="excessTolerance" (valueChange)="touch()"></base-input>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:20px">
+      <div class="card">
+        <div class="card-header">
+          <i-lucide name="badge-dollar-sign" [size]="18" style="color: var(--accent)"></i-lucide>
+          <div>
+            <h3>Costing</h3>
+            <div class="card-sub">Landed cost allocation on receipts</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <label class="setting-row">
+            <input type="checkbox" [checked]="enableLandedCost()" [disabled]="!canEdit()"
+                   (change)="enableLandedCost.set($any($event.target).checked); touch()" />
+            <div>
+              <div class="setting-title">Enable Landed Cost</div>
+              <div class="setting-hint">Allocate freight/other costs into product cost at GRN posting.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i-lucide name="shield-check" [size]="18" style="color: var(--accent)"></i-lucide>
+          <div>
+            <h3>Approval Bands</h3>
+            <div class="card-sub">Amount ranges and approver roles (enforced server-side)</div>
+          </div>
+        </div>
+        <div class="card-body">
+          @if (rules().length === 0) {
+            <div class="text-muted" style="font-size:13px; padding: 8px 0">
+              No approval bands configured. Add a band so approvals are applied by amount.
+            </div>
+          }
+          @for (r of rules(); track $index) {
+            <div class="rule-row">
+              <base-dropdown [options]="docTypeOptions" [(value)]="r.documentType" [disabled]="!canEdit()"></base-dropdown>
+              <base-input label="Level" type="number" [(value)]="r.approvalLevel" [disabled]="!canEdit()"></base-input>
+              <base-input label="Min Amount" type="number" [(value)]="r.minimumAmount" [disabled]="!canEdit()"></base-input>
+              <base-input label="Max Amount (∞ if empty)" type="number" [(value)]="r.maximumAmount" [disabled]="!canEdit()"></base-input>
+              <base-dropdown label="Approver Role" [options]="roles()" [(value)]="r.approverRoleId" [disabled]="!canEdit()" placeholder="Select role"></base-dropdown>
+              <label style="display:flex; gap:6px; align-items:center; font-size:13px">
+                <input type="checkbox" [checked]="r.isActive" [disabled]="!canEdit()" (change)="r.isActive = $any($event.target).checked; touch()" /> Active
+              </label>
+              @if (canEdit()) {
+                <button class="icon-btn" title="Remove band" (click)="removeRule($index)">
+                  <i-lucide name="trash-2" [size]="16"></i-lucide>
+                </button>
+              }
+            </div>
+          }
+          <div style="display:flex; gap:10px; margin-top: 12px">
+            @if (canEdit()) {
+              <base-button variant="secondary" icon="plus" (click)="addRule()">Add Band</base-button>
+            }
+            @if (rules().length > 0 && canEdit()) {
+              <base-button [loading]="saving()" icon="save" (click)="saveRules()">Save Bands</base-button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i-lucide name="hash" [size]="18" style="color: var(--accent)"></i-lucide>
+          <div>
+            <h3>Numbering</h3>
+            <div class="card-sub">Document numbers are generated server-side</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="text-muted" style="font-size:13px">
+            Purchase bills use <code>PUR-YYYY-00001</code>, purchase orders <code>PO-…</code> and receipts
+            <code>GRN-YYYYMMDD-0001</code>. Numbering is concurrency-safe (locked sequence per company) with
+            a uniqueness constraint per company, so parallel entries cannot collide.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; margin-top: 20px">
+    <base-button [loading]="saving()" [disabled]="!canEdit() || !dirty() || !!toleranceError()" icon="save" (click)="save()">
+      Save Settings
+    </base-button>
+    <base-button variant="secondary" [disabled]="!dirty()" (click)="cancel()">Cancel</base-button>
+  </div>
+}

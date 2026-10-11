@@ -54,6 +54,7 @@ export class SalesReturnPage implements OnInit {
   protected remarks = '';
   protected refundAmount = 0;
   protected source: SalesInvoiceDto | null = null;
+  private idempotencyKey: string | null = null;
   protected readonly draft = signal<ReturnDraft[]>([]);
 
   protected readonly grandTotal = computed(() => this.draft().reduce((s, d) => s + (d.lineTotal || 0), 0));
@@ -67,6 +68,7 @@ export class SalesReturnPage implements OnInit {
   protected newReturn(): void {
     if (!this.canManage()) return;
     this.showForm.set(true);
+    this.idempotencyKey = null;
     this.sourceId = '';
     this.source = null;
     this.draft.set([]);
@@ -171,6 +173,7 @@ export class SalesReturnPage implements OnInit {
     }
     this.saving.set(true);
     try {
+      this.idempotencyKey ??= globalThis.crypto?.randomUUID?.() ?? `sales-return-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       await this.svc.create({
         salesInvoiceId: source.salesInvoiceId,
         returnDate: this.returnDate,
@@ -178,7 +181,8 @@ export class SalesReturnPage implements OnInit {
         reason: this.reason || null,
         remarks: this.remarks || null,
         refund: this.refundAmount > 0 ? { amount: this.refundAmount } : null,
-      });
+      }, this.idempotencyKey);
+      this.idempotencyKey = null;
       this.toast.success('Sales return created');
       this.showForm.set(false);
       await this.load();

@@ -2,7 +2,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { LoginResponse } from '../models';
+import { ApiResponse, LoginResponse } from '../models';
 import { PermissionService, UserPermission } from './permission.service';
 import { NavigationStoreService } from './navigation-store.service';
 
@@ -36,7 +36,13 @@ export class AuthService {
   ) {
     const permissions = localStorage.getItem(PERMS_KEY);
 
-    if (permissions) {
+    // Keep the UI permission state aligned with the persisted user profile.
+    // A super-admin may have an older/stale permission list in local storage;
+    // product pages and shared master controls still consult PermissionService.
+    if (this.user()?.isSuperAdmin) {
+      this.perms.permissions.set(['*']);
+      localStorage.setItem(PERMS_KEY, JSON.stringify(['*']));
+    } else if (permissions) {
       try {
         this.perms.permissions.set(JSON.parse(permissions));
       } catch {
@@ -90,6 +96,50 @@ export class AuthService {
       await this.logout();
       return false;
     }
+  }
+
+  // ---- Forgot password (public, pre-authentication) ----
+
+  async forgotPassword(username: string, newPassword: string): Promise<string> {
+    const res = await firstValueFrom(
+      this.http.post<ApiResponse>('/api/auth/forgot-password', { username, newPassword })
+    );
+    return res.message;
+  }
+
+  // ---- Profile & photo (authenticated) ----
+
+  async getProfile(): Promise<any> {
+    const res = await firstValueFrom(
+      this.http.get<any>('/api/profile')
+    );
+    return res;
+  }
+
+  async updateProfile(payload: {
+    fullName: string;
+    email: string;
+    mobile: string;
+    username: string;
+  }): Promise<void> {
+    await firstValueFrom(
+      this.http.put<ApiResponse>('/api/profile', payload)
+    );
+  }
+
+  async uploadPhoto(file: File): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    await firstValueFrom(
+      this.http.post<ApiResponse>('/api/profile/photo', formData)
+    );
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<string> {
+    const res = await firstValueFrom(
+      this.http.put<ApiResponse>('/api/profile/password', { currentPassword, newPassword })
+    );
+    return res.message;
   }
 
   async logout(): Promise<void> {

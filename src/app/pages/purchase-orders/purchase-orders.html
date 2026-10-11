@@ -1,0 +1,184 @@
+<div class="page-header">
+  <div>
+    <h1>Purchase Orders</h1>
+    <div class="page-sub">ERP Mode workflow: create → submit → approve → receive via GRN.</div>
+  </div>
+  @if (perm.has('purchases.create')) {
+    <base-button icon="plus" (click)="openNew()">New Purchase Order</base-button>
+  }
+</div>
+
+<div class="card">
+  <div class="card-toolbar">
+    <div style="flex: 1; max-width: 340px">
+      <base-search placeholder="Search orders..." [(value)]="search"></base-search>
+    </div>
+    <base-dropdown [options]="statusOptions" [(value)]="statusFilter" (valueChange)="pageNumber.set(1); load()"></base-dropdown>
+    <base-button variant="secondary" icon="refresh-cw" (click)="load()">Refresh</base-button>
+  </div>
+
+  @if (loading()) {
+    <div class="card-body text-muted">Loading purchase orders…</div>
+  } @else if (rows().length === 0) {
+    <div class="card-body text-muted">No purchase orders found.</div>
+  } @else {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>PO Number</th>
+          <th>Date</th>
+          <th>Expected</th>
+          <th>Supplier</th>
+          <th class="num">Grand Total</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (po of rows(); track po.purchaseOrderId) {
+          <tr class="row-click" (click)="openDetail(po.purchaseOrderId)">
+            <td style="font-weight:600">{{ po.purchaseOrderNumber }}</td>
+            <td>{{ po.orderDate | date: 'dd-MMM-yyyy' }}</td>
+            <td>{{ po.expectedDate ? (po.expectedDate | date: 'dd-MMM-yyyy') : '—' }}</td>
+            <td>{{ po.supplierName || po.supplierId }}</td>
+            <td class="num">{{ po.grandTotal | currency: 'INR' }}</td>
+            <td><span class="status-pill" [class]="statusClass(po.status)">{{ po.status }}</span></td>
+            <td><base-button size="sm" variant="ghost" icon="eye" (click)="openDetail(po.purchaseOrderId); $event.stopPropagation()"></base-button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="card-toolbar" style="border-top: 1px solid var(--border)">
+      <span class="text-muted" style="font-size: 13px">
+        Page {{ pageNumber() }} — {{ totalCount() }} order(s)
+      </span>
+      <div style="display:flex; gap:8px">
+        <base-button size="sm" variant="secondary" icon="chevron-left" [disabled]="pageNumber() <= 1" (click)="prevPage()"></base-button>
+        <base-button size="sm" variant="secondary" icon="chevron-right" [disabled]="pageNumber() * pageSize >= totalCount()" (click)="nextPage()"></base-button>
+      </div>
+    </div>
+  }
+</div>
+
+@if (showEntry()) {
+  <div class="card" style="margin-top: 20px">
+    <div class="card-header">
+      <i-lucide name="file-plus-2" [size]="18" style="color: var(--accent)"></i-lucide>
+      <div>
+        <h3>New Purchase Order</h3>
+        <div class="card-sub">Quantities and prices are validated again on the server</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <base-dropdown label="Supplier" [options]="supplierOptions()" [(value)]="supplierId" placeholder="Select supplier"></base-dropdown>
+        <base-dropdown label="Warehouse" [options]="warehouseOptions()" [(value)]="warehouseId" placeholder="Select warehouse"></base-dropdown>
+        <base-input label="Order Date" type="date" [(value)]="orderDate"></base-input>
+        <base-input label="Expected Date" type="date" [(value)]="expectedDate"></base-input>
+      </div>
+
+      <table class="data-table" style="margin-top: 16px">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th style="width: 130px">Qty</th>
+            <th style="width: 150px">Unit Price</th>
+            <th class="num" style="width: 140px">Line Total</th>
+            <th style="width: 50px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of lines(); track $index) {
+            <tr>
+              <td>
+                <select class="input" [(ngModel)]="line.productId">
+                  <option value="" disabled>Select product</option>
+                  @for (p of productOptions(); track p.value) {
+                    <option [ngValue]="p.value">{{ p.label }}</option>
+                  }
+                </select>
+              </td>
+              <td><input class="input" type="number" min="0" step="any" [(ngModel)]="line.orderedQuantity" /></td>
+              <td><input class="input" type="number" min="0" step="any" [(ngModel)]="line.unitPrice" /></td>
+              <td class="num" style="font-weight:600">{{ lineTotal(line) | currency: 'INR' }}</td>
+              <td>
+                <button class="icon-btn" title="Remove line" (click)="removeLine($index)">
+                  <i-lucide name="trash-2" [size]="16"></i-lucide>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <div style="display:flex; justify-content: space-between; align-items:center; margin-top: 12px">
+        <base-button variant="secondary" icon="plus" (click)="addLine()">Add Line</base-button>
+        <div style="font-weight:700; font-size: 16px">Grand Total: {{ grandTotal | currency: 'INR' }}</div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top: 18px">
+        <base-button [loading]="saving()" icon="save" (click)="save()">Create Order</base-button>
+        <base-button variant="secondary" (click)="showEntry.set(false)">Close</base-button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (detail()) {
+  @if (detail(); as po) {
+    <div class="card" style="margin-top: 20px">
+      <div class="card-header">
+        <i-lucide name="file-text" [size]="18" style="color: var(--accent)"></i-lucide>
+        <div style="flex:1">
+          <h3>{{ po.purchaseOrderNumber }} <span class="status-pill" [class]="statusClass(po.status)">{{ po.status }}</span></h3>
+          <div class="card-sub">
+            {{ po.supplierName || 'Supplier' }} · {{ po.orderDate | date: 'dd-MMM-yyyy' }} · {{ po.grandTotal | currency: 'INR' }}
+          </div>
+        </div>
+        <button class="icon-btn" title="Close" (click)="detail.set(null)"><i-lucide name="x" [size]="18"></i-lucide></button>
+      </div>
+      <div class="card-body">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="num">Ordered</th>
+              <th class="num">Received</th>
+              <th class="num">Cancelled</th>
+              <th class="num">Unit Price</th>
+              <th class="num">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of po.items; track item.purchaseOrderItemId) {
+              <tr>
+                <td>{{ item.productName || item.productCode || item.productId }}</td>
+                <td class="num">{{ item.orderedQuantity }}</td>
+                <td class="num">{{ item.receivedQuantity }}</td>
+                <td class="num">{{ item.cancelledQuantity }}</td>
+                <td class="num">{{ item.unitPrice | currency: 'INR' }}</td>
+                <td class="num">{{ item.lineTotal | currency: 'INR' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        @if (canManage()) {
+          <div style="display:flex; gap:10px; margin-top: 18px">
+            @if (po.status === 'DRAFT') {
+              <base-button [loading]="saving()" icon="send" (click)="act('submit')">Submit for Approval</base-button>
+              <base-button variant="danger-soft" icon="x-circle" (click)="actWithReason('cancel')">Cancel Order</base-button>
+            }
+            @if (po.status === 'SUBMITTED') {
+              <base-button [loading]="saving()" icon="check-circle" (click)="act('approve')">Approve</base-button>
+              <base-button variant="danger-soft" icon="x-circle" (click)="actWithReason('reject')">Reject</base-button>
+            }
+          </div>
+        } @else {
+          <div class="field-hint" style="margin-top: 12px">You need purchase management permission to change the order status.</div>
+        }
+      </div>
+    </div>
+  }
+}

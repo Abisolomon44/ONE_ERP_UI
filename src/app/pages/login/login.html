@@ -33,11 +33,12 @@
       <div class="auth-sub">Sign in with your account credentials.</div>
 
       <form (ngSubmit)="submit()" style="display:block">
-        <base-input label="Username" icon="user" id="username" [(value)]="username" autocomplete="username"></base-input>
-        <base-input label="Password" type="password" icon="key-round" id="password" [(value)]="password" autocomplete="current-password" [error]="error()"></base-input>
-        <base-button type="submit" [loading]="loading()" [block]="true" style="margin-top:6px" [disabled]="!username() || !password()">
+        <base-input label="Username" icon="user" id="username" [(value)]="username" autocomplete="username" [error]="usernameFieldError()" [allowedPattern]="usernameCharPattern"></base-input>
+        <base-input label="Password" type="password" icon="key-round" id="password" [(value)]="password" autocomplete="current-password" [error]="error()" [allowedPattern]="passwordCharPattern"></base-input>
+        <base-button type="submit" [loading]="loading()" [block]="true" style="margin-top:6px" [disabled]="!canSubmit()">
           Sign in
         </base-button>
+        <button type="button" class="auth-link" (click)="forgotPassword()">Forgot password?</button>
       </form>
 
       <div class="auth-footer">

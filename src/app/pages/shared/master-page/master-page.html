@@ -96,7 +96,19 @@
   @if (!showEntry) {
 
     <div class="card">
-      <div class="table-wrap">
+      <app-data-grid
+        [columns]="gridColumns"
+        [rows]="filteredData"
+        [loading]="loading"
+        [searchText]="searchText"
+        [pageSize]="pageSize"
+        [pageSizes]="pageSizes"
+        [rowKey]="'id'"
+        [actions]="gridActions"
+        [resetKey]="searchText"
+        (action)="onGridAction($event)">
+      </app-data-grid>
+      <div class="table-wrap legacy-grid">
 
         @if (loading) {
           <div class="list-loading">
@@ -180,7 +192,7 @@
 
     <!-- Pagination -->
     @if (hasData) {
-      <div class="master-pagination">
+      <div class="master-pagination legacy-pagination">
         <div class="page-info">
           Showing <strong>{{ pageStart }}–{{ pageEnd }}</strong> of <strong>{{ filteredData.length }}</strong> records
         </div>
@@ -219,6 +231,7 @@
             <button
               class="entry-tab"
               [class.active]="activeTab == tab.name"
+              [class.has-error]="tabHasErrors(tab.name)"
               type="button"
               (click)="setTab(tab.name)">
               {{ tab.name }}
@@ -244,7 +257,9 @@
                   type="checkbox"
                   [id]="field.name"
                   [(ngModel)]="userModel[field.name]"
-                  [disabled]="field.disabled ?? false">
+                  (ngModelChange)="clearInvalid(field.name)"
+                  [disabled]="field.disabled ?? false"
+                  [class.invalid]="isInvalid(field)">
                 <label [for]="field.name">
                   {{ field.label }}
                   @if (field.required) { <span class="ff-req">*</span> }
@@ -265,6 +280,9 @@
                   [disabled]="field.disabled ?? false"
                   [searchable]="true">
                 </app-multi-select>
+                @if (isInvalid(field)) {
+                  <div class="ff-error">{{ field.label }} is required</div>
+                }
               </div>
             }
 
@@ -289,21 +307,25 @@
                     <input
                       class="ff-control"
                       [class.filled]="isFieldFilled(field)"
+                      [class.invalid]="isInvalid(field)"
                       [type]="field.type"
                       [(ngModel)]="userModel[field.name]"
+                      (ngModelChange)="clearInvalid(field.name)"
                       [placeholder]="field.placeholder || ' '"
-[readonly]="field.readonly"
-                       [disabled]="field.disabled ?? false"
-                       [minlength]="field.minLength ?? null"
-                       [maxlength]="field.maxLength ?? null">
+                      [readonly]="field.readonly"
+                      [disabled]="field.disabled ?? false"
+                      [minlength]="field.minLength ?? null"
+                      [maxlength]="field.maxLength ?? null">
                   }
 
                   @if (field.type == 'textarea') {
                     <textarea
                       class="ff-control"
                       [class.filled]="isFieldFilled(field)"
+                      [class.invalid]="isInvalid(field)"
                       rows="3"
                       [(ngModel)]="userModel[field.name]"
+                      (ngModelChange)="clearInvalid(field.name)"
                       [placeholder]="field.placeholder || ' '"
                       [readonly]="field.readonly"
                       [disabled]="field.disabled ?? false">
@@ -313,6 +335,7 @@
                   @if (field.type == 'dropdown') {
                     <select
                       class="ff-control ff-control-select filled"
+                      [class.invalid]="isInvalid(field)"
                       [(ngModel)]="userModel[field.name]"
                       (ngModelChange)="onFieldChange(field.name, $event)"
                       [disabled]="(field.disabled ?? false) || isNoAccessField(field)">
@@ -340,6 +363,10 @@
                   </label>
 
                 </div>
+
+                @if (isInvalid(field)) {
+                  <div class="ff-error">{{ field.label }} is required</div>
+                }
               </div>
             }
 

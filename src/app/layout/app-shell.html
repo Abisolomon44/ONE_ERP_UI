@@ -59,6 +59,9 @@
       <button class="icon-btn" aria-label="Toggle theme" (click)="theme.toggleMode()">
         <i-lucide [name]="theme.mode() === 'light' ? 'moon' : 'sun'" [size]="18"></i-lucide>
       </button>
+      <button class="icon-btn" aria-label="My Profile" routerLink="/my-profile" routerLinkActive="active">
+        <i-lucide name="user" [size]="18"></i-lucide>
+      </button>
       <base-button variant="ghost" icon="log-out" label="Logout" (click)="logout()">Logout</base-button>
     </header>
 

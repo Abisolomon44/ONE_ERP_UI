@@ -65,7 +65,7 @@ export class PurchaseRegisterPage implements OnInit {
       this.loading.set(true);
       const p = await this.svc.getPaged(this.page(), this.pageSize(), this.search());
       this.rows.set(p.items ?? []);
-      this.totalPages.set(Math.ceil(p.totalCount ?? 0 / this.pageSize()));
+      this.totalPages.set(Math.max(1, Math.ceil((p.totalCount ?? 0) / this.pageSize())));
     } catch (e: any) {
       this.toast.error('Failed to load purchases', e?.error?.message ?? e?.message ?? '');
     } finally {

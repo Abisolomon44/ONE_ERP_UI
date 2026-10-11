@@ -1,0 +1,161 @@
+<div class="page-header">
+  <div>
+    <h1>Goods Receipts</h1>
+    <div class="page-sub">Receive against approved purchase orders. Only accepted quantities enter stock on posting.</div>
+  </div>
+  @if (canCreate()) {
+    <base-button icon="plus" (click)="openNew()">New Receipt</base-button>
+  }
+</div>
+
+<div class="card">
+  <div class="card-toolbar">
+    <div style="flex: 1"></div>
+    <base-dropdown [options]="statusOptions" [(value)]="statusFilter" (valueChange)="pageNumber.set(1); load()"></base-dropdown>
+    <base-button variant="secondary" icon="refresh-cw" (click)="load()">Refresh</base-button>
+  </div>
+
+  @if (loading()) {
+    <div class="card-body text-muted">Loading receipts…</div>
+  } @else if (rows().length === 0) {
+    <div class="card-body text-muted">No goods receipts found.</div>
+  } @else {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>GRN Number</th>
+          <th>Date</th>
+          <th>Supplier</th>
+          <th>PO</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (grn of rows(); track grn.goodsReceiptId) {
+          <tr class="row-click" (click)="openDetail(grn.goodsReceiptId)">
+            <td style="font-weight:600">{{ grn.grnNumber }}</td>
+            <td>{{ grn.receiptDate | date: 'dd-MMM-yyyy' }}</td>
+            <td>{{ grn.supplierName || grn.supplierId }}</td>
+            <td>{{ grn.purchaseOrderNumber || 'Direct' }}</td>
+            <td><span class="status-pill" [class]="statusClass(grn.status)">{{ grn.status }}</span></td>
+            <td><base-button size="sm" variant="ghost" icon="eye" (click)="openDetail(grn.goodsReceiptId); $event.stopPropagation()"></base-button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="card-toolbar" style="border-top: 1px solid var(--border)">
+      <span class="text-muted" style="font-size: 13px">Page {{ pageNumber() }} — {{ totalCount() }} receipt(s)</span>
+      <div style="display:flex; gap:8px">
+        <base-button size="sm" variant="secondary" icon="chevron-left" [disabled]="pageNumber() <= 1" (click)="prevPage()"></base-button>
+        <base-button size="sm" variant="secondary" icon="chevron-right" [disabled]="pageNumber() * pageSize >= totalCount()" (click)="nextPage()"></base-button>
+      </div>
+    </div>
+  }
+</div>
+
+@if (showEntry()) {
+  <div class="card" style="margin-top: 20px">
+    <div class="card-header">
+      <i-lucide name="package-plus" [size]="18" style="color: var(--accent)"></i-lucide>
+      <div>
+        <h3>New Goods Receipt</h3>
+        <div class="card-sub">Quantities remaining on the selected PO are prefilled; server re-validates partial/excess policy</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <base-dropdown label="Approved Purchase Order" [options]="approvedOrders()" [(value)]="selectedPoId"
+                       placeholder="Select PO" (valueChange)="selectPo()"></base-dropdown>
+        <base-dropdown label="Warehouse" [options]="warehouseOptions()" [(value)]="warehouseId" placeholder="Select warehouse"></base-dropdown>
+        <base-input label="Receipt Date" type="date" [(value)]="receiptDate"></base-input>
+      </div>
+
+      @if (lines().length > 0) {
+        <table class="data-table" style="margin-top: 16px">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="num" style="width: 100px">Ordered</th>
+              <th style="width: 120px">Received</th>
+              <th style="width: 120px">Rejected</th>
+              <th style="width: 120px">Accepted</th>
+              <th style="width: 130px">Unit Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of lines(); track line.purchaseOrderItemId) {
+              <tr>
+                <td>{{ line.productName }}</td>
+                <td class="num">{{ line.ordered }}</td>
+                <td><input class="input" type="number" min="0" step="any" [(ngModel)]="line.received" (ngModelChange)="updateAccepted(line)" /></td>
+                <td><input class="input" type="number" min="0" step="any" [(ngModel)]="line.rejected" (ngModelChange)="updateAccepted(line)" /></td>
+                <td><input class="input" type="number" min="0" step="any" [(ngModel)]="line.accepted" /></td>
+                <td><input class="input" type="number" min="0" step="any" [(ngModel)]="line.unitCost" /></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else if (!selectedPoId()) {
+        <div class="field-hint" style="margin-top: 12px">Select an approved purchase order to load its pending lines.</div>
+      }
+
+      <div style="display:flex; gap:10px; margin-top: 18px">
+        <base-button [loading]="saving()" icon="save" (click)="save()">Create Draft Receipt</base-button>
+        <base-button variant="secondary" (click)="showEntry.set(false)">Close</base-button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (detail(); as grn) {
+  <div class="card" style="margin-top: 20px">
+    <div class="card-header">
+      <i-lucide name="package" [size]="18" style="color: var(--accent)"></i-lucide>
+      <div style="flex:1">
+        <h3>{{ grn.grnNumber }} <span class="status-pill" [class]="statusClass(grn.status)">{{ grn.status }}</span></h3>
+        <div class="card-sub">
+          {{ grn.supplierName || 'Supplier' }} · {{ grn.receiptDate | date: 'dd-MMM-yyyy' }}
+          @if (grn.purchaseOrderNumber) { · PO {{ grn.purchaseOrderNumber }} }
+        </div>
+      </div>
+      <button class="icon-btn" title="Close" (click)="detail.set(null)"><i-lucide name="x" [size]="18"></i-lucide></button>
+    </div>
+    <div class="card-body">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th class="num">Received</th>
+            <th class="num">Accepted</th>
+            <th class="num">Rejected</th>
+            <th class="num">Unit Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of grn.items; track item.goodsReceiptItemId) {
+            <tr>
+              <td>{{ item.productName || item.productCode || item.productId }}</td>
+              <td class="num">{{ item.receivedQuantity }}</td>
+              <td class="num">{{ item.acceptedQuantity }}</td>
+              <td class="num">{{ item.rejectedQuantity }}</td>
+              <td class="num">{{ item.unitCost | currency: 'INR' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (canManage()) {
+        <div style="display:flex; gap:10px; margin-top: 18px">
+          @if (grn.status === 'DRAFT') {
+            <base-button [loading]="saving()" icon="upload-cloud" (click)="post()">Post Receipt (update stock)</base-button>
+            <base-button variant="danger-soft" icon="x-circle" (click)="cancel()">Cancel Receipt</base-button>
+          }
+        </div>
+      } @else {
+        <div class="field-hint" style="margin-top: 12px">You need purchase management permission to post or cancel receipts.</div>
+      }
+    </div>
+  </div>
+}

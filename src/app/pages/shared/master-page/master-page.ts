@@ -5,8 +5,6 @@ import {
   Input,
   Output,
   OnInit,
-  OnChanges,
-  SimpleChanges,
   inject,
   signal
 } from '@angular/core';
@@ -14,8 +12,11 @@ import { FormsModule } from '@angular/forms';
 import { MasterRow } from '../master.model';
 import { LucideAngularModule } from "lucide-angular";
 import { PermissionService } from '../../../core/services/permission.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { EntityEditorComponent } from '../entity-editor/entity-editor';
 import { MultiSelectComponent } from '../multi-select/multi-select';
+import { DataGridComponent } from '../../../shared/data-grid/data-grid.component';
+import { GridAction, GridColumn } from '../../../shared/data-grid/data-grid.types';
 
 export interface DropdownOption {
   value: any;
@@ -120,14 +121,16 @@ export interface MasterConfig {
     FormsModule,
     LucideAngularModule,
     EntityEditorComponent,
-    MultiSelectComponent
+    MultiSelectComponent,
+    DataGridComponent
   ],
   templateUrl: './master-page.html',
   styleUrl: './master-page.css'
 })
-export class MasterPage implements OnInit, OnChanges {
+export class MasterPage implements OnInit {
 
   public readonly perm = inject(PermissionService);
+  private readonly toast = inject(ToastService);
 
   //===========================
   // Inputs
@@ -257,6 +260,28 @@ export class MasterPage implements OnInit, OnChanges {
   @Output()
   fieldChange = new EventEmitter<{ name: string; value: any }>();
 
+  /** Names of required fields currently missing a value (client-side validation). */
+  protected readonly invalidFields = signal<Set<string>>(new Set());
+
+  protected get gridColumns(): GridColumn<Record<string, unknown>>[] {
+    return this.config.columns.map(column => ({
+      ...column,
+      field: column.field as keyof Record<string, unknown> & string,
+      sortable: true,
+      value: (row: Record<string, unknown>) => row[column.field],
+    }));
+  }
+
+  protected readonly gridActions: GridAction<Record<string, unknown>>[] = [
+    { code: 'edit', label: 'Edit', icon: 'Pencil', variant: 'secondary', visible: () => this.canShowEdit() },
+    { code: 'delete', label: 'Delete', icon: 'Trash2', variant: 'danger-soft', visible: () => this.canShowDelete() },
+  ];
+
+  protected onGridAction(event: { code: string; row: Record<string, unknown> }): void {
+    if (event.code === 'edit') this.edit(event.row);
+    if (event.code === 'delete') this.delete(event.row);
+  }
+
   //===========================
   // Variables
   //===========================
@@ -276,20 +301,6 @@ export class MasterPage implements OnInit, OnChanges {
       this.activeTab = this.config.tabs[0].name;
     }
   }
-ngOnChanges(changes: SimpleChanges): void {
-
-  if (changes['config']) {
-    console.log('Config updated');
-  }
-
-  if (changes['showEntry']) {
-    console.log('Show Entry:', this.showEntry);
-  }
-
-  if (changes['userModel']) {
-    console.log('User Model:', this.userModel);
-  }
-}
   //===========================
   // Data-scope tagging
   //===========================
@@ -408,7 +419,66 @@ ngOnChanges(changes: SimpleChanges): void {
   }
 
   save() {
+    if (!this.validateRequiredFields()) return;
     this.saveClick.emit();
+  }
+
+  //===========================
+  // Required-field validation
+  //===========================
+
+  /** True when the field is required and currently has no value. */
+  protected isInvalid(field: MasterField): boolean {
+    return this.invalidFields().has(field.name);
+  }
+
+  /** True when the tab contains at least one missing required field. */
+  protected tabHasErrors(tabName: string): boolean {
+    const tab = this.config.tabs.find(t => t.name === tabName);
+    if (!tab || !this.invalidFields().size) return false;
+    return this.config.fields.some(
+      f => tab.fields.includes(f.name) && this.invalidFields().has(f.name),
+    );
+  }
+
+  /** Clear a field's error as soon as the user fills it in. */
+  protected clearInvalid(name: string): void {
+    if (!this.invalidFields().has(name)) return;
+    const next = new Set(this.invalidFields());
+    next.delete(name);
+    this.invalidFields.set(next);
+  }
+
+  /** Validate required fields; on failure mark them, jump to the first bad tab and toast. Returns true when valid. */
+  private validateRequiredFields(): boolean {
+    const missing = this.config.fields.filter(f => this.isRequiredMissing(f));
+    if (!missing.length) {
+      this.invalidFields.set(new Set());
+      return true;
+    }
+
+    this.invalidFields.set(new Set(missing.map(f => f.name)));
+
+    // Jump to the tab holding the first missing field if it's not visible here.
+    const first = missing[0];
+    const tab = this.config.tabs.find(t => t.fields.includes(first.name));
+    if (tab) this.activeTab = tab.name;
+
+    const labels = missing.map(f => f.label).join(', ');
+    this.toast.error('Validation failed', `${first.label} is required. Missing required fields: ${labels}`);
+    return false;
+  }
+
+  private isRequiredMissing(field: MasterField): boolean {
+    if (!field.required) return false;
+    const value = this.userModel?.[field.name];
+    if (field.type === 'checkbox') {
+      return value !== true;
+    }
+    if (field.type === 'multiselect') {
+      return !Array.isArray(value) || value.length === 0;
+    }
+    return value === null || value === undefined || String(value).trim() === '';
   }
 
   cancel() {
@@ -420,6 +490,7 @@ ngOnChanges(changes: SimpleChanges): void {
   }
 
   onFieldChange(name: string, value: any): void {
+    this.clearInvalid(name);
     this.fieldChange.emit({ name, value });
   }
 

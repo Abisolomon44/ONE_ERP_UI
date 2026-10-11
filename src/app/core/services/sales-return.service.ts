@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -104,8 +104,9 @@ export class SalesReturnService {
     return firstValueFrom(this.http.get<string>('/api/sales-returns/next-number'));
   }
 
-  create(req: CreateSalesReturnRequest): Promise<SalesReturnDto> {
-    return firstValueFrom(this.http.post<SalesReturnDto>('/api/sales-returns', req));
+  create(req: CreateSalesReturnRequest, idempotencyKey?: string): Promise<SalesReturnDto> {
+    const headers = idempotencyKey ? new HttpHeaders({ 'X-Idempotency-Key': idempotencyKey }) : undefined;
+    return firstValueFrom(this.http.post<SalesReturnDto>('/api/sales-returns', req, { headers }));
   }
 
   cancel(id: number, reason: string): Promise<SalesReturnDto> {

@@ -39,6 +39,7 @@ interface PosItem {
 
 interface SaleSession {
   id: number;
+  idempotencyKey: string | null;
   saleNumber: string;
   customerId: number | null;
   customerPhone: string;
@@ -215,6 +216,7 @@ export class PosPage implements OnInit {
   private buildSession(index = 1): SaleSession {
     return {
       id: Date.now() + Math.random(),
+      idempotencyKey: null,
       saleNumber: `Sale #${index}`,
       customerId: this.customerId,
       customerPhone: '',
@@ -711,7 +713,8 @@ export class PosPage implements OnInit {
         payment,
       };
 
-      const created = await this.svc.create(req);
+      active.idempotencyKey ??= globalThis.crypto?.randomUUID?.() ?? `pos-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const created = await this.svc.create(req, active.idempotencyKey);
       this.lastSaleNumber = created.salesInvoiceNo;
       this.lastGrandTotal = created.grandTotal;
       this.saleNo = '';

@@ -19,6 +19,12 @@
   padding: 20px 24px;
 }
 
+/* Product Master and compatible master screens now use the shared DataGrid. */
+.legacy-grid,
+.legacy-pagination {
+  display: none;
+}
+
 /* ============================ Header ============================ */
 .master-header {
   display: flex;
@@ -411,6 +417,29 @@
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* Tabs holding unfilled required fields get a red warning dot */
+.entry-tab.has-error {
+  position: relative;
+}
+
+.entry-tab.has-error::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: -6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+/* ============================ Entry-form validation ============================ */
+input.invalid[type='checkbox'] { accent-color: var(--danger); outline: 2px solid var(--danger); outline-offset: 2px; }
+
+.ff.error { margin-bottom: 4px; }
+
+.ff-error { margin-top: 4px; }
 
 /* ============================ Entry form ============================ */
 .entry-grid {

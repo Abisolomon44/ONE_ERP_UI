@@ -148,6 +148,15 @@ export class PaymentMethodDetailPage implements OnInit {
   protected async save(): Promise<void> {
     try {
       const f = this.form();
+      const lengths: Array<[string, number]> = [
+        [f.displayName, 150], [f.upiId, 150], [f.bankName, 150], [f.accountNumber, 100],
+        [f.ifscCode, 20], [f.terminalName, 100], [f.cashCounterName, 100], [f.referenceValue, 200],
+      ];
+      if (!f.code.trim() || f.code.trim().length > 50 || !f.name.trim() || f.name.trim().length > 100 ||
+          !Number.isInteger(f.displayOrder) || f.displayOrder < 0 || lengths.some(([value, max]) => value.length > max)) {
+        this.toast.error('Check required fields, maximum lengths, and non-negative whole display order');
+        return;
+      }
       const Base = {
         code: f.code.trim(),
         name: f.name.trim(),

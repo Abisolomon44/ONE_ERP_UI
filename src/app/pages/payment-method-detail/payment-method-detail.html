@@ -76,35 +76,35 @@
         </label>
       }
 
-      <label><span>Code *</span><input [(ngModel)]="form().code" /></label>
-      <label><span>Name *</span><input [(ngModel)]="form().name" /></label>
-      <label><span>Display Name</span><input [(ngModel)]="form().displayName" /></label>
+      <label><span>Code *</span><input [(ngModel)]="form().code" maxlength="50" required /></label>
+      <label><span>Name *</span><input [(ngModel)]="form().name" maxlength="100" required /></label>
+      <label><span>Display Name</span><input [(ngModel)]="form().displayName" maxlength="150" /></label>
 
       @if (showUpi()) {
-        <label><span>UPI ID</span><input [(ngModel)]="form().upiId" placeholder="abc@bank" /></label>
+        <label><span>UPI ID</span><input [(ngModel)]="form().upiId" maxlength="150" placeholder="abc@bank" /></label>
       }
       @if (showBankName()) {
-        <label><span>Bank Name</span><input [(ngModel)]="form().bankName" /></label>
+        <label><span>Bank Name</span><input [(ngModel)]="form().bankName" maxlength="150" /></label>
       }
       @if (showBank()) {
-        <label><span>Account Number</span><input [(ngModel)]="form().accountNumber" /></label>
-        <label><span>IFSC Code</span><input [(ngModel)]="form().ifscCode" /></label>
+        <label><span>Account Number</span><input [(ngModel)]="form().accountNumber" maxlength="100" /></label>
+        <label><span>IFSC Code</span><input [(ngModel)]="form().ifscCode" maxlength="20" /></label>
       }
       @if (showCard()) {
-        <label><span>Terminal Name</span><input [(ngModel)]="form().terminalName" /></label>
+        <label><span>Terminal Name</span><input [(ngModel)]="form().terminalName" maxlength="100" /></label>
       }
       @if (showCash()) {
-        <label><span>Cash Counter Name</span><input [(ngModel)]="form().cashCounterName" /></label>
+        <label><span>Cash Counter Name</span><input [(ngModel)]="form().cashCounterName" maxlength="100" /></label>
       }
       @if (showRef()) {
-        <label><span>Reference Value</span><input [(ngModel)]="form().referenceValue" /></label>
+        <label><span>Reference Value</span><input [(ngModel)]="form().referenceValue" maxlength="200" /></label>
       }
 
       <div class="row">
         <label class="check"><input type="checkbox" [(ngModel)]="form().isDefault" /> Default</label>
         <label class="check"><input type="checkbox" [(ngModel)]="form().isActive" /> Active</label>
       </div>
-      <label><span>Display Order</span><input type="number" [(ngModel)]="form().displayOrder" /></label>
+      <label><span>Display Order</span><input type="number" min="0" step="1" [(ngModel)]="form().displayOrder" /></label>
 
       <div class="actions">
         <button class="btn primary" (click)="save()">Save</button>

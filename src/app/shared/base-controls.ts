@@ -51,6 +51,9 @@ export class BaseInput {
   readonly required = input(false);
   readonly id = input('');
   readonly autocomplete = input('');
+  // Optional per-character filter applied on every keystroke/paste.
+  // Example: /^[A-Za-z0-9]$/ blocks all special characters and spaces.
+  readonly allowedPattern = input<RegExp | null>(null);
 
   protected showPassword = signal(false);
   protected isPassword = computed(() => this.type() === 'password');
@@ -61,7 +64,16 @@ export class BaseInput {
   }
 
   protected onInput(event: Event): void {
-    this.value.set((event.target as HTMLInputElement).value);
+    const inputEl = event.target as HTMLInputElement;
+    let value = inputEl.value;
+
+    const pattern = this.allowedPattern();
+    if (pattern) {
+      value = value.split('').filter((c) => pattern.test(c)).join('');
+      inputEl.value = value; // reflect the filtered value back into the DOM
+    }
+
+    this.value.set(value);
   }
 }
 

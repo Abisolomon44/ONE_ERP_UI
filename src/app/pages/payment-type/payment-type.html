@@ -53,15 +53,15 @@
       <h2>{{ editing() ? 'Edit Payment Type' : 'New Payment Type' }}</h2>
       <label>
         <span>Code *</span>
-        <input [(ngModel)]="form().code" />
+        <input [(ngModel)]="form().code" maxlength="30" required />
       </label>
       <label>
         <span>Name *</span>
-        <input [(ngModel)]="form().name" />
+        <input [(ngModel)]="form().name" maxlength="100" required />
       </label>
       <label>
         <span>Display Order</span>
-        <input type="number" [(ngModel)]="form().displayOrder" />
+        <input type="number" min="0" step="1" [(ngModel)]="form().displayOrder" />
       </label>
       <label class="check">
         <input type="checkbox" [(ngModel)]="form().isActive" /> Active

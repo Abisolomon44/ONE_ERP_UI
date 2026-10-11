@@ -63,6 +63,11 @@ export class PaymentTypePage implements OnInit {
   protected async save(): Promise<void> {
     try {
       const f = this.form();
+      if (!f.code.trim() || f.code.trim().length > 30 || !f.name.trim() || f.name.trim().length > 100 ||
+          !Number.isInteger(f.displayOrder) || f.displayOrder < 0) {
+        this.toast.error('Enter a code (max 30), name (max 100), and a non-negative whole display order');
+        return;
+      }
       if (this.editing()) {
         const req: UpdatePaymentTypeRequest = {
           code: f.code.trim(),

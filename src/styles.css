@@ -3,10 +3,6 @@
    Theme engine via CSS variables: light/dark + 5 accent colors.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-
-
 @layer material {
   .mdc-button { font-family: var(--font-family); }
   .mdc-text-field { font-family: var(--font-family); }
@@ -786,4 +782,3 @@ table.btable { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 @media (min-width: 721px) {
   .page-header .page-actions .search-box { width: auto; }
 }
-

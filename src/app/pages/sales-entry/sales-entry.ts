@@ -62,6 +62,7 @@ interface DraftPayment {
 
 interface SaleTabState {
   saleTabId: string;
+  idempotencyKey: string | null;
   saleLabel: string;
   salesNo: string;
   editingId: number | null;
@@ -404,6 +405,7 @@ export class SalesEntryPage implements OnInit {
     const defaultSource = this.defaultSource();
     return {
       saleTabId: `sale-tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      idempotencyKey: null,
       saleLabel: `Sale #${index}`,
       salesNo: '',
       editingId: null,
@@ -1565,7 +1567,8 @@ export class SalesEntryPage implements OnInit {
         await this.svc.update(tab.editingId, update);
         this.lastSavedInvoiceId = tab.editingId;
       } else {
-        const created = await this.svc.create(req);
+        tab.idempotencyKey ??= globalThis.crypto?.randomUUID?.() ?? `sales-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const created = await this.svc.create(req, tab.idempotencyKey);
         this.lastSavedInvoiceId = created.salesInvoiceId;
       }
 

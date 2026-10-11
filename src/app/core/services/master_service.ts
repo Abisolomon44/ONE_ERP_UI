@@ -82,12 +82,115 @@ export interface CompanyDto {
   timeZoneId: number;
   isActive: boolean;
   isBlocked: boolean;
+  companyGroupId?: number | null;
+  businessUnitId?: number | null;
+  website?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  logoUrl?: string | null;
+  defaultFinancialYearId?: number | null;
+  multiBranchEnabled?: boolean;
+  multiWarehouseEnabled?: boolean;
+  multiCurrencyEnabled?: boolean;
+  dateFormat?: string | null;
+  timeFormat?: string | null;
+  numberFormat?: string | null;
+  defaultWarehouseId?: number | null;
+  theme?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  remarks?: string | null;
   createdAt: string;
   updatedAt?: string | null;
 }
 
-export type CreateCompanyRequest = Omit<CompanyDto, 'id' | 'isActive' | 'isBlocked' | 'createdAt' | 'updatedAt'>;
-export type UpdateCompanyRequest = Omit<CompanyDto, 'id' | 'companyCode' | 'createdAt' | 'updatedAt'>;
+/** Matches the backend property-based CreateCompanyRequest (all fields optional at JSON level; required ones validated server-side). */
+export interface CreateCompanyRequest {
+  companyCode?: string;
+  companyName: string;
+  shortName?: string | null;
+  abbreviation?: string | null;
+  businessTypeId: number;
+  industryTypeId: number;
+  gstRegistrationTypeId?: number | null;
+  gstNumber?: string | null;
+  panNumber?: string | null;
+  tanNumber?: string | null;
+  cinNumber?: string | null;
+  registrationNumber?: string | null;
+  currencyId: number;
+  languageId: number;
+  timeZoneId: number;
+  companyGroupId?: number | null;
+  businessUnitId?: number | null;
+  website?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  logoUrl?: string | null;
+  defaultFinancialYearId?: number | null;
+  multiBranchEnabled?: boolean;
+  multiWarehouseEnabled?: boolean;
+  multiCurrencyEnabled?: boolean;
+  dateFormat?: string | null;
+  timeFormat?: string | null;
+  numberFormat?: string | null;
+  defaultWarehouseId?: number | null;
+  theme?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  remarks?: string | null;
+  /** Existing entity row to attach (validated server-side: must exist and must not already be linked). */
+  entityId?: number | null;
+  /** New entity payload (addresses/contacts/files/notes/tags) created atomically with the company. */
+  entity?: {
+    addresses?: any[];
+    contacts?: any[];
+    files?: any[];
+    notes?: any[];
+    tags?: any[];
+  };
+}
+
+/** Matches the backend property-based UpdateCompanyRequest. */
+export interface UpdateCompanyRequest {
+  companyName: string;
+  shortName?: string | null;
+  abbreviation?: string | null;
+  businessTypeId: number;
+  industryTypeId: number;
+  gstRegistrationTypeId?: number | null;
+  gstNumber?: string | null;
+  panNumber?: string | null;
+  tanNumber?: string | null;
+  cinNumber?: string | null;
+  registrationNumber?: string | null;
+  currencyId: number;
+  languageId: number;
+  timeZoneId: number;
+  isActive: boolean;
+  isBlocked: boolean;
+  companyGroupId?: number | null;
+  businessUnitId?: number | null;
+  website?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  logoUrl?: string | null;
+  defaultFinancialYearId?: number | null;
+  multiBranchEnabled?: boolean | null;
+  multiWarehouseEnabled?: boolean | null;
+  multiCurrencyEnabled?: boolean | null;
+  dateFormat?: string | null;
+  timeFormat?: string | null;
+  numberFormat?: string | null;
+  defaultWarehouseId?: number | null;
+  theme?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  remarks?: string | null;
+}
 
 class CompanyService {
   constructor(private readonly http: HttpClient) {}

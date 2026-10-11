@@ -57,9 +57,12 @@ export class CompanyPage implements OnInit {
 
     tabs: [
       { name: 'General', fields: ['companyCode', 'companyName', 'shortName', 'abbreviation'] },
-      { name: 'Classification', fields: ['businessTypeId', 'industryTypeId'] },
+      { name: 'Classification', fields: ['businessTypeId', 'industryTypeId', 'companyGroupId'] },
       { name: 'Statutory', fields: ['gstRegistrationTypeId', 'gstNumber', 'panNumber', 'tanNumber', 'cinNumber', 'registrationNumber'] },
-      { name: 'Localization', fields: ['currencyId', 'languageId', 'timeZoneId'] },
+      { name: 'Contact', fields: ['website', 'email', 'phone', 'mobile'] },
+      { name: 'Localization', fields: ['currencyId', 'languageId', 'timeZoneId', 'dateFormat', 'timeFormat', 'numberFormat'] },
+      { name: 'Configuration', fields: ['multiBranchEnabled', 'multiWarehouseEnabled', 'multiCurrencyEnabled', 'defaultFinancialYearId', 'defaultWarehouseId'] },
+      { name: 'Branding', fields: ['theme', 'primaryColor', 'secondaryColor', 'remarks'] },
       { name: 'Status', fields: ['isActive', 'isBlocked'] },
     ],
 
@@ -71,6 +74,7 @@ export class CompanyPage implements OnInit {
 
       { name: 'businessTypeId', label: 'Business Type', type: 'dropdown', required: true, options: [] },
       { name: 'industryTypeId', label: 'Industry Type', type: 'dropdown', required: true, options: [] },
+      { name: 'companyGroupId', label: 'Company Group', type: 'dropdown', options: [] },
 
       { name: 'gstRegistrationTypeId', label: 'GST Registration Type', type: 'dropdown', options: [] },
       { name: 'gstNumber', label: 'GST Number', type: 'text', maxLength: 15 },
@@ -79,9 +83,28 @@ export class CompanyPage implements OnInit {
       { name: 'cinNumber', label: 'CIN Number', type: 'text', maxLength: 21 },
       { name: 'registrationNumber', label: 'Registration Number', type: 'text' },
 
+      { name: 'website', label: 'Website', type: 'text', maxLength: 200 },
+      { name: 'email', label: 'Email', type: 'text', maxLength: 150 },
+      { name: 'phone', label: 'Phone', type: 'text', maxLength: 30 },
+      { name: 'mobile', label: 'Mobile', type: 'text', maxLength: 30 },
+
       { name: 'currencyId', label: 'Base Currency', type: 'dropdown', required: true, options: [] },
       { name: 'languageId', label: 'Default Language', type: 'dropdown', required: true, options: [] },
       { name: 'timeZoneId', label: 'Time Zone', type: 'dropdown', required: true, options: [] },
+      { name: 'dateFormat', label: 'Date Format', type: 'text', maxLength: 20 },
+      { name: 'timeFormat', label: 'Time Format', type: 'text', maxLength: 20 },
+      { name: 'numberFormat', label: 'Number Format', type: 'text', maxLength: 20 },
+
+      { name: 'multiBranchEnabled', label: 'Multi-Branch', type: 'checkbox' },
+      { name: 'multiWarehouseEnabled', label: 'Multi-Warehouse', type: 'checkbox' },
+      { name: 'multiCurrencyEnabled', label: 'Multi-Currency', type: 'checkbox' },
+      { name: 'defaultFinancialYearId', label: 'Default Financial Year', type: 'dropdown', options: [] },
+      { name: 'defaultWarehouseId', label: 'Default Warehouse', type: 'dropdown', options: [] },
+
+      { name: 'theme', label: 'Theme', type: 'text', maxLength: 50 },
+      { name: 'primaryColor', label: 'Primary Color', type: 'text', maxLength: 20 },
+      { name: 'secondaryColor', label: 'Secondary Color', type: 'text', maxLength: 20 },
+      { name: 'remarks', label: 'Remarks', type: 'textarea', maxLength: 1000 },
 
       { name: 'isActive', label: 'Active', type: 'checkbox' },
       { name: 'isBlocked', label: 'Blocked', type: 'checkbox' },
@@ -268,7 +291,10 @@ export class CompanyPage implements OnInit {
       load('timeZoneId', '/api/timezones', t => t.name, t => t.timeZoneId),
       load('industryTypeId', '/api/industry-types', i => i.name, i => i.industryTypeId),
       load('gstRegistrationTypeId', '/api/gst-registration-types', g => g.name, g => g.gstRegistrationTypeId),
-      load('businessTypeId', '/api/business-types', b => b.name ?? b.businessTypeName, b => b.id ?? b.businessTypeId)
+      load('businessTypeId', '/api/business-types', b => b.name ?? b.businessTypeName, b => b.id ?? b.businessTypeId),
+      load('companyGroupId', '/api/company-groups', g => g.groupName || g.name, g => g.id),
+      load('defaultFinancialYearId', '/api/financial-years?includeInactive=true', f => `${f.code} (${f.name})`, f => f.financialYearId),
+      load('defaultWarehouseId', '/api/organization/warehouses/all', w => w.warehouseName ?? w.name, w => w.id),
     ]);
   }
 
@@ -297,15 +323,32 @@ export class CompanyPage implements OnInit {
       abbreviation: '',
       businessTypeId: null,
       industryTypeId: null,
+      companyGroupId: null,
       gstRegistrationTypeId: null,
       gstNumber: '',
       panNumber: '',
       tanNumber: '',
       cinNumber: '',
       registrationNumber: '',
+      website: '',
+      email: '',
+      phone: '',
+      mobile: '',
       currencyId: null,
       languageId: null,
       timeZoneId: null,
+      dateFormat: '',
+      timeFormat: '',
+      numberFormat: '',
+      multiBranchEnabled: true,
+      multiWarehouseEnabled: true,
+      multiCurrencyEnabled: false,
+      defaultFinancialYearId: null,
+      defaultWarehouseId: null,
+      theme: '',
+      primaryColor: '',
+      secondaryColor: '',
+      remarks: '',
       isActive: true,
       isBlocked: false,
       addresses: [],
@@ -370,62 +413,100 @@ export class CompanyPage implements OnInit {
           abbreviation: this.userModel['abbreviation'] || null,
           businessTypeId: this.userModel['businessTypeId'],
           industryTypeId: this.userModel['industryTypeId'],
+          companyGroupId: this.userModel['companyGroupId'] || null,
           gstRegistrationTypeId: this.userModel['gstRegistrationTypeId'] || null,
-          gstNumber: this.userModel['gstNumber'] || null,
-          panNumber: this.userModel['panNumber'] || null,
-          tanNumber: this.userModel['tanNumber'] || null,
-          cinNumber: this.userModel['cinNumber'] || null,
+          gstNumber: this.userModel['gstNumber']?.trim().toUpperCase() || null,
+          panNumber: this.userModel['panNumber']?.trim().toUpperCase() || null,
+          tanNumber: this.userModel['tanNumber']?.trim().toUpperCase() || null,
+          cinNumber: this.userModel['cinNumber']?.trim().toUpperCase() || null,
           registrationNumber: this.userModel['registrationNumber'] || null,
+          website: this.userModel['website'] || null,
+          email: this.userModel['email'] || null,
+          phone: this.userModel['phone'] || null,
+          mobile: this.userModel['mobile'] || null,
           currencyId: this.userModel['currencyId'],
           languageId: this.userModel['languageId'],
           timeZoneId: this.userModel['timeZoneId'],
+          dateFormat: this.userModel['dateFormat'] || null,
+          timeFormat: this.userModel['timeFormat'] || null,
+          numberFormat: this.userModel['numberFormat'] || null,
+          multiBranchEnabled: this.userModel['multiBranchEnabled'],
+          multiWarehouseEnabled: this.userModel['multiWarehouseEnabled'],
+          multiCurrencyEnabled: this.userModel['multiCurrencyEnabled'],
+          defaultFinancialYearId: this.userModel['defaultFinancialYearId'] || null,
+          defaultWarehouseId: this.userModel['defaultWarehouseId'] || null,
+          theme: this.userModel['theme'] || null,
+          primaryColor: this.userModel['primaryColor'] || null,
+          secondaryColor: this.userModel['secondaryColor'] || null,
+          remarks: this.userModel['remarks'] || null,
           isActive: this.userModel['isActive'],
           isBlocked: this.userModel['isBlocked'],
         };
         await this.admin.company.update(editing.id, payload);
       } else {
-        const hasEntityData =
+        // The prior implementation POSTed /api/entities first and then POST /api/companies —
+        // two transactions with no rollback (orphaned Entity rows on failure). The backend
+        // now accepts the same entity payload inside the Company create request and wraps
+        // BOTH inserts in one SQL transaction, so the UI must never call /api/entities here.
+        // An entityId may already be present when the user saved the "Address & Contacts"
+        // tab before saving the company — it is validated (existence + not-already-linked)
+        // server-side and reused instead of creating another Entity row.
+        const anyEntityData =
           (this.userModel['addresses']?.length > 0) ||
           (this.userModel['contacts']?.length > 0) ||
           (this.userModel['files']?.length > 0) ||
           (this.userModel['notes']?.length > 0) ||
           (this.userModel['tags']?.length > 0);
 
-        let entityId: number | null = this.userModel['entityId'] as number | null ?? null;
-        if (entityId == null && hasEntityData) {
-          const entityPayload: any = {
-            entityType: 'COMPANY',
-            entityCode: this.userModel['companyCode']?.trim().toUpperCase(),
-            entityName: this.userModel['companyName']?.trim(),
-            isActive: true,
-            addresses: this.userModel['addresses'] ?? [],
-            contacts: this.userModel['contacts'] ?? [],
-            files: this.userModel['files'] ?? [],
-            notes: this.userModel['notes'] ?? [],
-            tags: this.userModel['tags'] ?? [],
-          };
-          const entity: any = await firstValueFrom(this.http.post('/api/entities', entityPayload));
-          entityId = entity?.entityId ?? entity?.EntityId ?? null;
-        }
+        const entityId = this.userModel['entityId'] as number | null ?? null;
 
-        const payload: CreateCompanyRequest = {
+        const payload: any = {
           companyCode: this.userModel['companyCode']?.trim().toUpperCase(),
           companyName: this.userModel['companyName']?.trim(),
           shortName: this.userModel['shortName'] || null,
           abbreviation: this.userModel['abbreviation'] || null,
           businessTypeId: this.userModel['businessTypeId'],
           industryTypeId: this.userModel['industryTypeId'],
+          companyGroupId: this.userModel['companyGroupId'] || null,
           gstRegistrationTypeId: this.userModel['gstRegistrationTypeId'] || null,
-          gstNumber: this.userModel['gstNumber'] || null,
-          panNumber: this.userModel['panNumber'] || null,
-          tanNumber: this.userModel['tanNumber'] || null,
-          cinNumber: this.userModel['cinNumber'] || null,
+          gstNumber: this.userModel['gstNumber']?.trim().toUpperCase() || null,
+          panNumber: this.userModel['panNumber']?.trim().toUpperCase() || null,
+          tanNumber: this.userModel['tanNumber']?.trim().toUpperCase() || null,
+          cinNumber: this.userModel['cinNumber']?.trim().toUpperCase() || null,
           registrationNumber: this.userModel['registrationNumber'] || null,
+          website: this.userModel['website'] || null,
+          email: this.userModel['email'] || null,
+          phone: this.userModel['phone'] || null,
+          mobile: this.userModel['mobile'] || null,
           currencyId: this.userModel['currencyId'],
           languageId: this.userModel['languageId'],
           timeZoneId: this.userModel['timeZoneId'],
-          entityId,
+          dateFormat: this.userModel['dateFormat'] || null,
+          timeFormat: this.userModel['timeFormat'] || null,
+          numberFormat: this.userModel['numberFormat'] || null,
+          multiBranchEnabled: this.userModel['multiBranchEnabled'],
+          multiWarehouseEnabled: this.userModel['multiWarehouseEnabled'],
+          multiCurrencyEnabled: this.userModel['multiCurrencyEnabled'],
+          defaultFinancialYearId: this.userModel['defaultFinancialYearId'] || null,
+          defaultWarehouseId: this.userModel['defaultWarehouseId'] || null,
+          theme: this.userModel['theme'] || null,
+          primaryColor: this.userModel['primaryColor'] || null,
+          secondaryColor: this.userModel['secondaryColor'] || null,
+          remarks: this.userModel['remarks'] || null,
         };
+
+        if (entityId != null) {
+          payload.entityId = entityId;
+        } else if (anyEntityData) {
+          payload.entity = {
+            addresses: this.userModel['addresses'] ?? [],
+            contacts: this.userModel['contacts'] ?? [],
+            files: this.userModel['files'] ?? [],
+            notes: this.userModel['notes'] ?? [],
+            tags: this.userModel['tags'] ?? [],
+          };
+        }
+
         await this.admin.company.create(payload);
       }
       this.showEntry.set(false);
