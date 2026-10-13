@@ -1,4 +1,4 @@
-@if (purchase) {
+@if (purchase(); as purchase) {
   <div class="card">
     <div class="card-header">
       <h2>Edit Purchase</h2>
@@ -138,9 +138,20 @@
 
     <div class="card-footer">
       <button class="btn secondary" (click)="goBack()">Cancel</button>
-      <button class="btn primary" (click)="savePurchase()" [disabled]="!canSave()">Save Changes</button>
+      <button class="btn primary" (click)="savePurchase()" [disabled]="!canSave() || loading()">{{ loading() ? 'Saving…' : 'Save Changes' }}</button>
     </div>
   </div>
+} @else if (loading()) {
+  <div class="empty" role="status">Loading purchase edit form…</div>
+} @else if (loadError()) {
+  <div class="empty" role="alert">
+    <p>{{ loadError() }}</p>
+    <button class="btn secondary" type="button" (click)="retryLoad()">Retry</button>
+    <button class="btn secondary" type="button" (click)="goBack()">Back to purchases</button>
+  </div>
 } @else {
-  <div class="empty">Loading purchase edit form…</div>
+  <div class="empty" role="alert">
+    <p>Purchase record was not found.</p>
+    <button class="btn secondary" type="button" (click)="goBack()">Back to purchases</button>
+  </div>
 }

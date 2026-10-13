@@ -1,4 +1,4 @@
-@if (purchase) {
+@if (purchase(); as purchase) {
   <div class="card">
     <div class="card-header">
       <h2>Cancel Purchase</h2>
@@ -7,27 +7,7 @@
 
     <div class="card-body">
       <p>Are you sure you want to cancel this purchase?</p>
-
-      <div class="detail-row">
-        <label>Purchase Number</label>
-        <span>{{ purchase.purchaseNumber }}</span>
-      </div>
-      <div class="detail-row">
-        <label>Purchase Date</label>
-        <span>{{ purchase.purchaseDate ? (purchase.purchaseDate | slice: 0 : 10) : '' }}</span>
-      </div>
-      <div class="detail-row">
-        <label>Supplier</label>
-        <span>{{ purchase.supplierNameSnapshot || purchase.supplierId }}</span>
-      </div>
-      <div class="detail-row">
-        <label>Grand Total</label>
-        <span class="num">{{ purchase.grandTotal | number: '1.2-2' }}</span>
-      </div>
-      <div class="detail-row">
-        <label>Current Status</label>
-        <span><span class="badge">{{ purchase.statusID || 'Open' }}</span></span>
-      </div>
+      <app-purchase-details-panel [purchase]="purchase" />
 
       <div class="form-section">
         <h3>Cancellation Reason</h3>
@@ -43,6 +23,17 @@
       <button class="btn primary" (click)="cancelPurchase()" [disabled]="!canCancel() || loading()">Confirm Cancel</button>
     </div>
   </div>
+} @else if (loading()) {
+  <div class="empty" role="status">Loading purchase details…</div>
+} @else if (loadError()) {
+  <div class="empty" role="alert">
+    <p>{{ loadError() }}</p>
+    <button class="btn secondary" type="button" (click)="retryLoad()">Retry</button>
+    <button class="btn secondary" type="button" (click)="goBack()">Back to purchases</button>
+  </div>
 } @else {
-  <div class="empty">Loading purchase details…</div>
+  <div class="empty" role="alert">
+    <p>Purchase record was not found.</p>
+    <button class="btn secondary" type="button" (click)="goBack()">Back to purchases</button>
+  </div>
 }

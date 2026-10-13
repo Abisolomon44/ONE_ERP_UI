@@ -8,6 +8,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { PurchaseHubService } from '../../core/purchase-hub.service';
 import { DocumentPrintService } from '../../core/services/document-print.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
   selector: 'app-purchase-register',
@@ -24,6 +25,7 @@ export class PurchaseRegisterPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly hub = inject(PurchaseHubService);
   private readonly docPrint = inject(DocumentPrintService);
+  protected readonly theme = inject(ThemeService);
 
   protected readonly canView = signal(false);
   protected readonly canCreate = signal(false);
@@ -32,7 +34,10 @@ export class PurchaseRegisterPage implements OnInit {
   protected readonly canDelete = signal(false);
   protected readonly canReturn = signal(false);
   protected readonly loading = signal(false);
+  protected readonly error = signal('');
   protected readonly rows = signal<PurchaseDto[]>([]);
+  protected readonly totalCount = signal(0);
+  protected readonly lookups = signal<PurchaseLookupsDto | null>(null);
   protected readonly search = signal('');
   protected readonly dateFrom = signal('');
   protected readonly dateTo = signal('');
@@ -48,7 +53,7 @@ export class PurchaseRegisterPage implements OnInit {
   protected readonly pageSize = signal(10);
   protected readonly totalPages = signal(1);
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.canView.set(this.perm.has(['purchases.view', 'purchases.manage']));
     this.canCreate.set(this.perm.has(['purchases.create', 'purchases.manage']));
     this.canEdit.set(this.perm.has(['purchases.edit', 'purchases.manage']));
@@ -57,17 +62,26 @@ export class PurchaseRegisterPage implements OnInit {
     this.canReturn.set(
       this.perm.has(['purchases-return.create', 'purchases.return.manage', 'purchases.return.view']),
     );
-    this.load();
+    try {
+      this.lookups.set(await this.svc.getLookups());
+    } catch {
+      // The register can still render snapshot names and IDs when lookups fail.
+    }
+    await this.load();
   }
 
   private async load(): Promise<void> {
     try {
       this.loading.set(true);
+      this.error.set('');
       const p = await this.svc.getPaged(this.page(), this.pageSize(), this.search());
       this.rows.set(p.items ?? []);
+      this.totalCount.set(p.totalCount ?? 0);
       this.totalPages.set(Math.max(1, Math.ceil((p.totalCount ?? 0) / this.pageSize())));
     } catch (e: any) {
-      this.toast.error('Failed to load purchases', e?.error?.message ?? e?.message ?? '');
+      const message = e?.error?.message ?? e?.message ?? 'Unable to retrieve purchase data.';
+      this.error.set(message);
+      this.toast.error('Failed to load purchases', message);
     } finally {
       this.loading.set(false);
     }
@@ -89,6 +103,22 @@ export class PurchaseRegisterPage implements OnInit {
     this.statusId.set(0);
     this.paymentStatus.set('');
     this.load();
+  }
+
+  protected refresh(): void {
+    this.load();
+  }
+
+  protected lookupName(items: { id: number; name?: string | null }[] | undefined, id: number): string {
+    return items?.find((item) => Number(item.id) === Number(id))?.name || String(id);
+  }
+
+  protected firstEntry(): number {
+    return this.totalCount() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1;
+  }
+
+  protected lastEntry(): number {
+    return Math.min(this.page() * this.pageSize(), this.totalCount());
   }
 
   protected newPurchase(): void {

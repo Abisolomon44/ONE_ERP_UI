@@ -11,6 +11,10 @@
   min-width: 0;
 }
 
+.pu.without-side-nav {
+  gap: 0;
+}
+
 /* ---------- Sidebar ---------- */
 .pu-side {
   width: 250px;

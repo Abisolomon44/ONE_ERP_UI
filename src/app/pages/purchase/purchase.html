@@ -1,4 +1,5 @@
-<div class="pu">
+<div class="pu" [class.without-side-nav]="tab() === 'returns'">
+  @if (tab() !== 'returns') {
   <aside class="pu-side" [class.collapsed]="collapsed()">
     <div class="pu-side-top">
       <div class="pu-brand">
@@ -27,6 +28,7 @@
       }
     </nav>
   </aside>
+  }
 
   <section class="pu-content">
     @if (tab() === 'dashboard') {

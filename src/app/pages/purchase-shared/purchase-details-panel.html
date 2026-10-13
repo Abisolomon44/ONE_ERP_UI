@@ -1,0 +1,81 @@
+<section class="purchase-details">
+  <header class="panel-heading">
+    <div>
+      <span class="eyebrow">PURCHASING</span>
+      <h2>Purchase #{{ purchase.purchaseNumber }}</h2>
+    </div>
+    <span class="status">Status {{ purchase.statusID }}</span>
+  </header>
+
+  <div class="field-grid">
+    <section class="field-group">
+      <h3>Supplier</h3>
+      <div><label>Supplier</label><span>{{ purchase.supplierNameSnapshot || lookupName(lookups()?.suppliers, purchase.supplierId) }}</span></div>
+      <div><label>Supplier Invoice No.</label><span>{{ purchase.supplierInvoiceNumber || '—' }}</span></div>
+      <div><label>Supplier Invoice Date</label><span>{{ purchase.supplierInvoiceDate ? (purchase.supplierInvoiceDate | slice: 0 : 10) : '—' }}</span></div>
+      <div><label>Supplier PO No.</label><span>{{ purchase.supplierPoNumber || '—' }}</span></div>
+    </section>
+    <section class="field-group">
+      <h3>Organization</h3>
+      <div><label>Company</label><span>{{ purchase.companyNameSnapshot || lookupName(lookups()?.companies, purchase.companyId) }}</span></div>
+      <div><label>Branch</label><span>{{ lookupName(lookups()?.branches, purchase.branchId) }}</span></div>
+      <div><label>Warehouse</label><span>{{ lookupName(lookups()?.warehouses, purchase.warehouseId) }}</span></div>
+      <div><label>Purchase Date</label><span>{{ purchase.purchaseDate | slice: 0 : 10 }}</span></div>
+    </section>
+    <section class="field-group">
+      <h3>Payment & Tax</h3>
+      <div><label>Payment Type</label><span>{{ lookupName(lookups()?.paymentTypes, purchase.paymentTypeID) }}</span></div>
+      <div><label>Payment Method</label><span>{{ lookupName(lookups()?.paymentMethods, purchase.paymentMethodID) }}</span></div>
+      <div><label>Tax Mode</label><span>{{ purchase.isGSTInclusive ? 'GST Inclusive' : 'GST Exclusive' }}</span></div>
+      <div><label>Reference No.</label><span>{{ purchase.referenceNumber || '—' }}</span></div>
+    </section>
+    <section class="field-group">
+      <h3>Amounts</h3>
+      <div><label>Gross Amount</label><span>{{ purchase.totalGrossAmount | number: '1.2-2' }}</span></div>
+      <div><label>Discount</label><span>{{ purchase.totalDiscountAmount | number: '1.2-2' }}</span></div>
+      <div><label>Taxable Amount</label><span>{{ purchase.totalTaxableAmount | number: '1.2-2' }}</span></div>
+      <div><label>GST / Tax</label><span>{{ purchase.totalTaxAmount | number: '1.2-2' }}</span></div>
+      <div><label>CESS</label><span>{{ purchase.totalCessAmount | number: '1.2-2' }}</span></div>
+      <div><label>Round Off</label><span>{{ purchase.totalRoundOff | number: '1.2-2' }}</span></div>
+      <div><label>Grand Total</label><strong>{{ purchase.grandTotal | number: '1.2-2' }}</strong></div>
+      <div><label>Paid / Balance</label><span>{{ purchase.paidAmount | number: '1.2-2' }} / {{ purchase.balanceAmount | number: '1.2-2' }}</span></div>
+    </section>
+    <section class="field-group remarks">
+      <h3>Remarks</h3>
+      <p>{{ purchase.remarks || '—' }}</p>
+    </section>
+  </div>
+
+  <section class="items-section">
+    <div class="items-heading"><h3>Purchase Items</h3><span>{{ purchase.items.length }} items</span></div>
+    @if (purchase.items.length) {
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>S.No</th><th>P.Code</th><th>Product</th><th>UOM</th><th>P.Rate</th><th>Qty</th><th>Free</th><th>Disc %</th><th>Disc Amt</th><th>HSN/SAC</th><th>GST %</th><th>Taxable</th><th>GST Amt</th><th>CESS</th><th>Total</th></tr></thead>
+          <tbody>
+            @for (item of purchase.items; track item.purchaseItemId; let i = $index) {
+              <tr>
+                <td>{{ i + 1 }}</td><td>{{ item.productCodeSnapshot || '—' }}</td>
+                <td>{{ item.productNameSnapshot || item.productCodeSnapshot || item.productId }}</td>
+                <td>{{ item.unitNameSnapshot || item.unitID }}</td>
+                <td class="number">{{ item.purchaseRate | number: '1.2-2' }}</td>
+                <td class="number">{{ item.quantity | number: '1.0-3' }}</td>
+                <td class="number">{{ item.freeQuantity | number: '1.0-3' }}</td>
+                <td class="number">{{ item.discountPercentage | number: '1.0-2' }}</td>
+                <td class="number">{{ item.discountAmount | number: '1.2-2' }}</td>
+                <td>{{ item.hsnCodeSnapshot || '—' }}</td>
+                <td class="number">{{ item.gstRate | number: '1.0-2' }}</td>
+                <td class="number">{{ item.taxableValue | number: '1.2-2' }}</td>
+                <td class="number">{{ item.gstAmount | number: '1.2-2' }}</td>
+                <td class="number">{{ item.cessAmount | number: '1.2-2' }}</td>
+                <td class="number total">{{ item.lineTotal | number: '1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="empty-items">No items were returned for this purchase.</p>
+    }
+  </section>
+</section>

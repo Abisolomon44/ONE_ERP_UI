@@ -264,7 +264,7 @@ export const routes: Routes = [
       {
         path: 'purchase-edit/:id',
         title: 'Purchase Edit',
-        loadComponent: () => import('./pages/purchase-edit/purchase-edit').then((m) => m.PurchaseEditPage),
+        loadComponent: () => import('./pages/purchase-entry/purchase-entry').then((m) => m.PurchaseEntryPage),
       },
       {
         path: 'purchase-cancel/:id',

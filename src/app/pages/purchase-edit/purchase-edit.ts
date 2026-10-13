@@ -21,17 +21,17 @@ export class PurchaseEditPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   protected loading = signal(false);
-  protected purchase: PurchaseDto | null = null;
+  protected purchase = signal<PurchaseDto | null>(null);
+  protected loadError = signal('');
   protected canSave = signal(false);
   protected isNew = signal(false);
   protected purchaseId: number = 0;
   protected lookups = signal<PurchaseLookupsDto | null>(null);
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id') ? 
-      parseInt(this.route.snapshot.paramMap.get('id')!, 10) : 0;
+    const id = Number(this.route.snapshot.paramMap.get('id'));
     this.purchaseId = id;
-    this.isNew.set(id === 0);
+    this.isNew.set(!Number.isInteger(id) || id <= 0);
     
     if (this.isNew()) {
       this.router.navigate(['/purchase-entry']);
@@ -54,14 +54,13 @@ export class PurchaseEditPage implements OnInit {
   private async loadPurchase(): Promise<void> {
     try {
       this.loading.set(true);
-      this.purchase = await this.svc.getById(this.purchaseId);
-      // Transform to create/update request shape
-      if (this.purchase) {
-        this.canSave.set(this.perm.has(['purchases.edit', 'purchases.manage']));
-      }
+      this.loadError.set('');
+      this.purchase.set(await this.svc.getById(this.purchaseId));
+      this.canSave.set(!!this.purchase() && this.perm.has(['purchases.edit', 'purchases.manage']));
     } catch (e: any) {
-      this.toast.error('Failed to load purchase', e?.error?.message ?? e?.message ?? '');
-      this.router.navigate(['/purchase-register']);
+      const detail = e?.error?.message ?? e?.message ?? 'Please try again.';
+      this.loadError.set(`Failed to load purchase. ${detail}`);
+      this.toast.error('Failed to load purchase', detail);
     } finally {
       this.loading.set(false);
     }
@@ -71,32 +70,33 @@ export class PurchaseEditPage implements OnInit {
     this.canSave.set(this.perm.has(['purchases.edit', 'purchases.manage']));
   }
 
-  protected savePurchase(): void {
-    if (!this.purchase || !this.canSave()) return;
+  protected async savePurchase(): Promise<void> {
+    const purchase = this.purchase();
+    if (!purchase || !this.canSave() || this.loading()) return;
 
     try {
       const request: UpdatePurchaseRequest = {
-        supplierId: this.purchase.supplierId,
-        companyId: this.purchase.companyId,
-        branchId: this.purchase.branchId,
-        warehouseId: this.purchase.warehouseId,
-        purchaseNumber: this.purchase.purchaseNumber,
-        purchaseDate: this.purchase.purchaseDate,
-        supplierInvoiceNumber: this.purchase.supplierInvoiceNumber,
-        supplierInvoiceDate: this.purchase.supplierInvoiceDate,
-        supplierPoNumber: this.purchase.supplierPoNumber,
-        referenceNumber: this.purchase.referenceNumber,
-        currencyId: this.purchase.currencyId,
-        purchaseTypeId: this.purchase.purchaseTypeId,
-        accountingYearId: this.purchase.accountingYearId,
-        taxId: this.purchase.taxId,
-        isGSTInclusive: this.purchase.isGSTInclusive,
-        paymentTypeID: this.purchase.paymentTypeID,
-        paymentMethodID: this.purchase.paymentMethodID,
-        paidAmount: this.purchase.paidAmount,
-        balanceAmount: this.purchase.balanceAmount,
-        remarks: this.purchase.remarks,
-        items: this.purchase.items?.map(item => ({
+        supplierId: purchase.supplierId,
+        companyId: purchase.companyId,
+        branchId: purchase.branchId,
+        warehouseId: purchase.warehouseId,
+        purchaseNumber: purchase.purchaseNumber,
+        purchaseDate: purchase.purchaseDate,
+        supplierInvoiceNumber: purchase.supplierInvoiceNumber,
+        supplierInvoiceDate: purchase.supplierInvoiceDate,
+        supplierPoNumber: purchase.supplierPoNumber,
+        referenceNumber: purchase.referenceNumber,
+        currencyId: purchase.currencyId,
+        purchaseTypeId: purchase.purchaseTypeId,
+        accountingYearId: purchase.accountingYearId,
+        taxId: purchase.taxId,
+        isGSTInclusive: purchase.isGSTInclusive,
+        paymentTypeID: purchase.paymentTypeID,
+        paymentMethodID: purchase.paymentMethodID,
+        paidAmount: purchase.paidAmount,
+        balanceAmount: purchase.balanceAmount,
+        remarks: purchase.remarks,
+        items: purchase.items?.map(item => ({
           purchaseItemId: item.purchaseItemId,
           productId: item.productId,
           productCodeSnapshot: item.productCodeSnapshot,
@@ -135,15 +135,18 @@ export class PurchaseEditPage implements OnInit {
       };
 
       this.loading.set(true);
-      this.svc.update(this.purchase.purchaseId, request).then(() => {
+      await this.svc.update(purchase.purchaseId, request);
         this.toast.success('Purchase updated successfully');
-        this.router.navigate(['/purchase-register']);
-      }).catch((e: any) => {
-        this.toast.error('Failed to update purchase', e?.error?.message ?? e?.message ?? '');
-      });
+      this.router.navigate(['/purchase-register']);
     } catch (e: any) {
       this.toast.error('Failed to update purchase', e?.error?.message ?? e?.message ?? '');
+    } finally {
+      this.loading.set(false);
     }
+  }
+
+  protected retryLoad(): void {
+    void this.loadPurchase();
   }
 
   protected goBack(): void {

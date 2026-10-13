@@ -9,11 +9,13 @@ import {
   PurchaseReturnDto,
   CreatePurchaseReturnItemInput,
   PurchaseLookupsDto,
+  LookupItem,
   PurchaseItemDto,
   CreatePurchaseReturnRequest,
 } from '../../core/services/master_service';
 import { PermissionService } from '../../core/services/permission.service';
 import { ToastService } from '../../core/services/toast.service';
+import { LucideAngularModule } from 'lucide-angular';
 
 interface EntryRow {
   purchaseItemId: number;
@@ -49,7 +51,7 @@ interface EntryRow {
 @Component({
   selector: 'app-purchase-return-entry',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
   templateUrl: './purchase-return-entry.html',
   styleUrl: './purchase-return-entry.css',
 })
@@ -114,7 +116,8 @@ export class PurchaseReturnEntryPage implements OnInit {
   async ngOnInit(): Promise<void> {
     this.canCreate.set(
       this.perm.has(['purchases-return.create', 'purchases.return.manage']),
-    );
+  );
+
     if (!this.canCreate()) {
       this.toast.error('You do not have permission to create purchase returns');
       await this.router.navigate(['/access-denied']);
@@ -480,6 +483,12 @@ export class PurchaseReturnEntryPage implements OnInit {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  protected lookupName(items: LookupItem[] | undefined, id: number | null | undefined): string {
+    if (id == null) return '—';
+    const item = items?.find((entry) => Number(entry.id) === Number(id));
+    return item?.name || item?.code || String(id);
   }
 
   protected cancel(): void {

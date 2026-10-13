@@ -21,12 +21,21 @@
           <span class="tab-close" aria-label="Close tab" (click)="closeTab(tab.tabId, $event)">×</span>
         </button>
       }
-      <button type="button" class="new-tab" (click)="newDoc()">+ New Purchase</button>
+      @if (!editRoute()) {
+        <button type="button" class="new-tab" (click)="newDoc()">+ New Purchase</button>
+      }
     </div>
 
     <div class="page-actions">
+      <button class="btn secondary theme-toggle" type="button"
+        (click)="theme.toggleMode()"
+        [title]="theme.mode() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+        [attr.aria-label]="theme.mode() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'">
+        <lucide-icon [name]="theme.mode() === 'light' ? 'moon' : 'sun'" size="14"></lucide-icon>
+        {{ theme.mode() === 'light' ? 'Dark' : 'Light' }}
+      </button>
       <button class="btn secondary" type="button" (click)="closeActivePurchase()">Cancel</button>
-      <button class="btn primary" type="button" (click)="save()" [disabled]="!canManage() || saving">
+      <button class="btn primary" type="button" (click)="save()" [disabled]="!canEditPurchase() || saving">
         {{ saving ? 'Saving…' : 'Save' }}
       </button>
     </div>
@@ -34,7 +43,18 @@
 
   @if (!canView()) {
     <div class="empty">You do not have permission to view purchases.</div>
+  } @else if (loading()) {
+    <div class="empty" role="status">Loading purchase…</div>
+  } @else if (editLoadError()) {
+    <div class="empty" role="alert">
+      <p>{{ editLoadError() }}</p>
+      <button class="btn secondary" type="button" (click)="retryEditLoad()">Retry</button>
+      <button class="btn secondary" type="button" (click)="closeActivePurchase()">Back to purchases</button>
+    </div>
   } @else if (activeTab(); as tab) {
+    @if (editBlockedReason()) {
+      <div class="validation-msg" role="alert">{{ editBlockedReason() }}</div>
+    }
     <!-- ============ Purchase Information ============ -->
     <section class="entry-card">
       <div class="section-header">
@@ -47,12 +67,12 @@
         }
       </div>
 
-      <div class="purchase-grid">
+      <div class="purchase-grid" (keydown.enter)="focusNextHeaderField($event)">
         <div class="info-group">
           <div class="info-group-title"><lucide-icon name="users" size="12"></lucide-icon>Supplier</div>
           <label>
             <span>Supplier *</span>
-            <select data-field="supplier" [(ngModel)]="tab.supplierId" (ngModelChange)="onSupplierChange(tab)" [disabled]="!canManage()">
+            <select data-field="supplier" [(ngModel)]="tab.supplierId" (ngModelChange)="onSupplierChange(tab)" [disabled]="!canEditPurchase()">
               <option [ngValue]="null">— Select —</option>
               @for (s of lookups()?.suppliers ?? []; track s.id) {
                 <option [ngValue]="s.id">{{ s.name }} ({{ s.code }})</option>
@@ -61,15 +81,15 @@
           </label>
           <label>
             <span>Contact No</span>
-            <input data-field="contactNo" [(ngModel)]="tab.contactNo" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
+            <input data-field="contactNo" [(ngModel)]="tab.contactNo" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()" />
           </label>
           <label>
             <span>Supplier Invoice No *</span>
-            <input data-field="supplierInvoiceNo" [(ngModel)]="tab.supplierInvoiceNo" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
+            <input data-field="supplierInvoiceNo" [(ngModel)]="tab.supplierInvoiceNo" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()" />
           </label>
           <label>
             <span>Supplier PO No</span>
-            <input data-field="supplierPoNo" [(ngModel)]="tab.supplierPoNo" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
+            <input data-field="supplierPoNo" [(ngModel)]="tab.supplierPoNo" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()" />
           </label>
         </div>
 
@@ -77,7 +97,7 @@
           <div class="info-group-title"><lucide-icon name="building-2" size="12"></lucide-icon>Organization</div>
           <label>
             <span>Company *</span>
-            <select data-field="company" [(ngModel)]="tab.companyId" (ngModelChange)="onCompanyChange(tab)" [disabled]="!canManage()">
+            <select data-field="company" [(ngModel)]="tab.companyId" (ngModelChange)="onCompanyChange(tab)" [disabled]="!canEditPurchase()">
               <option [ngValue]="null">— Select —</option>
               @for (c of lookups()?.companies ?? []; track c.id) {
                 <option [ngValue]="c.id">{{ c.name }} ({{ c.code }})</option>
@@ -86,7 +106,7 @@
           </label>
           <label>
             <span>Branch *</span>
-            <select data-field="branch" [(ngModel)]="tab.branchId" (ngModelChange)="markDirty()" [disabled]="!canManage()">
+            <select data-field="branch" [(ngModel)]="tab.branchId" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()">
               <option [ngValue]="null">— Select —</option>
               @for (b of lookups()?.branches ?? []; track b.id) {
                 <option [ngValue]="b.id">{{ b.name }} ({{ b.code }})</option>
@@ -95,7 +115,7 @@
           </label>
           <label>
             <span>Warehouse *</span>
-            <select data-field="warehouse" [(ngModel)]="tab.warehouseId" (ngModelChange)="markDirty()" [disabled]="!canManage()">
+            <select data-field="warehouse" [(ngModel)]="tab.warehouseId" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()">
               <option [ngValue]="null">— Select —</option>
               @for (w of lookups()?.warehouses ?? []; track w.id) {
                 <option [ngValue]="w.id">{{ w.name }} ({{ w.code }})</option>
@@ -108,15 +128,15 @@
           <div class="info-group-title"><lucide-icon name="file-text" size="12"></lucide-icon>Document</div>
           <label>
             <span>Purchase Date *</span>
-            <input data-field="purchaseDate" type="date" [(ngModel)]="tab.purchaseDate" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
+            <input data-field="purchaseDate" type="date" [(ngModel)]="tab.purchaseDate" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()" />
           </label>
           <label>
             <span>Reference No</span>
-            <input data-field="referenceNo" [(ngModel)]="tab.referenceNo" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
+            <input data-field="referenceNo" [(ngModel)]="tab.referenceNo" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()" />
           </label>
           <label>
             <span>Supplier Invoice Date *</span>
-            <input data-field="supplierInvoiceDate" type="date" [(ngModel)]="tab.supplierInvoiceDate" (ngModelChange)="markDirty()" [disabled]="!canManage()" />
+            <input data-field="supplierInvoiceDate" type="date" [(ngModel)]="tab.supplierInvoiceDate" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()" />
           </label>
         </div>
 
@@ -124,7 +144,7 @@
           <div class="info-group-title"><lucide-icon name="sticky-note" size="12"></lucide-icon>Other</div>
           <label class="remarks-field">
             <span>Remarks</span>
-            <textarea data-field="remarks" rows="3" [(ngModel)]="tab.remarks" (ngModelChange)="markDirty()" [disabled]="!canManage()"></textarea>
+            <textarea data-field="remarks" rows="3" [(ngModel)]="tab.remarks" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase()"></textarea>
           </label>
         </div>
 
@@ -132,14 +152,14 @@
           <div class="info-group-title"><lucide-icon name="credit-card" size="12"></lucide-icon>Payment</div>
           <label>
             <span>Tax Mode</span>
-            <select data-field="taxMode" [(ngModel)]="tab.taxMode" (ngModelChange)="onTaxModeChange(tab)" [disabled]="!canManage()">
+            <select data-field="taxMode" [(ngModel)]="tab.taxMode" (ngModelChange)="onTaxModeChange(tab)" [disabled]="!canEditPurchase()">
               <option value="exclusive">GST Exclusive</option>
               <option value="inclusive">GST Inclusive</option>
             </select>
           </label>
           <label>
             <span>Price List</span>
-            <select data-field="priceList" [(ngModel)]="tab.priceListId" (ngModelChange)="onPriceListChange(tab)" [disabled]="!canManage()">
+            <select data-field="priceList" [(ngModel)]="tab.priceListId" (ngModelChange)="onPriceListChange(tab)" [disabled]="!canEditPurchase()">
               <option value="">— None —</option>
               @for (pl of ($any(lookups())?.priceLists ?? []); track pl.id) {
                 <option [value]="pl.id">{{ pl.name }}</option>
@@ -148,7 +168,7 @@
           </label>
           <label>
             <span>Payment Type *</span>
-            <select data-field="paymentType" [(ngModel)]="tab.paymentTypeID" (ngModelChange)="onPaymentTypeChange(tab)" [disabled]="!canManage()">
+            <select data-field="paymentType" [(ngModel)]="tab.paymentTypeID" (ngModelChange)="onPaymentTypeChange(tab)" [disabled]="!canEditPurchase()">
               <option [ngValue]="null">— Select —</option>
               @for (t of ($any(lookups())?.paymentTypes ?? []); track t.id) {
                 <option [ngValue]="t.id">{{ t.name }}</option>
@@ -157,16 +177,12 @@
           </label>
           <label>
             <span>Payment Method *</span>
-            <select data-field="paymentMethod" [(ngModel)]="tab.paymentMethodID" (ngModelChange)="markDirty()" [disabled]="!canManage() || isPaymentTypeCredit(tab)" [class.disabled-select]="isPaymentTypeCredit(tab)">
+            <select data-field="paymentMethod" [(ngModel)]="tab.paymentMethodID" (ngModelChange)="markDirty()" [disabled]="!canEditPurchase() || isPaymentTypeCredit(tab)" [class.disabled-select]="isPaymentTypeCredit(tab)">
               <option [ngValue]="null">— Select —</option>
               @for (m of ($any(lookups())?.paymentMethods ?? []); track m.id) {
                 <option [ngValue]="m.id">{{ m.name }}</option>
               }
             </select>
-          </label>
-          <label>
-            <span>Grand Total</span>
-            <input type="text" [value]="grandTotal | number: '1.2-2'" readonly />
           </label>
         </div>
 
@@ -174,11 +190,15 @@
           <div class="info-group-title"><lucide-icon name="wallet" size="12"></lucide-icon>Payment Amount</div>
           <label>
             <span>Paid Amount</span>
-            <input data-field="paidAmount" type="number" min="0" step="0.01" [(ngModel)]="tab.paidAmount" (ngModelChange)="markDirty(); recalculatePayment(tab)" [readonly]="isPaymentTypeCash(tab) || isPaymentTypeCredit(tab)" [disabled]="!canManage()" [class.readonly-field]="isPaymentTypeCash(tab) || isPaymentTypeCredit(tab)" />
+            <input data-field="paidAmount" type="number" min="0" step="0.01" [(ngModel)]="tab.paidAmount" (ngModelChange)="markDirty(); recalculatePayment(tab)" [readonly]="isPaymentTypeCash(tab) || isPaymentTypeCredit(tab)" [disabled]="!canEditPurchase()" [class.readonly-field]="isPaymentTypeCash(tab) || isPaymentTypeCredit(tab)" />
           </label>
           <label>
             <span>Balance Amount</span>
             <input type="text" [value]="tab.balanceAmount | number: '1.2-2'" readonly class="readonly-field" />
+          </label>
+          <label>
+            <span>Grand Total</span>
+            <input type="text" [value]="grandTotal | number: '1.2-2'" readonly class="readonly-field grand-total-field" />
           </label>
           @if (paymentValidationMsg()) {
             <div class="validation-msg">{{ paymentValidationMsg() }}</div>
@@ -193,32 +213,32 @@
           <h3>Items</h3>
         </div>
         <div class="items-actions">
-          <button class="btn ghost sm" type="button" (click)="deleteSelected()" [disabled]="!canManage()">
+          <button class="btn ghost sm" type="button" (click)="deleteSelected()" [disabled]="!canEditPurchase()">
             <lucide-icon name="trash-2"></lucide-icon> Delete Selected
           </button>
-          <button class="btn primary sm" type="button" (click)="addItem()" [disabled]="!canManage()">
+          <button class="btn primary sm" type="button" (click)="addItem()" [disabled]="!canEditPurchase()">
             <lucide-icon name="plus"></lucide-icon> Add Item
           </button>
-          <button class="btn ghost sm" type="button" (click)="openImport()" [disabled]="!canManage()">
+          <button class="btn ghost sm" type="button" (click)="openImport()" [disabled]="!canEditPurchase()">
             <lucide-icon name="upload"></lucide-icon> Import
           </button>
           <input #importInput type="file" accept=".csv,text/csv" hidden (change)="onImportFile($event)" />
         </div>
       </div>
 
-      <div class="table-scroll">
+      <div class="table-scroll" data-kb-grid>
         <table class="items-table">
           <thead>
             <tr>
               <th class="check-col">
-                <input type="checkbox" [checked]="allSelected()" (change)="toggleAll($any($event.target).checked)" [disabled]="!canManage()" />
+                <input type="checkbox" [checked]="allSelected()" (change)="toggleAll($any($event.target).checked)" [disabled]="!canEditPurchase()" />
               </th>
               <th>S.No</th>
               <th>P.Code</th>
               <th>Barcode</th>
               <th class="product-col">P.Name</th>
               <th>UOM</th>
-              <th>P.Rate</th>
+              <th class="purchase-rate-col">P.Rate</th>
               <th>Qty</th>
               <th>Free</th>
               <th>Disc %</th>
@@ -235,7 +255,7 @@
             @for (it of tab.items; track trackByIndex($index)) {
               <tr>
                 <td class="check-col">
-                  <input type="checkbox" [checked]="it.selected ?? false" (change)="setSelected($index, $any($event.target).checked)" [disabled]="!canManage()" />
+                  <input type="checkbox" [checked]="it.selected ?? false" (change)="setSelected($index, $any($event.target).checked)" [disabled]="!canEditPurchase()" />
                 </td>
                 <td class="num">{{ $index + 1 }}</td>
                 <td class="code-cell">{{ productCode(it) }}</td>
@@ -249,25 +269,41 @@
                     [value]="productLabel(it)"
                     (input)="onProductType(it, $index, $any($event.target).value)"
                     (focus)="openProduct(it, $index)"
+                    (keydown.arrowdown)="moveProductHi(1); $event.preventDefault(); $event.stopPropagation()"
+                    (keydown.arrowup)="moveProductHi(-1); $event.preventDefault(); $event.stopPropagation()"
+                    (keydown.enter)="selectProductHighlighted(); $event.preventDefault(); $event.stopPropagation()"
                     (focusout)="onProductBlur($event)"
-                    [disabled]="!canManage()"
+                    [disabled]="!canEditPurchase()"
                   />
                 </td>
                 <td>
-                  <input [attr.data-row]="$index" [attr.data-col]="1" type="text" [value]="unitName(it)" readonly [disabled]="!canManage()" />
+                  <input [attr.data-row]="$index" [attr.data-col]="1" type="text" [value]="unitName(it)" readonly [disabled]="!canEditPurchase()" />
                 </td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="2" type="number" min="0" step="0.01" [(ngModel)]="it.purchaseRate" (ngModelChange)="onItemChange(tab)" [disabled]="!canManage()" /></td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="3" type="number" min="0" step="0.01" [(ngModel)]="it.quantity" (ngModelChange)="onItemChange(tab)" [disabled]="!canManage()" /></td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="4" type="number" min="0" step="0.01" [(ngModel)]="it.freeQuantity" (ngModelChange)="onItemChange(tab)" [disabled]="!canManage()" /></td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="5" type="number" min="0" step="0.01" [(ngModel)]="it.discountPercentage" (ngModelChange)="onItemChange(tab)" [disabled]="!canManage()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="2" type="number" min="0" step="0.01" [(ngModel)]="it.purchaseRate" (ngModelChange)="onItemChange(tab)" (keydown.enter)="onRateEnter($index, $event)" [disabled]="!canEditPurchase()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="3" type="number" min="0" step="0.01" [(ngModel)]="it.quantity" (ngModelChange)="onItemChange(tab)" (keydown.enter)="onQuantityEnter(tab, $index, $event)" [disabled]="!canEditPurchase()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="4" type="number" min="0" step="0.01" [(ngModel)]="it.freeQuantity" (ngModelChange)="onItemChange(tab)" [disabled]="!canEditPurchase()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="5" type="number" min="0" step="0.01" [(ngModel)]="it.discountPercentage" (ngModelChange)="onItemChange(tab)" [disabled]="!canEditPurchase()" /></td>
                 <td class="num">{{ lineDisc(it) | number: '1.2-2' }}</td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="6" type="text" [value]="it.hsnCode ?? ''" readonly [disabled]="!canManage()" /></td>
-                <td><input [attr.data-row]="$index" [attr.data-col]="7" type="number" min="0" step="0.01" [value]="it.gstRate" readonly [disabled]="!canManage()" /></td>
+                <td><input [attr.data-row]="$index" [attr.data-col]="6" type="text" [value]="it.hsnCode ?? ''" readonly [disabled]="!canEditPurchase()" /></td>
+                <td>
+                  <input
+                    [attr.data-row]="$index"
+                    [attr.data-col]="6"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    [ngModel]="it.gstRate"
+                    (ngModelChange)="onGstChange(it, $event)"
+                    [disabled]="!canEditPurchase()"
+                    aria-label="GST percentage"
+                  />
+                </td>
                 <td class="num">{{ lineTaxable(it) | number: '1.2-2' }}</td>
                 <td class="num">{{ lineGst(it) | number: '1.2-2' }}</td>
                 <td class="num total-col">{{ lineTotal(it) | number: '1.2-2' }}</td>
                 <td class="delete-col">
-                  <button class="icon danger" type="button" (click)="removeItem($index)" [disabled]="!canManage()" aria-label="Delete row">
+                  <button class="icon danger" type="button" (click)="setSelected($index, true); removeItem($index)" [disabled]="!canEditPurchase()" aria-label="Delete row">
                     <lucide-icon name="trash-2"></lucide-icon>
                   </button>
                 </td>
@@ -283,19 +319,20 @@
 
       <!-- ============ Product search panel ============ -->
       @if (productOpen !== null) {
-        <div class="product-panel">
+        <div class="product-panel" data-kb-autocomplete role="listbox" aria-label="Product search results">
           <div class="product-panel-head">
             <span><lucide-icon name="package-search" size="14"></lucide-icon> Select Product — Row {{ productOpen + 1 }}</span>
             <button class="btn ghost sm" type="button" (click)="closeProduct()">Close</button>
           </div>
           <div class="table-scroll">
             <table class="ac-table">
-              <thead><tr><th>Code</th><th>Product Name</th></tr></thead>
+              <thead><tr><th>Code</th><th>Product Name</th><th class="num">GST Rate</th></tr></thead>
               <tbody>
                 @for (p of productResults; track p.id; let i = $index) {
                   <tr class="ac-row" [class.hi]="productHi === i" (mousedown)="$event.preventDefault(); selectPanelProduct(p)">
                     <td class="ac-code-cell">{{ p.code }}</td>
                     <td class="ac-name-cell">{{ p.name }}</td>
+                    <td class="num">{{ p.gstRate ?? 0 | number: '1.2-2' }}%</td>
                   </tr>
                 }
               </tbody>
@@ -361,3 +398,7 @@
     </div>
   </div>
 }
+
+
+
+

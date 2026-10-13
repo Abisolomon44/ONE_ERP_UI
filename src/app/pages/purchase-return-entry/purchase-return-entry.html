@@ -5,8 +5,10 @@
       <h1>Purchase Return Entry</h1>
       <p class="muted">Return purchased goods to supplier</p>
     </div>
-    <a class="btn ghost" routerLink="/purchase" [queryParams]="{ tab: 'returns' }">Back</a>
-    <button class="btn primary" [disabled]="saving()">Save Return</button>
+    <div class="head-actions">
+      <a class="btn ghost" routerLink="/purchase" [queryParams]="{ tab: 'returns' }">Back</a>
+    </div>
+    <button class="btn primary" type="button" (click)="submit()" [disabled]="saving() || !source()">{{ saving() ? 'Saving…' : 'Save Return' }}</button>
   </header>
 
   <!-- Supplier & Invoice Selection -->
@@ -42,8 +44,10 @@
         <div><strong>Supplier Invoice Date:</strong> {{ source()!.supplierInvoiceDate || 'N/A' }}</div>
         <div><strong>Supplier Name:</strong> {{ source()!.supplierNameSnapshot || 'N/A' }}</div>
         <div><strong>Company:</strong> {{ source()!.companyNameSnapshot || 'N/A' }}</div>
-        <div><strong>Branch:</strong> {{ source()!.branchId }}</div>
-        <div><strong>Warehouse:</strong> {{ source()!.warehouseId }}</div>
+        <div><strong>Branch:</strong> {{ lookupName(lookups()?.branches, source()!.branchId) }}</div>
+        <div><strong>Warehouse:</strong> {{ lookupName(lookups()?.warehouses, source()!.warehouseId) }}</div>
+        <div><strong>Payment Type:</strong> {{ lookupName(lookups()?.paymentTypes, source()!.paymentTypeID) }}</div>
+        <div><strong>Payment Method:</strong> {{ lookupName(lookups()?.paymentMethods, source()!.paymentMethodID) }}</div>
         <div><strong>Original Grand Total:</strong> {{ source()!.grandTotal | currency }}</div>
         <div><strong>Original Paid Amount:</strong> {{ source()!.paidAmount | currency }}</div>
         <div><strong>Original Balance Amount:</strong> {{ source()!.balanceAmount | currency }}</div>
@@ -98,7 +102,7 @@
                 <td>{{ r.productCode }}</td>
                 <td>{{ r.productName }}</td>
                 <td>{{ r.barcode || '-' }}</td>
-                <td>{{ r.unitName || r.unitId }}</td>
+              <td>{{ r.unitName || lookupName(lookups()?.units, r.unitId) }}</td>
                 <td class="num">{{ r.purchasedQty }}</td>
                 <td class="num">{{ r.prevReturnedQty }}</td>
                 <td class="num" style="font-weight: bold; color: #dc2626;">{{ r.availableQty }}</td>

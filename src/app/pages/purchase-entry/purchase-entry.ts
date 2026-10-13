@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed, viewChild, ElementRef, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
 import {
   PurchaseService,
@@ -18,6 +18,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { KeyboardShortcutService } from '../../core/keyboard/keyboard-shortcut.service';
 import { PurchaseHubService } from '../../core/purchase-hub.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 interface DraftItem {
   productId: number | null;
@@ -98,10 +99,12 @@ const CURRENCIES = [
   styleUrl: './purchase-entry.css',
 })
 export class PurchaseEntryPage implements OnInit {
+  protected readonly theme = inject(ThemeService);
   private readonly svc = inject(PurchaseService);
   private readonly toast = inject(ToastService);
   private readonly perm = inject(PermissionService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly el = inject(ElementRef);
   protected readonly kb = inject(KeyboardShortcutService);
   private readonly hub = inject(PurchaseHubService);
@@ -114,6 +117,9 @@ export class PurchaseEntryPage implements OnInit {
   protected readonly loading = signal(false);
   protected readonly lookups = signal<PurchaseLookupsDto | null>(null);
   protected readonly showHelp = signal(false);
+  protected readonly editRoute = signal(false);
+  protected readonly editLoadError = signal('');
+  protected readonly editBlockedReason = signal('');
 
   protected readonly currencies = CURRENCIES;
 
@@ -162,17 +168,30 @@ export class PurchaseEntryPage implements OnInit {
     this.canManage.set(this.perm.has('purchases.manage'));
     this.registerShortcuts();
     if (this.canView()) {
+      const pathId = this.route.snapshot.paramMap.get('id');
+      const idParam = pathId ?? this.route.snapshot.queryParamMap.get('id');
+      this.editRoute.set(!!pathId);
       await this.refreshLookups();
-      this.ensureTab();
-      const idParam = this.route.snapshot.queryParamMap.get('id');
-      if (idParam && !this.hub.editRequest()) {
+      if (idParam && (pathId || !this.hub.editRequest())) {
+        this.loading.set(true);
         try {
           const d = await this.svc.getById(Number(idParam));
-          if (d) this.openTab(d);
-        } catch {
-          /* ignore missing record */
+          if (d) {
+            this.openTab(d);
+            await this.checkEditPaymentAllocations(d.purchaseId);
+          }
+          else this.editLoadError.set('Purchase record was not found.');
+        } catch (e: any) {
+          this.editLoadError.set(e?.error?.message ?? e?.message ?? 'Failed to load purchase.');
+        } finally {
+          this.loading.set(false);
         }
+      } else if (!this.hub.editRequest()) {
+        this.ensureTab();
       }
+      queueMicrotask(() => this.focusField('supplier'));
+      // Force the first operational focus after async lookup/document loading.
+      setTimeout(() => this.focusField('supplier'), 0);
     }
   }
 
@@ -283,7 +302,47 @@ export class PurchaseEntryPage implements OnInit {
   protected closeActivePurchase(): void {
     const tab = this.activeTab();
     if (!tab) return;
+    if (this.editRoute()) {
+      if (tab.isDirty && !confirm('Discard unsaved changes on this purchase?')) return;
+      void this.router.navigate(['/purchase-register']);
+      return;
+    }
     this.closeTab(tab.tabId, new Event('click'));
+  }
+
+  protected async retryEditLoad(): Promise<void> {
+    const id = Number(this.route.snapshot.paramMap.get('id') ?? this.route.snapshot.queryParamMap.get('id'));
+    if (!Number.isInteger(id) || id <= 0) return;
+    this.loading.set(true);
+    this.editLoadError.set('');
+    try {
+      const purchase = await this.svc.getById(id);
+      if (purchase) {
+        this.openTab(purchase);
+        await this.checkEditPaymentAllocations(purchase.purchaseId);
+      }
+      else this.editLoadError.set('Purchase record was not found.');
+    } catch (e: any) {
+      this.editLoadError.set(e?.error?.message ?? e?.message ?? 'Failed to load purchase.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private async checkEditPaymentAllocations(purchaseId: number): Promise<void> {
+    this.editBlockedReason.set('');
+    try {
+      const allocations = await this.svc.getPayments(purchaseId);
+      if (allocations.length) {
+        this.editBlockedReason.set('This purchase has allocated payments and cannot be edited. Have a finance user reverse or reallocate the linked payment, then reopen the purchase.');
+      }
+    } catch {
+      // The API remains authoritative and will reject an edit if allocations exist.
+    }
+  }
+
+  protected canEditPurchase(): boolean {
+    return this.canManage() && !this.editBlockedReason();
   }
 
   protected markDirty(): void {
@@ -303,7 +362,7 @@ export class PurchaseEntryPage implements OnInit {
       this.kbDeregs.push(this.kb.register(cfg));
     const G = 'Purchase Entry';
 
-    reg({ combo: 'ctrl+n', global: true, preventDefault: true, group: G, description: 'New Purchase', handler: () => this.newDoc() });
+    reg({ combo: 'ctrl+n', global: true, preventDefault: true, stopPropagation: true, group: G, description: 'New Purchase', handler: () => this.newDoc() });
     reg({ combo: 'ctrl+s', global: true, preventDefault: true, group: G, description: 'Save Purchase', handler: () => this.save() });
     reg({ combo: 'ctrl+tab', global: true, preventDefault: true, group: G, description: 'Next tab', handler: () => this.moveTab(1) });
     reg({ combo: 'ctrl+shift+tab', global: true, preventDefault: true, group: G, description: 'Previous tab', handler: () => this.moveTab(-1) });
@@ -322,6 +381,7 @@ export class PurchaseEntryPage implements OnInit {
     reg({ combo: 'alt+m', group: G, description: 'Focus Payment Method', handler: () => this.focusField('paymentMethod') });
     reg({ combo: 'alt+a', group: G, description: 'Focus Paid Amount', handler: () => this.focusField('paidAmount') });
     reg({ combo: 'alt+t', group: G, description: 'Focus Tax Mode', handler: () => this.focusField('taxMode') });
+    reg({ combo: 'alt+n', global: true, preventDefault: true, stopPropagation: true, group: G, description: 'Focus first product cell', handler: () => this.focusGrid() });
 
     reg({ combo: 'insert', group: G, description: 'Add item row', handler: () => this.onInsertRow() });
     reg({ combo: 'delete', group: G, description: 'Delete item row', handler: (e) => this.onDeleteRow(e) });
@@ -470,7 +530,12 @@ export class PurchaseEntryPage implements OnInit {
       this.closeProduct();
       const items = this.itemsOf(this.activeTab());
       const rows = items.length;
-      if (cell.col < 7) {
+      // Fast billing flow: after Product → Rate → Quantity, Enter on the
+      // quantity cell creates the next row and focuses its Product cell.
+      if (cell.col === 3 && cell.row === rows - 1) {
+        this.addItem();
+        this.focusCell(cell.row + 1, 0);
+      } else if (cell.col < 7) {
         this.focusCell(cell.row, cell.col + 1);
       } else if (cell.row < rows - 1) {
         this.focusCell(cell.row + 1, 0);
@@ -554,12 +619,9 @@ export class PurchaseEntryPage implements OnInit {
     if (p.uomId != null) it.unitID = p.uomId;
     it.hsnCode = p.hsnCode ?? null;
     if (p.gstRate != null) this.onGstChange(it, p.gstRate);
-    // T062 — seed the rate: price list first, then product master purchase price.
-    if (!(it.purchaseRate > 0)) {
-      const listRate = (this.lookups()?.priceListRates ?? {})[String(p.id)];
-      const seeded = listRate ?? (p.purchasePrice ?? 0);
-      if (seeded > 0) it.purchaseRate = round2(seeded);
-    }
+    // Purchase rate is intentionally entered by the operator. Product
+    // selection must not silently copy the product master/price-list rate.
+    it.purchaseRate = 0;
     const tab = this.activeTab();
     if (tab) {
       const dupIdx = tab.items.findIndex((x, i) => i !== row && x.productId === p.id);
@@ -574,12 +636,15 @@ export class PurchaseEntryPage implements OnInit {
         return;
       }
       this.onItemChange(tab);
+      // Publish the updated row so the rate and GST values render immediately
+      // after selecting a product from the keyboard search list.
+      this.tabs.update((arr) => [...arr]);
     }
     this.closeProduct();
     this.focusCell(row, 2);
   }
 
-  private selectProductHighlighted(): void {
+  protected selectProductHighlighted(): void {
     if (this.productOpen === null) return;
     const row = this.productOpen;
     const p = this.productResults[this.productHi];
@@ -692,17 +757,8 @@ export class PurchaseEntryPage implements OnInit {
       this.toast.error('Failed to load price list rates', e?.error?.message ?? e?.message ?? '');
       return;
     }
-    // Seed rates into rows the user has not priced yet (0 or unset).
-    const rates = this.lookups()?.priceListRates ?? {};
-    if (listId != null && Object.keys(rates).length) {
-      for (const it of tab.items) {
-        if (it.productId != null && !(it.purchaseRate > 0)) {
-          const seeded = rates[String(it.productId)];
-          if (seeded != null && seeded > 0) it.purchaseRate = round2(seeded);
-        }
-      }
-      this.onItemChange(tab);
-    }
+    // Price-list selection affects lookup context only. Purchase rates are
+    // entered explicitly by the operator and are never copied automatically.
     this.tabs.update((arr) => [...arr]);
   }
 
@@ -758,6 +814,45 @@ export class PurchaseEntryPage implements OnInit {
     tab.items.push(this.blankItem());
     this.onItemChange(tab);
     this.tabs.update((arr) => [...arr]);
+    // Wait for Angular to render the new row, then place the keyboard focus
+    // directly in its product cell. This keeps Add Item and Insert mouse-free.
+    const row = tab.items.length - 1;
+    queueMicrotask(() => this.focusCell(row, 0));
+  }
+
+  protected focusNextHeaderField(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    if (!target || !['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const root = target.closest('.purchase-grid');
+    if (!root) return;
+    const fields = Array.from(root.querySelectorAll<HTMLElement>('input, select, textarea'))
+      .filter((el) => !(el as HTMLInputElement).disabled && el.tabIndex !== -1);
+    const index = fields.indexOf(target);
+    fields[index + 1]?.focus();
+  }
+
+  protected onQuantityEnter(tab: PurchaseTab, row: number, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const current = tab.items[row];
+    if (!current || !current.productId || !(current.purchaseRate > 0)) {
+      this.focusCell(row, current?.productId ? 2 : 0);
+      return;
+    }
+    if (row !== tab.items.length - 1) {
+      this.focusCell(row + 1, 0);
+      return;
+    }
+    this.addItem();
+    queueMicrotask(() => this.focusCell(row + 1, 0));
+  }
+
+  protected onRateEnter(row: number, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.focusCell(row, 3);
   }
 
   protected allSelected(): boolean {
@@ -1248,7 +1343,7 @@ export class PurchaseEntryPage implements OnInit {
     const tab = this.activeTab();
     if (!tab) return;
     if (this.saving) return;
-    if (!this.canManage()) return;
+    if (!this.canEditPurchase()) return;
     if (this.validate(tab) !== null) return;
     this.saving = true;
     try {
@@ -1276,6 +1371,11 @@ export class PurchaseEntryPage implements OnInit {
           items: req.items,
         };
         await this.svc.update(tab.editingId, up);
+        if (this.editRoute()) {
+          this.toast.success('Purchase updated successfully');
+          void this.router.navigate(['/purchase-register']);
+          return;
+        }
       } else {
         tab.idempotencyKey ??= globalThis.crypto?.randomUUID?.() ?? `purchase-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         await this.svc.create(req, tab.idempotencyKey);
@@ -1287,7 +1387,13 @@ export class PurchaseEntryPage implements OnInit {
       this.relabelTab(tab);
       this.newTab();
     } catch (e: any) {
-      this.toast.error('Failed to save', e?.error?.message ?? e?.message ?? '');
+      const message = e?.error?.message ?? e?.message ?? '';
+      if (String(message).toLowerCase().includes('payments are allocated')) {
+        this.editBlockedReason.set('This purchase has allocated payments and cannot be edited. Have a finance user reverse or reallocate the linked payment, then reopen the purchase.');
+        this.toast.error('Purchase edit blocked', this.editBlockedReason());
+      } else {
+        this.toast.error('Failed to save', message);
+      }
     } finally {
       this.saving = false;
     }
@@ -1462,3 +1568,5 @@ export class PurchaseEntryPage implements OnInit {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+

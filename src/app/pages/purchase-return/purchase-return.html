@@ -1,114 +1,88 @@
-<div class="page">
-  <header class="page-head">
-    <div>
-      <h1>Purchase Returns</h1>
-      <p class="muted">Return goods to suppliers and reverse stock.</p>
+<section class="register-page" [class.dark-theme]="theme.mode() === 'dark'" aria-labelledby="purchase-return-title">
+  <header class="page-header">
+    <div class="page-heading">
+      <span class="eyebrow">PURCHASING</span>
+      <h1 id="purchase-return-title">Purchase Return Register</h1>
+      <p>View and manage supplier returns</p>
     </div>
-    @if (canCreate()) {
-      <button class="btn primary" (click)="newReturn()"><lucide-icon name="plus"></lucide-icon> New Return</button>
-    }
+    <div class="header-actions">
+      <button class="button button-secondary" type="button" (click)="refresh()" [disabled]="loading()" aria-label="Refresh purchase returns">
+        <lucide-icon name="refresh-cw" [size]="16"></lucide-icon><span>Refresh</span>
+      </button>
+      @if (canCreate()) {
+        <button class="button button-primary" type="button" (click)="newReturn()">
+          <lucide-icon name="plus" [size]="17"></lucide-icon><span>New Return</span>
+        </button>
+      }
+    </div>
   </header>
 
   @if (!canView()) {
-    <div class="empty">You do not have permission to view returns.</div>
-  } @else if (showForm()) {
-    <section class="card">
-      <h2>New Purchase Return</h2>
-      <div class="grid">
-        <label>
-          <span>Purchase ID *</span>
-          <input [(ngModel)]="sourceId" placeholder="e.g. 1" (keyup.enter)="loadSource()" />
-        </label>
-        <label>
-          <span>Return Date</span>
-          <input type="date" [(ngModel)]="returnDate" />
-        </label>
-        <label>
-          <span>Reason</span>
-          <input [(ngModel)]="reason" />
-        </label>
-        <label>
-          <span>Remarks</span>
-          <input [(ngModel)]="remarks" />
-        </label>
+    <section class="table-card"><div class="state-block"><lucide-icon name="lock-keyhole" [size]="22"></lucide-icon><strong>You do not have permission to view purchase returns.</strong></div></section>
+  } @else {
+    <section class="filter-card" aria-label="Purchase return search">
+      <label class="search-box" for="purchase-return-search">
+        <lucide-icon name="search" [size]="18" aria-hidden="true"></lucide-icon>
+        <input id="purchase-return-search" type="search" placeholder="Search return number, supplier or purchase ID…"
+          [value]="search()" (input)="onSearchInput($event)" />
+      </label>
+      <div class="filter-footer">
+        <span class="filter-note">{{ filteredReturns().length }} {{ filteredReturns().length === 1 ? 'return' : 'returns' }}</span>
+        @if (search()) { <button class="text-button" type="button" (click)="clearSearch()"><lucide-icon name="x" [size]="15"></lucide-icon> Clear search</button> }
       </div>
-      <button class="btn ghost" (click)="loadSource()">Load Purchase</button>
+    </section>
 
-      @if (source) {
-        <div class="table-scroll">
-          <table class="items">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Unit</th>
-                <th class="num">Billed Qty</th>
-                <th class="num">Return Qty</th>
-                <th class="num">Rate</th>
-                <th class="num">GST %</th>
-                <th class="num">Line Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (it of draft(); track it.purchaseItemId) {
+    <section class="table-card" aria-label="Purchase returns">
+      <div class="table-toolbar">
+        <div><h2>Purchase returns</h2><p>{{ returns().length }} {{ returns().length === 1 ? 'entry' : 'entries' }}</p></div>
+        @if (loading()) { <span class="loading-label"><span class="spinner" aria-hidden="true"></span>Loading returns</span> }
+      </div>
+
+      <div class="table-scroll">
+        <table class="return-table">
+          <thead><tr>
+            <th>S.No</th><th>Return Number</th><th>Return Date</th><th>Purchase ID</th><th>Supplier</th>
+            <th>Return Status</th><th class="numeric">Grand Total</th><th class="actions-col">Actions</th>
+          </tr></thead>
+          <tbody>
+            @if (loadError()) {
+              <tr><td class="state-cell" colspan="8"><div class="state-block error-state">
+                <lucide-icon name="circle-alert" [size]="22"></lucide-icon><strong>Purchase returns could not be loaded</strong>
+                <span>{{ loadError() }}</span><button class="button button-secondary" type="button" (click)="refresh()">Try again</button>
+              </div></td></tr>
+            } @else if (loading() && returns().length === 0) {
+              <tr><td class="state-cell" colspan="8"><div class="state-block"><span class="spinner spinner-large"></span><strong>Loading returns…</strong></div></td></tr>
+            } @else if (filteredReturns().length === 0) {
+              <tr><td class="state-cell" colspan="8"><div class="state-block">
+                <span class="empty-icon"><lucide-icon name="file-text" [size]="22"></lucide-icon></span>
+                <strong>{{ search() ? 'No matching returns' : 'No purchase returns recorded' }}</strong>
+                <span>{{ search() ? 'Try another search.' : 'Purchase returns will appear here once recorded.' }}</span>
+                @if (search()) { <button class="text-button" type="button" (click)="clearSearch()">Clear search</button> }
+              </div></td></tr>
+            } @else {
+              @for (r of filteredReturns(); track r.purchaseReturnId; let i = $index) {
                 <tr>
-                  <td>{{ it.productName }}</td>
-                  <td>{{ it.unitId }}</td>
-                  <td class="num">{{ it.originalQty | number: '1.3-3' }}</td>
-                  <td class="num"><input type="number" min="0" step="0.01" [(ngModel)]="it.returnQuantity" (input)="onQtyChange()" /></td>
-                  <td class="num">{{ it.purchaseRate | number: '1.2-2' }}</td>
-                  <td class="num">{{ it.gstRate | number: '1.2-2' }}</td>
-                  <td class="num">{{ it.lineTotal | number: '1.2-2' }}</td>
+                  <td class="serial-cell">{{ i + 1 }}</td>
+                  <td><button class="document-link" type="button" (click)="open(r, 'view')" [disabled]="!canView()">{{ r.returnNumber }}</button></td>
+                  <td class="date-cell">{{ r.returnDate ? (r.returnDate | slice: 0 : 10) : '—' }}</td>
+                  <td>Purchase {{ r.purchaseId }}</td>
+                  <td class="primary-cell">{{ r.supplierNameSnapshot || ('Supplier ' + r.supplierId) }}</td>
+                  <td><span class="status-badge neutral"><i></i>Status {{ r.statusID }}</span></td>
+                  <td class="numeric money">{{ r.grandTotal | number: '1.2-2' }}</td>
+                  <td class="actions-col"><div class="row-actions">
+                    <button class="icon-button" type="button" title="View return" aria-label="View return" (click)="open(r, 'view')" [disabled]="!canView()"><lucide-icon name="eye" [size]="16"></lucide-icon></button>
+                    <button class="icon-button" type="button" title="Edit return" aria-label="Edit return" (click)="open(r, 'edit')" [disabled]="!canEdit()"><lucide-icon name="pencil" [size]="16"></lucide-icon></button>
+                    <button class="icon-button" type="button" title="Cancel return" aria-label="Cancel return" (click)="open(r, 'cancel')" [disabled]="!canCancel()"><lucide-icon name="ban" [size]="16"></lucide-icon></button>
+                    <button class="icon-button danger" type="button" title="Delete return" aria-label="Delete return" (click)="open(r, 'delete')" [disabled]="!canDelete()"><lucide-icon name="trash-2" [size]="16"></lucide-icon></button>
+                    <button class="icon-button" type="button" title="Print return" aria-label="Print return" (click)="printReturn(r)"><lucide-icon name="printer" [size]="16"></lucide-icon></button>
+                    <button class="icon-button" type="button" title="Print debit note" aria-label="Print debit note" (click)="printReturn(r, true)"><lucide-icon name="file-text" [size]="16"></lucide-icon></button>
+                  </div></td>
                 </tr>
               }
-            </tbody>
-          </table>
-        </div>
-        <div class="totals">
-          <div class="grand"><span>Return Total</span><strong>{{ grandTotal | number: '1.2-2' }}</strong></div>
-        </div>
-        <div class="actions">
-          <button class="btn primary" (click)="submit()"><lucide-icon name="save"></lucide-icon> Save Return</button>
-          <button class="btn ghost" (click)="cancel()">Cancel</button>
-        </div>
-      }
+            }
+          </tbody>
+        </table>
+      </div>
     </section>
-  } @else {
-    @if (loading()) {
-      <div class="empty">Loading…</div>
-    } @else if (!returns().length) {
-      <div class="empty">No purchase returns yet.</div>
-    } @else {
-      <table class="list">
-        <thead>
-          <tr>
-            <th>Return No</th>
-            <th>Date</th>
-            <th>Purchase</th>
-            <th>Supplier</th>
-            <th class="num">Total</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (r of returns(); track r.purchaseReturnId) {
-            <tr>
-              <td>{{ r.returnNumber }}</td>
-              <td>{{ r.returnDate ? (r.returnDate | slice: 0 : 10) : '' }}</td>
-              <td>{{ r.purchaseId }}</td>
-              <td>{{ r.supplierNameSnapshot || r.supplierId }}</td>
-              <td class="num">{{ r.grandTotal | number: '1.2-2' }}</td>
-              <td>
-                <button type="button" (click)="printReturn(r)">Print Return</button>
-                <button type="button" (click)="printReturn(r, true)">Print Debit Note</button>
-                <button type="button" (click)="open(r, 'view')" [disabled]="!canView()">View</button>
-                <button type="button" (click)="open(r, 'edit')" [disabled]="!canEdit()">Edit</button>
-                <button type="button" (click)="open(r, 'cancel')" [disabled]="!canCancel()">Cancel</button>
-                <button type="button" (click)="open(r, 'delete')" [disabled]="!canDelete()">Delete</button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
   }
-</div>
+</section>

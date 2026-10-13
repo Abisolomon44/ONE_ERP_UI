@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
 import { BaseButton } from '../../shared/base-button';
-import { BaseDropdown, BaseInput, BaseSearch } from '../../shared/base-controls';
+import { BaseDropdown, BaseInput } from '../../shared/base-controls';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 import {
@@ -29,7 +29,7 @@ interface ReceiptLine {
 @Component({
   selector: 'app-goods-receipts',
   standalone: true,
-  imports: [FormsModule, CurrencyPipe, DatePipe, LucideAngularModule, BaseButton, BaseDropdown, BaseInput, BaseSearch],
+  imports: [FormsModule, CurrencyPipe, DatePipe, LucideAngularModule, BaseButton, BaseDropdown, BaseInput],
   templateUrl: './goods-receipts.html',
   styleUrl: './goods-receipts.css',
 })

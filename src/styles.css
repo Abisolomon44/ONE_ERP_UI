@@ -81,6 +81,11 @@
 
 * { box-sizing: border-box; }
 
+/* Keep typography consistent across every screen and form control. */
+body, body *:not(.material-icons):not(.material-symbols-outlined):not(mat-icon):not(code):not(pre):not(.mono):not(.font-mono) {
+  font-family: var(--font-family) !important;
+}
+
 html, body { height: 100%; margin: 0; }
 
 body {

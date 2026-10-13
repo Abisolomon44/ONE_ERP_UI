@@ -1,15 +1,15 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { DecimalPipe, SlicePipe } from '@angular/common';
 import { PurchaseService, PurchaseDto } from '../../core/services/master_service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { PurchaseDetailsPanel } from '../purchase-shared/purchase-details-panel';
 
 @Component({
   selector: 'app-purchase-cancel',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, SlicePipe],
+  imports: [FormsModule, PurchaseDetailsPanel],
   templateUrl: './purchase-cancel.html',
   styleUrl: './purchase-cancel.css',
 })
@@ -21,31 +21,37 @@ export class PurchaseCancelPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   protected loading = signal(false);
-  protected purchase: PurchaseDto | null = null;
+  protected purchase = signal<PurchaseDto | null>(null);
+  protected loadError = signal('');
   protected canCancel = signal(false);
   protected reason = '';
   protected purchaseId: number = 0;
   protected reasonError: string | null = null;
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id') ? 
-      parseInt(this.route.snapshot.paramMap.get('id')!, 10) : 0;
+    const id = Number(this.route.snapshot.paramMap.get('id'));
     this.purchaseId = id;
-    this.loadPurchase();
+    if (!Number.isInteger(id) || id <= 0) this.loadError.set('A valid purchase ID is required.');
+    else void this.loadPurchase();
     this.checkPermissions();
   }
 
   private async loadPurchase(): Promise<void> {
     try {
       this.loading.set(true);
-      this.purchase = await this.svc.getById(this.purchaseId);
+      this.loadError.set('');
+      this.purchase.set(await this.svc.getById(this.purchaseId));
+      if (!this.purchase()) this.loadError.set('Purchase record was not found.');
     } catch (e: any) {
-      this.toast.error('Failed to load purchase', e?.error?.message ?? e?.message ?? '');
-      this.router.navigate(['/purchase-register']);
+      const detail = e?.error?.message ?? e?.message ?? 'Please try again.';
+      this.loadError.set(`Failed to load purchase. ${detail}`);
+      this.toast.error('Failed to load purchase', detail);
     } finally {
       this.loading.set(false);
     }
   }
+
+  protected retryLoad(): void { void this.loadPurchase(); }
 
   private checkPermissions(): void {
     this.canCancel.set(this.perm.has(['purchases.cancel', 'purchases.manage']));
@@ -56,7 +62,7 @@ export class PurchaseCancelPage implements OnInit {
     this.reasonError = null;
   }
 
-  protected cancelPurchase(): void {
+  protected async cancelPurchase(): Promise<void> {
     if (!this.reason.trim()) {
       this.toast.error('Cancellation reason is required');
       return;
@@ -67,14 +73,12 @@ export class PurchaseCancelPage implements OnInit {
       return;
     }
 
+    if (this.loading()) return;
     try {
       this.loading.set(true);
-      this.svc.cancel(this.purchaseId, this.reason).then(() => {
-        this.toast.success('Purchase cancelled successfully');
-        this.router.navigate(['/purchase-register']);
-      }).catch((e: any) => {
-        this.toast.error('Failed to cancel purchase', e?.error?.message ?? e?.message ?? '');
-      });
+      await this.svc.cancel(this.purchaseId, this.reason);
+      this.toast.success('Purchase cancelled successfully');
+      await this.router.navigate(['/purchase-register']);
     } catch (e: any) {
       this.toast.error('Failed to cancel purchase', e?.error?.message ?? e?.message ?? '');
     } finally {

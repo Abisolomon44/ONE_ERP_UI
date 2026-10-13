@@ -7,6 +7,8 @@ import {
   PurchaseReturnService,
   PurchaseReturnDto,
   PurchaseDto,
+  PurchaseLookupsDto,
+  LookupItem,
   DeleteCheckDto,
 } from '../../core/services/master_service';
 import { PermissionService } from '../../core/services/permission.service';
@@ -31,9 +33,11 @@ export class PurchaseReturnManagementPage implements OnInit {
 
   protected readonly mode = signal<ReturnMode>('view');
   protected readonly loading = signal(false);
+  protected readonly loadError = signal('');
   protected readonly saving = signal(false);
   protected readonly ret = signal<PurchaseReturnDto | null>(null);
   protected readonly source = signal<PurchaseDto | null>(null);
+  protected readonly lookups = signal<PurchaseLookupsDto | null>(null);
   protected readonly deleteCheck = signal<DeleteCheckDto | null>(null);
 
   protected readonly canView = signal(false);
@@ -45,9 +49,6 @@ export class PurchaseReturnManagementPage implements OnInit {
   protected editDate = '';
   protected editReason = '';
   protected editRemarks = '';
-  // returnQty keyed by purchaseItemId; available map for validation display
-  protected qty = new Map<number, number>();
-  protected available = new Map<number, number>();
 
   async ngOnInit(): Promise<void> {
     this.canView.set(this.perm.has(['purchases-return.view', 'purchases.return.view', 'purchases.return.manage']));
@@ -71,9 +72,8 @@ export class PurchaseReturnManagementPage implements OnInit {
     }
 
     const id = Number(this.route.snapshot.paramMap.get('id'));
-    if (!id) {
-      this.toast.error('Return id is missing');
-      await this.router.navigate(['/purchase'], { queryParams: { tab: 'returns' } });
+    if (!Number.isInteger(id) || id <= 0) {
+      this.loadError.set('A valid purchase return ID is required.');
       return;
     }
     await this.load(id);
@@ -81,7 +81,9 @@ export class PurchaseReturnManagementPage implements OnInit {
 
   private async load(id: number): Promise<void> {
     this.loading.set(true);
+    this.loadError.set('');
     try {
+      this.lookups.set(await this.purchaseSvc.getLookups().catch(() => null));
       const r = await this.svc.getById(id);
       this.ret.set(r);
       this.editDate = (r.returnDate ?? '').slice(0, 10);
@@ -92,41 +94,27 @@ export class PurchaseReturnManagementPage implements OnInit {
       } catch {
         this.source.set(null);
       }
-      // Build editable qty map; available = purchased - otherReturns (current excluded by backend rule).
-      const src = this.source();
-      if (src && this.mode() === 'edit') {
-        const others = new Map<number, number>();
-        try {
-          const rp = await this.svc.getPaged(1, 200, '');
-          for (const x of rp.items ?? []) {
-            if (x.purchaseId !== r.purchaseId || x.purchaseReturnId === r.purchaseReturnId) continue;
-            let full = x;
-            try {
-              full = await this.svc.getById(x.purchaseReturnId);
-            } catch {
-              full = x;
-            }
-            for (const it of full.items ?? []) {
-              others.set(it.purchaseItemId, (others.get(it.purchaseItemId) ?? 0) + it.returnQuantity);
-            }
-          }
-        } catch {
-          /* backend validation remains authoritative */
-        }
-        for (const it of r.items) {
-          this.qty.set(it.purchaseItemId, it.returnQuantity);
-          const purchased = src.items.find((s) => s.purchaseItemId === it.purchaseItemId)?.quantity ?? it.returnQuantity;
-          this.available.set(it.purchaseItemId, Math.max(0, purchased - (others.get(it.purchaseItemId) ?? 0)));
-        }
-      }
       if (this.mode() === 'delete') {
         this.deleteCheck.set(await this.svc.deleteCheck(id).catch(() => null));
       }
     } catch (e: any) {
-      this.toast.error('Failed to load purchase return', e?.error?.message ?? e?.message ?? '');
+      const detail = e?.error?.message ?? e?.message ?? 'Please try again.';
+      this.loadError.set(`Failed to load purchase return. ${detail}`);
+      this.toast.error('Failed to load purchase return', detail);
     } finally {
       this.loading.set(false);
     }
+  }
+
+  protected retryLoad(): void {
+    const id = Number(this.route.snapshot.paramMap.get('id'));
+    if (Number.isInteger(id) && id > 0) void this.load(id);
+  }
+
+  protected lookupName(items: LookupItem[] | undefined, id: number | null | undefined): string {
+    if (id == null) return '—';
+    const item = items?.find((entry) => Number(entry.id) === Number(id));
+    return item?.name || item?.code || String(id);
   }
 
   protected get title(): string {
@@ -144,7 +132,11 @@ export class PurchaseReturnManagementPage implements OnInit {
 
   protected async saveEdit(): Promise<void> {
     const r = this.ret();
-    if (!r) return;
+    if (!r || this.saving()) return;
+    if (!this.editDate) {
+      this.toast.error('Return date is required');
+      return;
+    }
     this.saving.set(true);
     try {
       const updated = await this.svc.update(r.purchaseReturnId, {
@@ -155,7 +147,7 @@ export class PurchaseReturnManagementPage implements OnInit {
           purchaseItemId: it.purchaseItemId,
           productId: it.productId,
           unitId: it.unitId,
-          returnQuantity: this.qty.get(it.purchaseItemId) ?? it.returnQuantity,
+          returnQuantity: it.returnQuantity,
           purchaseRate: it.purchaseRate,
           discountAmount: it.discountAmount,
           taxableValue: it.taxableValue,
@@ -183,7 +175,7 @@ export class PurchaseReturnManagementPage implements OnInit {
 
   protected async confirmCancel(): Promise<void> {
     const r = this.ret();
-    if (!r) return;
+    if (!r || this.saving()) return;
     if (!this.cancelReason.trim()) {
       this.toast.error('Cancellation reason is required');
       return;
@@ -202,7 +194,7 @@ export class PurchaseReturnManagementPage implements OnInit {
 
   protected async confirmDelete(): Promise<void> {
     const r = this.ret();
-    if (!r) return;
+    if (!r || this.saving()) return;
     this.saving.set(true);
     try {
       await this.svc.delete(r.purchaseReturnId);
@@ -215,19 +207,15 @@ export class PurchaseReturnManagementPage implements OnInit {
     }
   }
 
-  protected qtyFor(id: number): number {
-    return this.qty.get(id) ?? 0;
-  }
-
-  protected setQty(id: number, v: number): void {
-    this.qty.set(id, v);
-  }
-
-  protected availFor(id: number): number | null {
-    return this.available.has(id) ? (this.available.get(id) ?? null) : null;
-  }
-
   protected back(): void {
     this.router.navigate(['/purchase'], { queryParams: { tab: 'returns' } });
+  }
+
+  protected goToMode(mode: ReturnMode): void {
+    const r = this.ret();
+    const allowed = mode === 'view' || (mode === 'edit' && this.canEdit()) ||
+      (mode === 'cancel' && this.canCancel()) || (mode === 'delete' && this.canDelete());
+    if (!r || !allowed) return;
+    void this.router.navigate(['/purchase-returns', r.purchaseReturnId], { queryParams: { mode } });
   }
 }

@@ -1,15 +1,15 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { DecimalPipe, SlicePipe } from '@angular/common';
 import { PurchaseService, PurchaseDto } from '../../core/services/master_service';
 import { ToastService } from '../../core/services/toast.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { DocumentPrintService } from '../../core/services/document-print.service';
+import { PurchaseDetailsPanel } from '../purchase-shared/purchase-details-panel';
 
 @Component({
   selector: 'app-purchase-view',
   standalone: true,
-  imports: [DecimalPipe, SlicePipe],
+  imports: [PurchaseDetailsPanel],
   templateUrl: './purchase-view.html',
   styleUrl: './purchase-view.css',
 })
@@ -22,7 +22,8 @@ export class PurchaseViewPage implements OnInit {
   private readonly docPrint = inject(DocumentPrintService);
 
   protected loading = signal(false);
-  protected purchase: PurchaseDto | null = null;
+  protected purchase = signal<PurchaseDto | null>(null);
+  protected loadError = signal('');
   protected canEdit = signal(false);
   protected canCancel = signal(false);
   protected canDelete = signal(false);
@@ -31,24 +32,29 @@ export class PurchaseViewPage implements OnInit {
   protected purchaseId: number = 0;
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id') ? 
-      parseInt(this.route.snapshot.paramMap.get('id')!, 10) : 0;
+    const id = Number(this.route.snapshot.paramMap.get('id'));
     this.purchaseId = id;
-    this.loadPurchase();
+    if (!Number.isInteger(id) || id <= 0) this.loadError.set('A valid purchase ID is required.');
+    else void this.loadPurchase();
     this.checkPermissions();
   }
 
   private async loadPurchase(): Promise<void> {
     try {
       this.loading.set(true);
-      this.purchase = await this.svc.getById(this.purchaseId);
+      this.loadError.set('');
+      this.purchase.set(await this.svc.getById(this.purchaseId));
+      if (!this.purchase()) this.loadError.set('Purchase record was not found.');
     } catch (e: any) {
-      this.toast.error('Failed to load purchase', e?.error?.message ?? e?.message ?? '');
-      this.router.navigate(['/purchase-register']);
+      const detail = e?.error?.message ?? e?.message ?? 'Please try again.';
+      this.loadError.set(`Failed to load purchase. ${detail}`);
+      this.toast.error('Failed to load purchase', detail);
     } finally {
       this.loading.set(false);
     }
   }
+
+  protected retryLoad(): void { void this.loadPurchase(); }
 
   private checkPermissions(): void {
     this.canEdit.set(this.perm.has(['purchases.edit', 'purchases.manage']));
@@ -80,6 +86,7 @@ export class PurchaseViewPage implements OnInit {
   }
 
   protected printPurchase(): void {
-    if (this.purchase) void this.docPrint.openPurchasePreview(this.purchaseId, this.purchase.companyId, 'PURCHASE');
+    const purchase = this.purchase();
+    if (purchase) void this.docPrint.openPurchasePreview(this.purchaseId, purchase.companyId, 'PURCHASE');
   }
 }

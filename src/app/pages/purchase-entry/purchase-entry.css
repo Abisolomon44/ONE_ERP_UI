@@ -34,7 +34,7 @@
 }
 
 .page {
-  padding: 0.5rem 0.7rem 0.7rem;
+  padding: 0.35rem 0.55rem 0.45rem;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -49,7 +49,9 @@
 
 .purchase-page {
   height: 100%;
-  overflow-y: auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
   background: var(--bg);
 }
 
@@ -63,6 +65,10 @@
   padding: 0.25rem 0.1rem;
   border-bottom: 1px solid var(--pe-border);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: var(--bg);
 }
 
 .tabs-strip {
@@ -257,6 +263,9 @@
   gap: 8px;
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .section-header {
@@ -267,6 +276,10 @@
   min-height: 30px;
   border-bottom: 1px solid var(--pe-border);
   padding-bottom: 6px;
+  padding-left: 8px;
+  border-left: 3px solid var(--pe-accent);
+  background: var(--pe-surface-2);
+  border-radius: 0 var(--pe-radius) var(--pe-radius) 0;
 }
 
 .section-heading {
@@ -304,8 +317,11 @@
 /* ============================ Information groups ============================ */
 .purchase-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+  align-items: stretch;
 }
 
 .info-group {
@@ -317,7 +333,27 @@
   border-radius: var(--pe-radius);
   background: var(--pe-surface-2);
   padding: 8px 10px;
+  align-self: stretch;
+  height: 100%;
+  box-sizing: border-box;
   transition: border-color 160ms ease;
+}
+
+/* SAP-style dense transaction cards: clear grouping and compact controls. */
+.info-group > h3,
+.info-group .group-title {
+  color: var(--pe-accent);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.items-header {
+  border-left: 3px solid var(--pe-accent);
+  padding-left: 8px;
+  background: var(--pe-surface-2);
+  border-radius: 0 var(--pe-radius) var(--pe-radius) 0;
 }
 
 .info-group:hover {
@@ -413,14 +449,34 @@ textarea:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-top: 4px;
+  margin-top: 2px;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .items-actions {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.items-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 30px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.items-actions .btn lucide-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
 }
 
 /* ============================ Items grid ============================ */
@@ -430,6 +486,9 @@ textarea:disabled {
   border-radius: var(--pe-radius);
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
+  overscroll-behavior: contain;
+  min-height: 120px;
 }
 
 .items-table {
@@ -439,6 +498,7 @@ textarea:disabled {
   table-layout: fixed;
   background: var(--pe-surface);
 }
+
 
 .items-table th,
 .items-table td {
@@ -450,6 +510,16 @@ textarea:disabled {
   font-size: 0.72rem;
   vertical-align: middle;
   overflow: hidden;
+}
+
+.items-table td.num,
+.items-table td.total-col,
+.items-table td:nth-child(11),
+.items-table td:nth-child(14),
+.items-table td:nth-child(15),
+.items-table td:nth-child(16) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .items-table thead th {
@@ -635,6 +705,12 @@ textarea:disabled {
 
 /* ============================ Product search panel ============================ */
 .product-panel {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  top: 48%;
+  z-index: 20;
+  max-height: 290px;
   border: 1px solid var(--pe-border-strong);
   border-radius: var(--pe-radius);
   background: var(--pe-surface);
@@ -667,7 +743,7 @@ textarea:disabled {
 }
 
 .product-panel .table-scroll {
-  max-height: 240px;
+  max-height: 235px;
   border: none;
   border-radius: 0;
 }
@@ -934,6 +1010,53 @@ kbd {
 
   .totals-row {
     justify-content: flex-start;
+  }
+}
+
+@media (min-width: 1101px) {
+  .purchase-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .info-group {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .info-group-title {
+    margin-bottom: 0;
+    padding-bottom: 3px;
+  }
+
+  label {
+    gap: 2px;
+    font-size: 10px;
+  }
+
+  input,
+  select {
+    height: 28px;
+    font-size: 0.72rem;
+  }
+
+  .purchase-grid .info-group:nth-child(5),
+  .purchase-grid .info-group:nth-child(6) {
+    max-height: 260px;
+    overflow: auto;
+  }
+}
+
+/* Remarks remains bound to the purchase model, but the optional Other panel
+   is intentionally removed from the compact entry header. */
+.purchase-grid .info-group:nth-child(4) {
+  display: none;
+}
+
+/* The entry card owns the viewport. Only the item grid is allowed to scroll. */
+@media (min-width: 1101px) {
+  .purchase-grid .info-group {
+    min-height: 0;
   }
 }
 

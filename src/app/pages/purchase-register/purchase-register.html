@@ -1,147 +1,185 @@
-<div class="card">
-  <div class="ledger-head">
-    <h2>Purchase Register</h2>
-    <p>View and manage purchase invoices</p>
-    <button class="btn primary" type="button" (click)="newPurchase()" [disabled]="!canCreate()">
-      <lucide-icon name="plus"></lucide-icon> New Purchase
-    </button>
-    <button class="btn secondary" type="button" (click)="clearFilters()" [disabled]="loading()">
-      <lucide-icon name="reload"></lucide-icon> Refresh
-    </button>
-  </div>
+<section class="register-page" [class.dark-theme]="theme.mode() === 'dark'" aria-labelledby="purchase-register-title">
+  <header class="page-header">
+    <div class="page-heading">
+      <span class="eyebrow">PURCHASING</span>
+      <h1 id="purchase-register-title">Purchase Register</h1>
+      <p>View and manage purchase invoices</p>
+    </div>
+    <div class="header-actions">
+      <button class="button button-secondary" type="button" (click)="refresh()" [disabled]="loading()" aria-label="Refresh purchases">
+        <lucide-icon name="refresh-cw" [size]="16"></lucide-icon><span>Refresh</span>
+      </button>
+      <button class="button button-primary" type="button" (click)="newPurchase()" [disabled]="!canCreate()">
+        <lucide-icon name="plus" [size]="17"></lucide-icon><span>New Purchase</span>
+      </button>
+    </div>
+  </header>
 
-  @if (loading()) {
-    <div class="empty">Loading…</div>
-  } @else if (rows().length === 0) {
-    <div class="empty">No purchases recorded yet.</div>
-  } @else {
-    <div class="toolbar">
-      <div class="search-group">
-        <input type="text" placeholder="Search purchases..." [ngModel]="search()" (ngModelChange)="search.set($event); onSearch()" />
-      </div>
-      <div class="filters">
-        <div class="filter-row">
-          <label>Date From</label>
-          <input type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event); onSearch()" />
-        </div>
-        <div class="filter-row">
-          <label>Date To</label>
-          <input type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event); onSearch()" />
-        </div>
-        <div class="filter-row">
-          <label>Supplier</label>
-          <select [ngModel]="supplierId()" (ngModelChange)="supplierId.set($event); onSearch()">
-            <option value="">All Suppliers</option>
-          </select>
-        </div>
-        <div class="filter-row">
-          <label>Company</label>
-          <select [ngModel]="companyId()" (ngModelChange)="companyId.set($event); onSearch()">
-            <option value="">All Companies</option>
-          </select>
-        </div>
-        <div class="filter-row">
-          <label>Branch</label>
-          <select [ngModel]="branchId()" (ngModelChange)="branchId.set($event); onSearch()">
-            <option value="">All Branches</option>
-          </select>
-        </div>
-        <div class="filter-row">
-          <label>Warehouse</label>
-          <select [ngModel]="warehouseId()" (ngModelChange)="warehouseId.set($event); onSearch()">
-            <option value="">All Warehouses</option>
-          </select>
-        </div>
-        <div class="filter-row">
-          <label>Status</label>
-          <select [ngModel]="statusId()" (ngModelChange)="statusId.set($event); onSearch()">
-            <option value="">All Statuses</option>
-          </select>
-        </div>
-        <div class="filter-row">
-          <label>Payment Status</label>
-          <select [ngModel]="paymentStatus()" (ngModelChange)="paymentStatus.set($event); onSearch()">
-            <option value="">All Payment Statuses</option>
-          </select>
-        </div>
-        <button class="btn clear" type="button" (click)="clearFilters()" [disabled]="loading()">Clear Filters</button>
-      </div>
+  <section class="filter-card" aria-label="Purchase search and filters">
+    <label class="search-box" for="purchase-search">
+      <lucide-icon name="search" [size]="18" aria-hidden="true"></lucide-icon>
+      <input id="purchase-search" type="search" placeholder="Search purchase number, supplier or invoice…"
+        [ngModel]="search()" (ngModelChange)="search.set($event); onSearch()" />
+    </label>
+
+    <div class="filter-grid">
+      <label class="filter-field"><span>Date From</span>
+        <input type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event); onSearch()" />
+      </label>
+      <label class="filter-field"><span>Date To</span>
+        <input type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event); onSearch()" />
+      </label>
+      <label class="filter-field"><span>Supplier</span>
+        <select [ngModel]="supplierId()" (ngModelChange)="supplierId.set(+$event); onSearch()">
+          <option [ngValue]="0">All suppliers</option>
+            @for (supplier of (lookups()?.suppliers ?? []); track supplier.id) {
+            <option [ngValue]="supplier.id">{{ supplier.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="filter-field"><span>Company</span>
+        <select [ngModel]="companyId()" (ngModelChange)="companyId.set(+$event); onSearch()">
+          <option [ngValue]="0">All companies</option>
+          @for (company of (lookups()?.companies ?? []); track company.id) {
+            <option [ngValue]="company.id">{{ company.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="filter-field"><span>Branch</span>
+        <select [ngModel]="branchId()" (ngModelChange)="branchId.set(+$event); onSearch()">
+          <option [ngValue]="0">All branches</option>
+          @for (branch of (lookups()?.branches ?? []); track branch.id) {
+            <option [ngValue]="branch.id">{{ branch.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="filter-field"><span>Warehouse</span>
+        <select [ngModel]="warehouseId()" (ngModelChange)="warehouseId.set(+$event); onSearch()">
+          <option [ngValue]="0">All warehouses</option>
+          @for (warehouse of (lookups()?.warehouses ?? []); track warehouse.id) {
+            <option [ngValue]="warehouse.id">{{ warehouse.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="filter-field"><span>Purchase Status</span>
+        <select [ngModel]="statusId()" disabled title="Purchase status filtering is not supported by the current API">
+          <option [ngValue]="0">All statuses</option>
+        </select>
+      </label>
+      <label class="filter-field"><span>Payment Status</span>
+        <select [ngModel]="paymentStatus()" (ngModelChange)="paymentStatus.set($event); onSearch()">
+          <option value="">All payment statuses</option>
+          <option value="PAID">Paid</option>
+          <option value="PARTIAL">Partial</option>
+          <option value="UNPAID">Unpaid</option>
+        </select>
+      </label>
     </div>
 
-    <div class="table-container">
-      <table class="list">
+    <div class="filter-footer">
+      <span class="filter-note">Search is applied by the server. Additional filters are shown for register context.</span>
+      <button class="text-button" type="button" (click)="clearFilters()" [disabled]="loading()">
+        <lucide-icon name="x" [size]="15"></lucide-icon> Clear filters
+      </button>
+    </div>
+  </section>
+
+  <section class="table-card" aria-label="Purchase invoices">
+    <div class="table-toolbar">
+      <div>
+        <h2>Purchase invoices</h2>
+        <p>{{ totalCount() }} {{ totalCount() === 1 ? 'entry' : 'entries' }}</p>
+      </div>
+      @if (loading()) {
+        <span class="loading-label"><span class="spinner" aria-hidden="true"></span>Loading purchases</span>
+      }
+    </div>
+
+    <div class="table-scroll">
+      <table class="purchase-table">
         <thead>
           <tr>
-            <th>Select</th>
+            <th class="check-col"><span class="sr-only">Select</span></th>
             <th>S.No</th>
             <th>Purchase Number</th>
             <th>Purchase Date</th>
             <th>Supplier</th>
-            <th>Supplier Invoice No</th>
+            <th>Supplier Invoice No.</th>
             <th>Company</th>
             <th>Branch</th>
             <th>Warehouse</th>
             <th>Payment Status</th>
             <th>Purchase Status</th>
-            <th class="num">Grand Total</th>
-            <th class="num">Paid Amount</th>
-            <th class="num">Balance</th>
-            <th></th>
+            <th class="numeric">Grand Total</th>
+            <th class="numeric">Paid Amount</th>
+            <th class="numeric">Balance</th>
+            <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
-          @for (p of rows(); track p.purchaseId; let i = $index) {
-            <tr>
-              <td>
-                <input type="checkbox" class="select-row" />
-              </td>
-              <td>{{ $index + 1 }}</td>
-              <td>{{ p.purchaseNumber }}</td>
-              <td>{{ p.purchaseDate ? (p.purchaseDate | slice: 0 : 10) : '' }}</td>
-              <td>{{ p.supplierNameSnapshot || p.supplierId }}</td>
-              <td>{{ p.supplierInvoiceNumber || '' }}</td>
-              <td>{{ p.companyNameSnapshot || p.companyId }}</td>
-              <td>{{ p.branchId }}</td>
-              <td>{{ p.warehouseId }}</td>
-              <td>
-                @if (p.paidAmount >= p.grandTotal) {
-                  <span class="badge paid">Paid</span>
-                } @else if (p.paidAmount > 0) {
-                  <span class="badge partial">Partial</span>
-                } @else {
-                  <span class="badge">Unpaid</span>
-                }
-              </td>
-              <td>
-                @if (p.statusID) {
-                  <span class="badge">{{ p.statusID }}</span>
-                } @else {
-                  <span class="badge">Open</span>
-                }
-              </td>
-              <td class="num">{{ p.grandTotal | number: '1.2-2' }}</td>
-              <td class="num">{{ p.paidAmount | number: '1.2-2' }}</td>
-              <td class="num">{{ (p.grandTotal - p.paidAmount) | number: '1.2-2' }}</td>
-              <td class="row-actions">
-                <button class="icon" title="View" (click)="viewPurchase(p.purchaseId)" [disabled]="!canView()"><lucide-icon name="eye"></lucide-icon></button>
-                <button class="icon" title="Edit" (click)="editPurchase(p.purchaseId)" [disabled]="!canEdit()"><lucide-icon name="pencil"></lucide-icon></button>
-                <button class="icon" title="Cancel" (click)="cancelPurchase(p.purchaseId)" [disabled]="!canCancel()"><lucide-icon name="ban"></lucide-icon></button>
-                <button class="icon danger" title="Delete" (click)="deletePurchase(p.purchaseId)" [disabled]="!canDelete()"><lucide-icon name="trash-2"></lucide-icon></button>
-                <button class="icon" title="Return" (click)="returnPurchase(p.purchaseId)" [disabled]="!canReturn()"><lucide-icon name="undo-2"></lucide-icon></button>
-                <button class="icon" title="Print" (click)="printPurchase(p.purchaseId)"><lucide-icon name="printer"></lucide-icon></button>
-              </td>
-            </tr>
+          @if (error()) {
+            <tr><td class="state-cell" colspan="15">
+              <div class="state-block error-state"><lucide-icon name="circle-alert" [size]="22"></lucide-icon>
+                <strong>Purchases could not be loaded</strong><span>{{ error() }}</span>
+                <button class="button button-secondary" type="button" (click)="refresh()">Try again</button>
+              </div>
+            </td></tr>
+          } @else if (loading() && rows().length === 0) {
+            <tr><td class="state-cell" colspan="15"><div class="state-block"><span class="spinner spinner-large"></span><strong>Loading purchases…</strong></div></td></tr>
+          } @else if (rows().length === 0) {
+            <tr><td class="state-cell" colspan="15"><div class="state-block">
+              <span class="empty-icon"><lucide-icon name="file-text" [size]="22"></lucide-icon></span>
+              <strong>{{ search() ? 'No matching purchases' : 'No purchases recorded' }}</strong>
+              <span>{{ search() ? 'Try another search or clear the filters.' : 'Purchase invoices will appear here once recorded.' }}</span>
+              @if (search()) { <button class="text-button" type="button" (click)="clearFilters()">Clear search</button> }
+            </div></td></tr>
+          } @else {
+            @for (p of rows(); track p.purchaseId; let i = $index) {
+              <tr>
+                <td class="check-col"><input type="checkbox" class="row-check" [attr.aria-label]="'Select purchase ' + p.purchaseNumber" /></td>
+                <td class="serial-cell">{{ (page() - 1) * pageSize() + i + 1 }}</td>
+                <td><button class="document-link" type="button" (click)="viewPurchase(p.purchaseId)" [disabled]="!canView()">{{ p.purchaseNumber }}</button></td>
+                <td class="date-cell">{{ p.purchaseDate ? (p.purchaseDate | slice: 0 : 10) : '—' }}</td>
+                <td class="primary-cell">{{ p.supplierNameSnapshot || p.supplierId }}</td>
+                <td>{{ p.supplierInvoiceNumber || '—' }}</td>
+                <td>{{ p.companyNameSnapshot || lookupName(lookups()?.companies, p.companyId) }}</td>
+                <td>{{ lookupName(lookups()?.branches, p.branchId) }}</td>
+                <td>{{ lookupName(lookups()?.warehouses, p.warehouseId) }}</td>
+                <td>
+                  @if (p.paidAmount >= p.grandTotal) { <span class="status-badge paid"><i></i>Paid</span> }
+                  @else if (p.paidAmount > 0) { <span class="status-badge partial"><i></i>Partial</span> }
+                  @else { <span class="status-badge unpaid"><i></i>Unpaid</span> }
+                </td>
+                <td><span class="status-badge neutral"><i></i>{{ p.statusID ? ('Status ' + p.statusID) : 'Open' }}</span></td>
+                <td class="numeric money">{{ p.grandTotal | number: '1.2-2' }}</td>
+                <td class="numeric money">{{ p.paidAmount | number: '1.2-2' }}</td>
+                <td class="numeric money balance">{{ p.balanceAmount | number: '1.2-2' }}</td>
+                <td class="actions-col">
+                  <div class="row-actions">
+                    <button class="icon-button" type="button" title="View purchase" aria-label="View purchase" (click)="viewPurchase(p.purchaseId)" [disabled]="!canView()"><lucide-icon name="eye" [size]="16"></lucide-icon></button>
+                    <button class="icon-button" type="button" title="Edit purchase" aria-label="Edit purchase" (click)="editPurchase(p.purchaseId)" [disabled]="!canEdit()"><lucide-icon name="pencil" [size]="16"></lucide-icon></button>
+                    <button class="icon-button" type="button" title="Cancel purchase" aria-label="Cancel purchase" (click)="cancelPurchase(p.purchaseId)" [disabled]="!canCancel()"><lucide-icon name="ban" [size]="16"></lucide-icon></button>
+                    <button class="icon-button danger" type="button" title="Delete purchase" aria-label="Delete purchase" (click)="deletePurchase(p.purchaseId)" [disabled]="!canDelete()"><lucide-icon name="trash-2" [size]="16"></lucide-icon></button>
+                    <button class="icon-button" type="button" title="Create purchase return" aria-label="Create purchase return" (click)="returnPurchase(p.purchaseId)" [disabled]="!canReturn()"><lucide-icon name="corner-up-left" [size]="16"></lucide-icon></button>
+                    <button class="icon-button" type="button" title="Print purchase" aria-label="Print purchase" (click)="printPurchase(p.purchaseId)"><lucide-icon name="printer" [size]="16"></lucide-icon></button>
+                  </div>
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
     </div>
 
-    <div class="pagination">
-      <button class="btn" (click)="loadPage(1)" [disabled]="loading()">First</button>
-      <button class="btn" (click)="loadPage(page() - 1)" [disabled]="page() <= 1 || loading()">Prev</button>
-      <span>Page {{ page() }} of {{ totalPages() }}</span>
-      <button class="btn" (click)="loadPage(page() + 1)" [disabled]="page() >= totalPages() || loading()">Next</button>
-      <button class="btn" (click)="loadPage(totalPages())" [disabled]="loading() || totalPages() <= 1">Last</button>
-    </div>
-  }
-</div>
+    <footer class="pagination">
+      <span class="page-summary">Showing <strong>{{ firstEntry() }}–{{ lastEntry() }}</strong> of <strong>{{ totalCount() }}</strong></span>
+      <div class="page-controls">
+        <button class="page-button" type="button" aria-label="First page" (click)="loadPage(1)" [disabled]="page() <= 1 || loading()"><lucide-icon name="chevrons-left" [size]="16"></lucide-icon><span>First</span></button>
+        <button class="page-button" type="button" aria-label="Previous page" (click)="loadPage(page() - 1)" [disabled]="page() <= 1 || loading()"><lucide-icon name="chevron-left" [size]="16"></lucide-icon><span>Previous</span></button>
+        <span class="page-current">{{ page() }} <span>of</span> {{ totalPages() }}</span>
+        <button class="page-button" type="button" aria-label="Next page" (click)="loadPage(page() + 1)" [disabled]="page() >= totalPages() || loading()"><span>Next</span><lucide-icon name="chevron-right" [size]="16"></lucide-icon></button>
+        <button class="page-button" type="button" aria-label="Last page" (click)="loadPage(totalPages())" [disabled]="page() >= totalPages() || loading()"><span>Last</span><lucide-icon name="chevrons-right" [size]="16"></lucide-icon></button>
+      </div>
+    </footer>
+  </section>
+</section>
